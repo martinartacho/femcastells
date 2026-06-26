@@ -1,0 +1,143 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\CastellerResource\Pages;
+use App\Models\Casteller;
+use BackedEnum;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+
+class CastellerResource extends Resource
+{
+    protected static ?string $model = Casteller::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static ?string $navigationLabel = 'Castellers';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Identificació')->schema([
+                TextInput::make('alias')
+                    ->required()
+                    ->maxLength(50),
+                TextInput::make('name')
+                    ->label('Nom')
+                    ->required()
+                    ->maxLength(100),
+                TextInput::make('last_name')
+                    ->label('Cognoms')
+                    ->maxLength(100),
+                Select::make('status')
+                    ->label('Estat')
+                    ->options([
+                        1 => 'Actiu',
+                        2 => 'Inactiu',
+                        3 => 'Baixa',
+                        4 => 'Candidat',
+                    ])
+                    ->default(1)
+                    ->required(),
+            ])->columns(2),
+
+            Section::make('Contacte')->schema([
+                TextInput::make('email')
+                    ->email()
+                    ->maxLength(200),
+                TextInput::make('phone')
+                    ->label('Telèfon')
+                    ->tel()
+                    ->maxLength(20),
+                DatePicker::make('birthdate')
+                    ->label('Data de naixement')
+                    ->displayFormat('d/m/Y'),
+            ])->columns(3),
+
+            Section::make('Dades físiques')->schema([
+                TextInput::make('height')
+                    ->label('Alçada (cm)')
+                    ->numeric()
+                    ->minValue(100)
+                    ->maxValue(250),
+                TextInput::make('weight')
+                    ->label('Pes (kg)')
+                    ->numeric()
+                    ->minValue(30)
+                    ->maxValue(200),
+                TextInput::make('shoulder_height')
+                    ->label('Alçada espatlles (cm)')
+                    ->numeric(),
+            ])->columns(3),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('alias')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('name')
+                    ->label('Nom')
+                    ->searchable()
+                    ->formatStateUsing(fn ($record) => $record->full_name),
+                TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('phone')
+                    ->label('Telèfon')
+                    ->toggleable(),
+                TextColumn::make('status')
+                    ->label('Estat')
+                    ->badge()
+                    ->formatStateUsing(fn (int $state) => Casteller::statusLabel($state))
+                    ->color(fn (int $state) => match ($state) {
+                        1 => 'success',
+                        2 => 'warning',
+                        3 => 'danger',
+                        4 => 'info',
+                        default => 'gray',
+                    }),
+            ])
+            ->filters([
+                SelectFilter::make('status')
+                    ->label('Estat')
+                    ->options([
+                        1 => 'Actiu',
+                        2 => 'Inactiu',
+                        3 => 'Baixa',
+                        4 => 'Candidat',
+                    ]),
+            ])
+            ->defaultSort('alias');
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListCastellers::route('/'),
+            'create' => Pages\CreateCasteller::route('/create'),
+            'edit' => Pages\EditCasteller::route('/{record}/edit'),
+        ];
+    }
+}
