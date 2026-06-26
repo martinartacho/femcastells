@@ -10,6 +10,7 @@ use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Facades\Hash;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -66,6 +67,16 @@ class CastellerResource extends Resource
                     ->label('Data de naixement')
                     ->displayFormat('d/m/Y'),
             ])->columns(3),
+
+            Section::make('Accés al portal')->schema([
+                TextInput::make('password')
+                    ->label('Contrasenya')
+                    ->password()
+                    ->dehydrateStateUsing(fn (string $state) => Hash::make($state))
+                    ->dehydrated(fn (?string $state) => filled($state))
+                    ->hint('Deixa buit per no canviar')
+                    ->maxLength(255),
+            ]),
 
             Section::make('Dades físiques')->schema([
                 TextInput::make('height')
