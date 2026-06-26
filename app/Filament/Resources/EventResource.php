@@ -61,13 +61,17 @@ class EventResource extends Resource
                 DateTimePicker::make('start_date')
                     ->label('Inici')
                     ->required()
-                    ->displayFormat('d/m/Y H:i'),
+                    ->displayFormat('d/m/Y H:i')
+                    ->default(now()->setTime(14, 0))
+                    ->seconds(false),
                 DateTimePicker::make('open_date')
                     ->label('Obertura assistència')
-                    ->displayFormat('d/m/Y H:i'),
+                    ->displayFormat('d/m/Y H:i')
+                    ->seconds(false),
                 DateTimePicker::make('close_date')
                     ->label('Tancament assistència')
-                    ->displayFormat('d/m/Y H:i'),
+                    ->displayFormat('d/m/Y H:i')
+                    ->seconds(false),
             ])->columns(3),
 
             Section::make('Opcions')->schema([
