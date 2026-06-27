@@ -55,6 +55,8 @@
                 @endforeach
             </select>
 
+            <span id="board-counter" style="font-size:11px; color:#6b7280; white-space:nowrap;">0/0</span>
+
             <button onclick="boardEditor.clearBoard()"
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; white-space:nowrap;">
                 Neteja
@@ -79,6 +81,12 @@
                     💾 Desa
                 </button>
             @endif
+
+            <button onclick="boardEditor.exportPng('pissarra-{{ $this->castleType }}.png')"
+                title="Descarrega com a imatge PNG"
+                style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f5f3ff; border:1px solid #c4b5fd; color:#6d28d9; cursor:pointer; white-space:nowrap;">
+                📷 PNG
+            </button>
 
             <button id="btn-fullscreen" onclick="toggleFullscreen()"
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap;">
@@ -141,8 +149,9 @@
                         @endphp
                         <button
                             data-alias="{{ $casteller->alias }}"
+                            draggable="true"
                             onclick="boardEditor.selectCasteller('{{ $casteller->alias }}')"
-                            style="display:flex; align-items:center; gap:5px; width:100%; text-align:left; font-size:11px; font-family:monospace; padding:3px 6px; margin-bottom:2px; border-radius:4px; border:1px solid #e5e7eb; background:white; cursor:pointer;">
+                            style="display:flex; align-items:center; gap:5px; width:100%; text-align:left; font-size:11px; font-family:monospace; padding:3px 6px; margin-bottom:2px; border-radius:4px; border:1px solid #e5e7eb; background:white; cursor:grab;">
                             @if($this->selectedEventId)
                                 <span style="flex-shrink:0; width:15px; height:15px; border-radius:50%; background:{{ $bg }}; color:white; font-size:9px; font-family:sans-serif; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">{{ $ic }}</span>
                             @endif
