@@ -1,0 +1,232 @@
+<x-filament-panels::page>
+    @vite('resources/js/board-editor.js')
+
+    <style>
+        body.board-fullscreen aside,
+        body.board-fullscreen header,
+        body.board-fullscreen .fi-topbar,
+        body.board-fullscreen .fi-sidebar,
+        body.board-fullscreen .fi-sidebar-nav {
+            display: none !important;
+        }
+        body.board-fullscreen .fi-main-ctn,
+        body.board-fullscreen .fi-main,
+        body.board-fullscreen main {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        body.board-fullscreen #board-wrapper {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #f9fafb;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+
+    <div id="board-wrapper"
+         x-data="{ showSave: false, saveName: '' }"
+         @board-apply.window="boardEditor.applyAssignments($event.detail.assignments)"
+         @board-type-changed.window="boardEditor.loadCastleType($event.detail.type)">
+
+        {{-- Toolbar --}}
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+
+            {{-- Selector d'event --}}
+            <select wire:model.live="selectedEventId"
+                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; flex:1; min-width:0;">
+                <option value="">— Sense event —</option>
+                @foreach($this->getUpcomingEvents() as $event)
+                    <option value="{{ $event->id }}">
+                        {{ $event->start_date?->format('d/m') }} · {{ Str::limit($event->name, 28) }}
+                    </option>
+                @endforeach
+            </select>
+
+            {{-- Selector tipus de castell --}}
+            <select wire:model.live="castleType"
+                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; width:90px;">
+                @foreach(\App\Filament\Pages\BoardEditorPage::CASTLE_TYPES as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <button onclick="boardEditor.clearBoard()"
+                style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; white-space:nowrap;">
+                Neteja
+            </button>
+
+            @if($this->currentSnapshotId)
+                {{-- Snapshot actiu: Desa (sobreescriu) + Desa com... (nou) --}}
+                <button
+                    @click="$dispatch('board-overwrite', {assignmentsJson: JSON.stringify(boardEditor.getAssignments())})"
+                    title="Sobreescriu: {{ $this->currentSnapshotName }}"
+                    style="font-size:11px; padding:4px 10px; border-radius:6px; background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; cursor:pointer; font-weight:600; white-space:nowrap;">
+                    💾 Desa
+                </button>
+                <button @click="saveName = ''; showSave = true"
+                    style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; color:#374151; cursor:pointer; white-space:nowrap;">
+                    💾 Desa com...
+                </button>
+            @else
+                {{-- Sense snapshot: Desa obre el diàleg de nom --}}
+                <button @click="saveName = ''; showSave = true"
+                    style="font-size:11px; padding:4px 10px; border-radius:6px; background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; cursor:pointer; font-weight:600; white-space:nowrap;">
+                    💾 Desa
+                </button>
+            @endif
+
+            <button id="btn-fullscreen" onclick="toggleFullscreen()"
+                style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap;">
+                ⛶ Pantalla completa
+            </button>
+        </div>
+
+        {{-- Diàleg Desa --}}
+        <div x-show="showSave" x-cloak
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">
+            <div style="background:white; border-radius:12px; padding:20px; width:320px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:12px;">Desar pissarra</div>
+
+                @if(!$this->selectedEventId)
+                    <p style="font-size:12px; color:#92400e; background:#fef3c7; border-radius:6px; padding:8px; margin-bottom:12px;">
+                        Sense event seleccionat. La pissarra es desarà sense vincle a cap event.
+                    </p>
+                @endif
+
+                <label style="font-size:12px; color:#374151; display:block; margin-bottom:4px;">Nom (ex: "Assaig 1", "Versió definitiva")</label>
+                <input x-model="saveName" type="text" maxlength="100"
+                    placeholder="Nom de la pissarra..."
+                    @keydown.enter="if(saveName.trim()) { $dispatch('board-save', {name: saveName.trim(), assignmentsJson: JSON.stringify(boardEditor.getAssignments())}); showSave = false; }"
+                    style="width:100%; font-size:12px; padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; margin-bottom:12px; box-sizing:border-box;"
+                    x-ref="saveNameInput"
+                    x-init="$watch('showSave', v => v && $nextTick(() => $refs.saveNameInput.focus()))">
+
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button @click="showSave = false"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer;">
+                        Cancel·la
+                    </button>
+                    <button
+                        @click="if(saveName.trim()) { $dispatch('board-save', {name: saveName.trim(), assignmentsJson: JSON.stringify(boardEditor.getAssignments())}); showSave = false; }"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#059669; border:none; color:white; cursor:pointer; font-weight:600;">
+                        Desa
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Layout 3 columnes --}}
+        <div id="board-cols" style="display:flex; flex-direction:row; gap:10px; flex:1; min-height:0;">
+
+            {{-- ESQUERRA — Llista castellers --}}
+            <div style="width:180px; min-width:180px; display:flex; flex-direction:column; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
+                <div style="padding:8px; border-bottom:1px solid #e5e7eb; background:#f3f4f6; flex-shrink:0;">
+                    <div style="font-size:12px; font-weight:600; color:#374151;">Castellers actius</div>
+                    <div style="font-size:11px; color:#6b7280;">{{ $this->getCastellers()->count() }} castellers</div>
+                </div>
+                <div style="overflow-y:auto; flex:1; padding:6px;">
+                    @foreach($this->getCastellers() as $casteller)
+                        @php
+                            $as = $casteller->attendance_status ?? null;
+                            [$ic, $bg] = match($as) {
+                                'ok'  => ['✓', '#16a34a'],
+                                'nok' => ['✗', '#dc2626'],
+                                default => ['?', '#d97706'],
+                            };
+                        @endphp
+                        <button
+                            data-alias="{{ $casteller->alias }}"
+                            onclick="boardEditor.selectCasteller('{{ $casteller->alias }}')"
+                            style="display:flex; align-items:center; gap:5px; width:100%; text-align:left; font-size:11px; font-family:monospace; padding:3px 6px; margin-bottom:2px; border-radius:4px; border:1px solid #e5e7eb; background:white; cursor:pointer;">
+                            @if($this->selectedEventId)
+                                <span style="flex-shrink:0; width:15px; height:15px; border-radius:50%; background:{{ $bg }}; color:white; font-size:9px; font-family:sans-serif; font-weight:700; display:inline-flex; align-items:center; justify-content:center;">{{ $ic }}</span>
+                            @endif
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $casteller->alias }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                <div style="padding:6px; border-top:1px solid #e5e7eb; background:#f3f4f6; font-size:10px; color:#6b7280; flex-shrink:0;">
+                    Clic → selecciona<br>
+                    Clic posició → assigna<br>
+                    Doble clic → desassigna
+                </div>
+            </div>
+
+            {{-- CENTRE — Canvas (wire:ignore evita que Livewire destrueixi el Konva en re-renders) --}}
+            <div wire:ignore style="flex:1; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:12px;">
+                <div id="board-canvas"></div>
+            </div>
+
+            {{-- DRETA — Snapshots desats --}}
+            <div style="width:190px; min-width:190px; display:flex; flex-direction:column; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
+                <div style="padding:8px; border-bottom:1px solid #e5e7eb; background:#f3f4f6; flex-shrink:0;">
+                    <div style="font-size:12px; font-weight:600; color:#374151;">Pissarres desades</div>
+                    @if($this->selectedEventId)
+                        <div style="font-size:10px; color:#6b7280;">{{ $this->getSnapshots()->count() }} versions</div>
+                    @else
+                        <div style="font-size:10px; color:#9ca3af;">Selecciona un event</div>
+                    @endif
+                </div>
+                <div style="overflow-y:auto; flex:1; padding:6px;">
+                    @forelse($this->getSnapshots() as $snap)
+                        <div style="border:1px solid #e5e7eb; border-radius:6px; padding:6px; margin-bottom:6px; background:white;">
+                            <div style="font-size:11px; font-weight:600; color:#111827; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->name }}">
+                                {{ $snap->name }}
+                            </div>
+                            <div style="font-size:10px; color:#9ca3af; margin-bottom:6px;">
+                                {{ $snap->created_at->format('d/m H:i') }}
+                            </div>
+                            <div style="display:flex; gap:4px;">
+                                <button wire:click="loadSnapshot({{ $snap->id }})"
+                                    style="flex:1; font-size:10px; padding:3px 6px; border-radius:4px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer;">
+                                    Carrega
+                                </button>
+                                <button wire:click="deleteSnapshot({{ $snap->id }})"
+                                    wire:confirm="Eliminar '{{ addslashes($snap->name) }}'?"
+                                    style="font-size:10px; padding:3px 6px; border-radius:4px; background:#fef2f2; border:1px solid #fecaca; color:#dc2626; cursor:pointer;">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        @if($this->selectedEventId)
+                            <p style="font-size:11px; color:#9ca3af; text-align:center; padding:16px 8px;">
+                                Encara no hi ha pissarres desades per aquest event.
+                            </p>
+                        @endif
+                    @endforelse
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function toggleFullscreen() {
+            const isFs = document.body.classList.toggle('board-fullscreen');
+            document.getElementById('btn-fullscreen').textContent = isFs ? '✕ Surt' : '⛶ Pantalla completa';
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                document.body.classList.remove('board-fullscreen');
+                document.getElementById('btn-fullscreen').textContent = '⛶ Pantalla completa';
+            }
+        });
+
+        // Després de cada re-render de Livewire, re-amaguem els castellers ja assignats al canvas
+        document.addEventListener('livewire:updated', () => {
+            if (typeof boardEditor === 'undefined') return;
+            const assigned = Object.values(boardEditor.getAssignments());
+            assigned.forEach(alias => {
+                document.querySelectorAll(`[data-alias="${alias}"]`).forEach(el => {
+                    el.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</x-filament-panels::page>

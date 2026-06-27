@@ -21,6 +21,11 @@ class EditEvent extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('openBoard')
+                ->label('Pissarra')
+                ->icon(Heroicon::OutlinedTableCells)
+                ->color('info')
+                ->url(fn () => '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $this->record->id),
             Action::make('importAttendance')
                 ->label('Importa assistència CSV')
                 ->icon(Heroicon::OutlinedArrowUpTray)
