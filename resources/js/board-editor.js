@@ -1,9 +1,6 @@
 import Konva from 'konva';
-import positions3d6 from './boards/3d6.json';
 
-const CASTLE_POSITIONS = {
-    '3d6': positions3d6,
-};
+const CASTLE_POSITIONS = window.__boardPositions ?? {};
 
 const SCALE = 0.9;
 const ASSIGNED_FILL = '#86efac';
@@ -57,7 +54,7 @@ function initBoard(type = '3d6') {
         dragOverPosId = null;
     }
 
-    const positions = CASTLE_POSITIONS[type] ?? positions3d6;
+    const positions = CASTLE_POSITIONS[type] ?? Object.values(CASTLE_POSITIONS)[0] ?? [];
     const centroid  = computeCentroid(positions);
     const xs = positions.map(p => p.cx);
     const ys = positions.map(p => p.cy);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Models\BoardSnapshot;
+use App\Models\CastleTemplate;
 use App\Models\Casteller;
 use App\Models\Event;
 use BackedEnum;
@@ -21,7 +22,9 @@ class BoardEditorPage extends Page
 
     protected static ?string $navigationLabel = 'Pissarra';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 1;
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Pissarra';
 
     protected static ?string $slug = 'pissarra';
 
@@ -35,9 +38,22 @@ class BoardEditorPage extends Page
 
     public ?string $currentSnapshotName = null;
 
-    public const CASTLE_TYPES = [
-        '3d6' => '3 de 6',
-    ];
+    public function getCastleTypes(): Collection
+    {
+        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('ready', true)
+            ->orderBy('name')
+            ->get(['key', 'name']);
+    }
+
+    public function getCastlePositions(): array
+    {
+        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('ready', true)
+            ->get(['key', 'positions'])
+            ->mapWithKeys(fn ($t) => [$t->key => $t->positions])
+            ->toArray();
+    }
 
     public function getView(): string
     {
@@ -87,7 +103,20 @@ class BoardEditorPage extends Page
             ->where('event_id', $this->selectedEventId)
             ->where('castle_type', $this->castleType)
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'created_at']);
+            ->get(['id', 'name', 'created_at', 'event_id']);
+    }
+
+    public function getAllCollaSnapshots(): Collection
+    {
+        $collaId = auth()->user()?->colla_id;
+
+        return BoardSnapshot::where('colla_id', $collaId)
+            ->where('castle_type', $this->castleType)
+            ->when($this->selectedEventId, fn ($q) => $q->where('event_id', '!=', $this->selectedEventId))
+            ->with('event:id,name,start_date')
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get(['id', 'name', 'created_at', 'event_id']);
     }
 
     public function updatedCastleType(): void
