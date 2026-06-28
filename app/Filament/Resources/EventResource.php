@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Actions\Action;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -122,6 +123,13 @@ class EventResource extends Resource
                         2 => 'Actuació',
                         3 => 'Activitat',
                     ]),
+            ])
+            ->actions([
+                Action::make('pissarra')
+                    ->label('Pissarra')
+                    ->icon(Heroicon::OutlinedTableCells)
+                    ->color('info')
+                    ->url(fn (Event $record): string => '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id),
             ])
             ->defaultSort('start_date', 'desc');
     }

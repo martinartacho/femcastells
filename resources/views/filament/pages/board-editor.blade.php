@@ -1,5 +1,6 @@
 <x-filament-panels::page>
     @vite('resources/js/board-editor.js')
+    <script>window.__boardPositions = @json($this->getCastlePositions());</script>
 
     <style>
         body.board-fullscreen aside,
@@ -49,9 +50,9 @@
 
             {{-- Selector tipus de castell --}}
             <select wire:model.live="castleType"
-                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; width:90px;">
-                @foreach(\App\Filament\Pages\BoardEditorPage::CASTLE_TYPES as $key => $label)
-                    <option value="{{ $key }}">{{ $label }}</option>
+                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; width:110px;">
+                @foreach($this->getCastleTypes() as $template)
+                    <option value="{{ $template->key }}">{{ $template->name }}</option>
                 @endforeach
             </select>
 
@@ -173,15 +174,17 @@
 
             {{-- DRETA — Snapshots desats --}}
             <div style="width:190px; min-width:190px; display:flex; flex-direction:column; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
+
+                {{-- Secció 1: pissarres d'aquest event --}}
                 <div style="padding:8px; border-bottom:1px solid #e5e7eb; background:#f3f4f6; flex-shrink:0;">
-                    <div style="font-size:12px; font-weight:600; color:#374151;">Pissarres desades</div>
+                    <div style="font-size:12px; font-weight:600; color:#374151;">Aquest event</div>
                     @if($this->selectedEventId)
                         <div style="font-size:10px; color:#6b7280;">{{ $this->getSnapshots()->count() }} versions</div>
                     @else
                         <div style="font-size:10px; color:#9ca3af;">Selecciona un event</div>
                     @endif
                 </div>
-                <div style="overflow-y:auto; flex:1; padding:6px;">
+                <div style="overflow-y:auto; max-height:240px; padding:6px; border-bottom:2px solid #e5e7eb;">
                     @forelse($this->getSnapshots() as $snap)
                         <div style="border:1px solid #e5e7eb; border-radius:6px; padding:6px; margin-bottom:6px; background:white;">
                             <div style="font-size:11px; font-weight:600; color:#111827; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->name }}">
@@ -204,12 +207,51 @@
                         </div>
                     @empty
                         @if($this->selectedEventId)
-                            <p style="font-size:11px; color:#9ca3af; text-align:center; padding:16px 8px;">
-                                Encara no hi ha pissarres desades per aquest event.
+                            <p style="font-size:11px; color:#9ca3af; text-align:center; padding:12px 8px;">
+                                Sense pissarres per aquest event.
                             </p>
                         @endif
                     @endforelse
                 </div>
+
+                {{-- Secció 2: totes les plantilles de la colla --}}
+                <div style="padding:8px; border-bottom:1px solid #e5e7eb; background:#f3f4f6; flex-shrink:0;">
+                    <div style="font-size:12px; font-weight:600; color:#374151;">Totes les plantilles</div>
+                    <div style="font-size:10px; color:#6b7280;">Altres events · {{ $this->getAllCollaSnapshots()->count() }}</div>
+                </div>
+                <div style="overflow-y:auto; flex:1; padding:6px;">
+                    @forelse($this->getAllCollaSnapshots() as $snap)
+                        <div style="border:1px solid #e5e7eb; border-radius:6px; padding:6px; margin-bottom:6px; background:white;">
+                            <div style="font-size:11px; font-weight:600; color:#111827; margin-bottom:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->name }}">
+                                {{ $snap->name }}
+                            </div>
+                            @if($snap->event)
+                                <div style="font-size:10px; color:#6b7280; margin-bottom:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->event->name }}">
+                                    {{ $snap->event->start_date?->format('d/m') }} · {{ Str::limit($snap->event->name, 18) }}
+                                </div>
+                            @else
+                                <div style="font-size:10px; color:#9ca3af; margin-bottom:1px;">Sense event</div>
+                            @endif
+                            <div style="font-size:10px; color:#9ca3af; margin-bottom:6px;">{{ $snap->created_at->format('d/m H:i') }}</div>
+                            <div style="display:flex; gap:4px;">
+                                <button wire:click="loadSnapshot({{ $snap->id }})"
+                                    style="flex:1; font-size:10px; padding:3px 6px; border-radius:4px; background:#f5f3ff; border:1px solid #c4b5fd; color:#6d28d9; cursor:pointer;">
+                                    Carrega
+                                </button>
+                                <button wire:click="deleteSnapshot({{ $snap->id }})"
+                                    wire:confirm="Eliminar '{{ addslashes($snap->name) }}'?"
+                                    style="font-size:10px; padding:3px 6px; border-radius:4px; background:#fef2f2; border:1px solid #fecaca; color:#dc2626; cursor:pointer;">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <p style="font-size:11px; color:#9ca3af; text-align:center; padding:12px 8px;">
+                            Sense plantilles d'altres events.
+                        </p>
+                    @endforelse
+                </div>
+
             </div>
 
         </div>
