@@ -7,11 +7,41 @@ const ASSIGNED_FILL = '#86efac';
 const HOVER_FILL    = '#fde68a';
 const STROKE = '#374151';
 
-// Zone colors (approximation by distance from centroid; proper classification needs castle_positions table)
+// Zone colors — fallback when pos.grup is absent (distance-based approximation)
 const ZONE_COLORS = {
-    tronc:  '#bfdbfe', // light blue  — inner ~24 positions
-    folre:  '#fde68a', // light amber — middle ~33 positions
-    pinya:  '#e5e7eb', // light gray  — outer ~57 positions
+    tronc:  '#bfdbfe',
+    folre:  '#fde68a',
+    pinya:  '#e5e7eb',
+};
+
+// Role-based colors (motor PHP) + baix-based colors (dades importades FemPinya)
+const GRUP_COLORS = {
+    // Rols estructurals (PinyaMotor)
+    baix:      '#37474f',
+    nucli:     '#ffcdd2',
+    nucli_D:   '#f8bbd0',
+    nucli_E:   '#f8bbd0',
+    lateral_D: '#c8e6c9',
+    lateral_E: '#bbdefb',
+    rengle:    '#fff9c4',
+    falca_D:   '#d1c4e9',
+    falca_E:   '#d1c4e9',
+    angle_D:   '#ffe0b2',
+    angle_E:   '#ffe0b2',
+    // Baixos del Cinc de 6 (dades reals FemPinya)
+    Plena:        '#f8bbd0',
+    Carregada:    '#bbdefb',
+    Buida:        '#c8e6c9',
+    Rengle:       '#fff9c4',
+    Descarregada: '#d1c4e9',
+    // Baixos del Set de X (dades reals FemPinya)
+    Una:    '#f8bbd0',
+    Dues:   '#bbdefb',
+    Tres:   '#c8e6c9',
+    Quatre: '#fff9c4',
+    Cinc:   '#d1c4e9',
+    Sis:    '#ffe0b2',
+    Set:    '#b2dfdb',
 };
 
 function computeCentroid(positions) {
@@ -23,6 +53,9 @@ function computeCentroid(positions) {
 }
 
 function zoneColor(pos, centroid) {
+    if (pos.grup !== undefined && GRUP_COLORS[pos.grup] !== undefined) {
+        return GRUP_COLORS[pos.grup];
+    }
     const d = Math.sqrt((pos.cx - centroid.cx) ** 2 + (pos.cy - centroid.cy) ** 2);
     if (d < 110) return ZONE_COLORS.tronc;
     if (d < 165) return ZONE_COLORS.folre;
@@ -84,20 +117,17 @@ function initBoard(type = '3d6') {
 
         const emptyFill = zoneColor(pos, centroid);
 
-        const rect = new Konva.Rect({
-            x: -pos.w / 2,
-            y: -pos.h / 2,
-            width: pos.w,
-            height: pos.h,
+        const rect = new Konva.Ellipse({
+            radiusX: pos.w / 2,
+            radiusY: pos.h / 2,
             fill: emptyFill,
             stroke: STROKE,
             strokeWidth: 0.8,
-            cornerRadius: 1,
         });
 
         const isTall = pos.h > pos.w;
-        const textW = isTall ? pos.h : pos.w;
-        const textH = isTall ? pos.w : pos.h;
+        const textW = isTall ? pos.h * 0.75 : pos.w * 0.82;
+        const textH = isTall ? pos.w * 0.82 : pos.h;
         const baseRot = isTall ? -90 : 0;
         const screenAngle = ((pos.angle + baseRot) % 360 + 360) % 360;
         const flip = screenAngle > 90 && screenAngle < 270;
@@ -126,6 +156,15 @@ function initBoard(type = '3d6') {
         group.add(label);
         layer.add(group);
         positionGroups[pos.id] = { group, rect, label, pos, emptyFill };
+
+        group.on('mouseenter', () => {
+            const info = document.getElementById('board-info');
+            if (info && pos.nom) info.textContent = pos.nom;
+        });
+        group.on('mouseleave', () => {
+            const info = document.getElementById('board-info');
+            if (info) info.textContent = '';
+        });
 
         group.on('click tap', () => {
             if (!selectedCasteller) return;
