@@ -7,10 +7,17 @@ namespace Database\Seeders;
 use App\Models\CastleTemplate;
 use App\Models\Colla;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 
 class CastleTemplateSeeder extends Seeder
 {
     public function run(): void
+    {
+        $this->seedFromJsonFiles();
+        $this->seedFromPinyaData();
+    }
+
+    private function seedFromJsonFiles(): void
     {
         $templates = [
             ['key' => '3d6',      'name' => '3 de 6'],
@@ -31,6 +38,24 @@ class CastleTemplateSeeder extends Seeder
                     ['name' => $t['name'], 'positions' => $positions, 'ready' => true]
                 );
             }
+        }
+    }
+
+    private function seedFromPinyaData(): void
+    {
+        foreach (['cinc_de_6', 'set_de_x'] as $castle) {
+            $dataPath = base_path(
+                'temp/projecte_pinyes_castelleres/projecte_pinyes/data/' .
+                ($castle === 'cinc_de_6' ? 'cinc_de_6_amb_baix.json' : 'set_de_x_baixos.json')
+            );
+
+            if (!file_exists($dataPath)) {
+                $this->command->warn("Fitxer no trobat per {$castle}, s'omet.");
+                continue;
+            }
+
+            Artisan::call('pinya:import', ['castle' => $castle]);
+            $this->command->info(Artisan::output());
         }
     }
 }

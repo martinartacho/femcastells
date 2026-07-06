@@ -168,8 +168,9 @@
             </div>
 
             {{-- CENTRE — Canvas (wire:ignore evita que Livewire destrueixi el Konva en re-renders) --}}
-            <div wire:ignore style="flex:1; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:12px;">
+            <div wire:ignore style="flex:1; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:auto; display:flex; flex-direction:column; align-items:center; padding:12px;">
                 <div id="board-canvas"></div>
+                <div id="board-info" style="min-height:18px; font-size:11px; color:#6b7280; margin-top:4px;"></div>
             </div>
 
             {{-- DRETA — Snapshots desats --}}

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Filament\Resources\CastleTemplateResource\Pages;
 
 use App\Filament\Resources\CastleTemplateResource;
+use App\Services\PinyaMotor;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -57,6 +60,43 @@ class EditCastleTemplate extends EditRecord
 
                     Notification::make()
                         ->title('Posicions extretes: ' . count($positions))
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('generateMotor')
+                ->label('Genera per motor')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->color('success')
+                ->form([
+                    Select::make('num_baixos')
+                        ->label('Tipus de castell')
+                        ->options([1 => 'Pilar', 2 => 'Torre', 3 => 'Tres', 4 => 'Quatre'])
+                        ->required(),
+                    TextInput::make('pisos')
+                        ->label('Pisos')
+                        ->numeric()
+                        ->minValue(4)
+                        ->maxValue(10)
+                        ->required(),
+                ])
+                ->modalHeading('Genera posicions amb el motor')
+                ->modalDescription('Es generaran les posicions geomètriques calculades. Sobreescriurà les posicions actuals.')
+                ->action(function (array $data, PinyaMotor $motor): void {
+                    $numBaixos = (int) $data['num_baixos'];
+                    $pisos     = (int) $data['pisos'];
+
+                    try {
+                        $positions = $motor->generate($numBaixos, $pisos);
+                    } catch (\InvalidArgumentException $e) {
+                        Notification::make()->title($e->getMessage())->danger()->send();
+                        return;
+                    }
+
+                    $this->record->update(['positions' => $positions, 'ready' => true]);
+
+                    Notification::make()
+                        ->title('Generades ' . count($positions) . ' posicions (' . $motor->nomCastell($numBaixos, $pisos) . ')')
                         ->success()
                         ->send();
                 }),
