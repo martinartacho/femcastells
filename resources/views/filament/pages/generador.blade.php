@@ -2,23 +2,32 @@
 
     {{-- ── Amagar el sidebar de Filament en aquesta pàgina ── --}}
     <style>
-        .fi-sidebar { display: none !important; }
-        :root { --sidebar-width: 0px !important; }
-        .fi-main { padding-inline-start: 0 !important; }
         .fi-main-ctn { max-width: none !important; padding: 0 0.75rem 0.75rem !important; }
     </style>
 
     <div x-data="{
             topbarOpen: true,
+            sidebarOpen: false,
             zoom: 1.0,
             toggleTopbar() {
                 this.topbarOpen = !this.topbarOpen;
                 const tb = document.querySelector('.fi-topbar-ctn');
                 if (tb) tb.style.display = this.topbarOpen ? '' : 'none';
+            },
+            toggleSidebar() {
+                this.sidebarOpen = !this.sidebarOpen;
+                const sb = document.querySelector('.fi-sidebar');
+                if (sb) sb.style.display = this.sidebarOpen ? '' : 'none';
+                document.documentElement.style.setProperty('--sidebar-width', this.sidebarOpen ? '14rem' : '0px');
             }
          }"
          :style="`display:flex; gap:12px; height:calc(100svh - ${topbarOpen ? '8rem' : '3.5rem'}); overflow:hidden;`"
-         x-init="$watch('topbarOpen', () => {})"
+         x-init="
+             const sb = document.querySelector('.fi-sidebar');
+             if (sb) sb.style.display = 'none';
+             document.documentElement.style.setProperty('--sidebar-width', '0px');
+             $watch('topbarOpen', () => {});
+         "
     >
 
         {{-- ══════════════════════════════════════════════
@@ -227,6 +236,20 @@
                     <span x-text="topbarOpen ? 'Amaga barra' : 'Mostra barra'"></span>
                 </button>
             </div>
+
+            {{-- Botó toggle sidebar principal — tab fix al lateral esquerre --}}
+            <button @click="toggleSidebar()" type="button"
+                    :style="`position:fixed; top:50%; transform:translateY(-50%); z-index:9999;
+                             left:${sidebarOpen ? '14rem' : '0px'}; transition:left .2s;
+                             background:#fff; border:1px solid #e5e7eb; border-left:none;
+                             border-radius:0 8px 8px 0; padding:10px 5px; cursor:pointer;
+                             box-shadow:2px 0 4px rgba(0,0,0,.08);
+                             display:flex; flex-direction:column; align-items:center; gap:3px;`"
+                    title="Menú de navegació">
+                <span style="display:block; width:13px; height:1.5px; background:#9ca3af; border-radius:1px;"></span>
+                <span style="display:block; width:13px; height:1.5px; background:#9ca3af; border-radius:1px;"></span>
+                <span style="display:block; width:13px; height:1.5px; background:#9ca3af; border-radius:1px;"></span>
+            </button>
 
             {{-- SVG canvas + taula --}}
             <div style="flex:1; display:flex; gap:10px; min-height:0; overflow:hidden;">
