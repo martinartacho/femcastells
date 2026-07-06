@@ -184,6 +184,179 @@ class GeneradorPage extends Page
     }
 
     // ─────────────────────────────────────────────────────────────
+    // Vista frontal — tronc 2D
+    // ─────────────────────────────────────────────────────────────
+
+    public function getTroncSvg(): string
+    {
+        $n  = $this->familiaToBaixos();
+        $p  = $this->pisos;
+        $s  = max(0.5, min(1.8, $this->mida / 100));
+
+        $posW   = (int) round(28 * $s);
+        $posH   = (int) round(18 * $s);
+        $gapX   = (int) round(3 * $s);
+        $gapY   = (int) round(6 * $s);
+        $armGap = (int) round(12 * $s);
+        $mleft  = 72;
+        $mtop   = 12;
+
+        // Enxaneta portrait (swap w/h → taller than wide)
+        $enxW = $posH;
+        $enxH = $posW;
+
+        $wMid  = 3 * $posW + 2 * $gapX;
+        $wBaix = 5 * $posW + 4 * $gapX;
+
+        $folreCount    = 7;
+        $manillesCount = 9;
+        $wFolre    = $folreCount * $posW + ($folreCount - 1) * $gapX;
+        $wManilles = $manillesCount * $posW + ($manillesCount - 1) * $gapX;
+
+        $rowWMid      = $n * $wMid + ($n - 1) * $armGap;
+        $rowWBaix     = $n * $wBaix + ($n - 1) * $armGap;
+        $rowWFolre    = $n * $wFolre + ($n - 1) * $armGap;
+        $rowWManilles = $n * $wManilles + ($n - 1) * $armGap;
+
+        $hasFolre    = in_array($this->nivell, ['folre', 'manilles']);
+        $hasManilles = $this->nivell === 'manilles';
+
+        $maxW = max(
+            $enxW, $posW, $rowWMid, $rowWBaix,
+            $hasFolre ? $rowWFolre : 0,
+            $hasManilles ? $rowWManilles : 0
+        );
+
+        $svgW     = $mleft + $maxW + $mleft;
+        $parts    = [];
+        $currentY = (float) $mtop;
+
+        $addLabel = function (float $y, float $h, string $text) use (&$parts, $mleft): void {
+            $parts[] = sprintf(
+                '<text x="%d" y="%.1f" font-size="9" fill="#9ca3af" text-anchor="end" font-family="sans-serif">%s</text>',
+                $mleft - 6,
+                $y + $h / 2 + 3,
+                $text
+            );
+        };
+
+        // Enxaneta — portrait
+        $addLabel($currentY, $enxH, 'Enxaneta');
+        $parts[] = $this->troncRect(
+            (int) round($mleft + ($maxW - $enxW) / 2),
+            (int) $currentY, $enxW, $enxH, ['#1a237e', 'Enx', '#fff']
+        );
+        $currentY += $enxH + $gapY;
+
+        // Acotxador
+        $addLabel($currentY, $posH, 'Acotxador');
+        $parts[] = $this->troncRect(
+            (int) round($mleft + ($maxW - $posW) / 2),
+            (int) $currentY, $posW, $posH, ['#1565c0', 'Acot', '#fff']
+        );
+        $currentY += $posH + $gapY;
+
+        // Mid pisos (pis p-2 down to pis 2)
+        $posMid = [['#2e7d32', 'LE', '#fff'], ['#fef9c3', 'R', '#555'], ['#1565c0', 'LD', '#fff']];
+        for ($pis = $p - 2; $pis >= 2; $pis--) {
+            $addLabel($currentY, $posH, $this->pisLabel($pis, $p));
+            $startX = $mleft + ($maxW - $rowWMid) / 2;
+            for ($arm = 0; $arm < $n; $arm++) {
+                $armX = $startX + $arm * ($wMid + $armGap);
+                foreach ($posMid as $pi => $posData) {
+                    $parts[] = $this->troncRect(
+                        (int) round($armX + $pi * ($posW + $gapX)),
+                        (int) $currentY, $posW, $posH, $posData
+                    );
+                }
+            }
+            $currentY += $posH + $gapY;
+        }
+
+        // Pinya (pis 1)
+        $posBaix = [
+            ['#f9a825', 'Ct', '#333'],
+            ['#37474f', 'B',  '#fff'],
+            ['#e65100', 'Ag', '#fff'],
+            ['#37474f', 'B',  '#fff'],
+            ['#f9a825', 'Ct', '#333'],
+        ];
+        $addLabel($currentY, $posH, 'Pinya');
+        $startX = $mleft + ($maxW - $rowWBaix) / 2;
+        for ($arm = 0; $arm < $n; $arm++) {
+            $armX = $startX + $arm * ($wBaix + $armGap);
+            foreach ($posBaix as $pi => $posData) {
+                $parts[] = $this->troncRect(
+                    (int) round($armX + $pi * ($posW + $gapX)),
+                    (int) $currentY, $posW, $posH, $posData
+                );
+            }
+        }
+        $currentY += $posH;
+
+        // Folre
+        if ($hasFolre) {
+            $currentY += $gapY;
+            $addLabel($currentY, $posH, 'Folre');
+            $startX = $mleft + ($maxW - $rowWFolre) / 2;
+            for ($arm = 0; $arm < $n; $arm++) {
+                $armX = $startX + $arm * ($wFolre + $armGap);
+                for ($pi = 0; $pi < $folreCount; $pi++) {
+                    $parts[] = $this->troncRect(
+                        (int) round($armX + $pi * ($posW + $gapX)),
+                        (int) $currentY, $posW, $posH, ['#6a1b9a', '', '#fff']
+                    );
+                }
+            }
+            $currentY += $posH;
+        }
+
+        // Manilles
+        if ($hasManilles) {
+            $currentY += $gapY;
+            $addLabel($currentY, $posH, 'Manilles');
+            $startX = $mleft + ($maxW - $rowWManilles) / 2;
+            for ($arm = 0; $arm < $n; $arm++) {
+                $armX = $startX + $arm * ($wManilles + $armGap);
+                for ($pi = 0; $pi < $manillesCount; $pi++) {
+                    $parts[] = $this->troncRect(
+                        (int) round($armX + $pi * ($posW + $gapX)),
+                        (int) $currentY, $posW, $posH, ['#c62828', '', '#fff']
+                    );
+                }
+            }
+            $currentY += $posH;
+        }
+
+        return sprintf(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" style="width:100%%;height:auto;max-height:520px;">%s</svg>',
+            (int) ceil($svgW),
+            (int) ceil($currentY + $mtop),
+            implode('', $parts)
+        );
+    }
+
+    private function troncRect(int $x, int $y, int $w, int $h, array $pos): string
+    {
+        [$color, $label, $tc] = array_pad($pos, 3, '#fff');
+        $rect = sprintf('<rect x="%d" y="%d" width="%d" height="%d" rx="3" fill="%s" stroke="rgba(0,0,0,.12)" stroke-width="0.5"/>', $x, $y, $w, $h, $color);
+        $text = $label ? sprintf('<text x="%d" y="%.1f" font-size="7" fill="%s" text-anchor="middle" font-weight="bold" font-family="sans-serif">%s</text>', $x + $w / 2, $y + $h / 2 + 3, $tc, $label) : '';
+        return $rect . $text;
+    }
+
+    private function pisLabel(int $pis, int $totalPisos): string
+    {
+        if ($pis === $totalPisos) return 'Enxaneta';
+        if ($pis === $totalPisos - 1) return 'Acotxador';
+        if ($pis === 1) return 'Pinya';
+        return match ($pis) {
+            2 => 'Segs.', 3 => 'Terços', 4 => 'Quarts',
+            5 => 'Quints', 6 => 'Sisens', 7 => 'Setens',
+            8 => 'Vuitens', 9 => 'Novens', default => $pis . 'è',
+        };
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // Colors i etiquetes
     // ─────────────────────────────────────────────────────────────
 

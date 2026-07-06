@@ -131,7 +131,7 @@
 
                     <label style="display:block; font-size:11px; color:#6b7280; margin-bottom:5px;">Vista</label>
                     <div style="display:flex; gap:4px;">
-                        @foreach(['superior' => '⊙', 'frontal' => '⬛', '3d' => '◈'] as $v => $icon)
+                        @foreach(['superior' => 'Planta', 'frontal' => 'Tronc', '3d' => '3D'] as $v => $icon)
                             <button wire:click="$set('vista', '{{ $v }}')" type="button" title="{{ ucfirst($v) }}"
                                     style="flex:1; padding:6px 0; border-radius:8px; font-size:15px; cursor:pointer;
                                            border:1px solid {{ $vista === $v ? '#dc2626' : '#d1d5db' }};
@@ -258,13 +258,15 @@
                     {{-- SVG amb transform zoom --}}
                     <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:12px;"
                          :style="`transform: scale(${zoom}); transform-origin: center center; transition: transform .15s;`">
-                        @if($vista !== 'superior')
-                            <div style="text-align:center; color:#9ca3af;">
-                                <div style="font-size:40px; opacity:.2; margin-bottom:8px;">◈</div>
-                                <p style="font-size:13px;">Vista <strong>{{ ucfirst($vista) }}</strong> pendent d'implementar</p>
-                            </div>
-                        @else
+                        @if($vista === 'superior')
                             {!! $this->getGeneratedSvg() !!}
+                        @elseif($vista === 'frontal')
+                            {!! $this->getTroncSvg() !!}
+                        @else
+                            <div style="text-align:center; color:#9ca3af;">
+                                <div style="font-size:36px; opacity:.2; margin-bottom:8px;">◈</div>
+                                <p style="font-size:13px;">Vista 3D pendent d'implementar</p>
+                            </div>
                         @endif
                     </div>
                 </div>
