@@ -155,6 +155,11 @@ class CastleTemplateResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
             ])
+            ->recordUrl(fn (CastleTemplate $record): string =>
+                route('filament.admin.pages.generador', [
+                    'tenant' => auth()->user()?->colla?->shortname,
+                ]) . '?template=' . $record->id
+            )
             ->defaultSort('name');
     }
 
