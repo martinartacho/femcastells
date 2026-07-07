@@ -29,6 +29,11 @@ class Colla extends Model implements HasAvatar
         return $this->hasMany(User::class);
     }
 
+    public function castellers(): HasMany
+    {
+        return $this->hasMany(Casteller::class);
+    }
+
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? asset('storage/'.$this->logo) : null;

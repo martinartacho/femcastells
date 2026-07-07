@@ -46,6 +46,7 @@ class PinyaMotor
                     'angle' => round($p['angle'], 2),
                     'grup'  => $p['grup'],
                     'nom'   => $p['nom'],
+                    'pis'   => $p['grup'] === 'baix' ? 1 : 0,
                 ];
             }
         }

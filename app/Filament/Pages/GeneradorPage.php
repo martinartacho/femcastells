@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Models\CastleTemplate;
+use App\Services\PinyaMotor;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
 class GeneradorPage extends Page
@@ -11,6 +14,11 @@ class GeneradorPage extends Page
     protected string $view = 'filament.pages.generador';
 
     protected static ?string $navigationLabel = 'Generador';
+
+    public function getTitle(): string
+    {
+        return $this->templateId ? 'Edició de Plantilla' : 'Generador de Pinya';
+    }
 
     protected static \UnitEnum|string|null $navigationGroup = 'Pissarra';
 
@@ -29,7 +37,146 @@ class GeneradorPage extends Page
     public int    $densitat    = 100;
     public bool   $mostrarPeus = false;
     public bool   $nomsPos     = false;
-    public string $vista       = 'superior'; // superior | frontal | lateral | 3d
+    public string $vista       = 'superior'; // superior | frontal | 3d
+
+    // ── Plantilla activa (mode Editor) ──
+    public ?int    $templateId   = null;
+    public string  $templateName = '';
+    public string  $editorLayer  = 'pinya'; // pinya | folre | manilles | tronc
+
+    // ─────────────────────────────────────────────────────────────
+    // Muntatge i paràmetres URL
+    // ─────────────────────────────────────────────────────────────
+
+    public function mount(): void
+    {
+        $templateId = request()->query('template');
+        if ($templateId && is_numeric($templateId)) {
+            $this->loadTemplate((int) $templateId);
+        }
+    }
+
+    public function loadTemplate(int $id): void
+    {
+        $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->findOrFail($id);
+
+        $this->templateId   = $template->id;
+        $this->templateName = $template->name;
+    }
+
+    public function closeTemplate(): void
+    {
+        $this->templateId   = null;
+        $this->templateName = '';
+        $this->editorLayer  = 'pinya';
+    }
+
+    public function saveTemplateChanges(string $positionsJson): void
+    {
+        if (! $this->templateId) return;
+
+        $positions = json_decode($positionsJson, true);
+        if (! is_array($positions) || count($positions) === 0) {
+            Notification::make()->title('Error: cap posició rebuda — el canvas no estava inicialitzat')->danger()->send();
+            return;
+        }
+
+        $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->findOrFail($this->templateId);
+
+        $template->update(['positions' => $positions]);
+
+        Notification::make()->title('Canvis desats: ' . $template->name . ' (' . count($positions) . ' pos.)')->success()->send();
+    }
+
+    public function getAvailableTemplates(): \Illuminate\Support\Collection
+    {
+        $familyName = $this->getFamilies()[$this->familia] ?? ucfirst($this->familia);
+
+        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('ready', true)
+            ->where('name', 'like', $familyName . '%')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Desar com a plantilla / versió
+    // ─────────────────────────────────────────────────────────────
+
+    public function saveAsTemplate(string $name = ''): void
+    {
+        $positions = json_decode($this->getPositionsJson(), true);
+        if (! is_array($positions)) {
+            Notification::make()->title('Error al generar les posicions')->danger()->send();
+            return;
+        }
+
+        $collaId = auth()->user()?->colla_id;
+        $name    = trim($name) ?: $this->getCastellName();
+        $key     = \Illuminate\Support\Str::slug($name);
+
+        $template = CastleTemplate::updateOrCreate(
+            ['colla_id' => $collaId, 'key' => $key],
+            ['name' => $name, 'positions' => $positions, 'ready' => true]
+        );
+
+        $template->saveVersion('Generat ' . now()->format('d/m/Y H:i'));
+
+        $this->templateId   = $template->id;
+        $this->templateName = $template->name;
+
+        Notification::make()
+            ->title('Plantilla desada: ' . $template->name)
+            ->success()
+            ->send();
+    }
+
+    public function saveVersion(string $label = ''): void
+    {
+        if (! $this->templateId) {
+            Notification::make()->title('Primer desa com a plantilla')->warning()->send();
+            return;
+        }
+
+        $positions = json_decode($this->getPositionsJson(), true);
+        if (! is_array($positions)) {
+            Notification::make()->title('Error al generar les posicions')->danger()->send();
+            return;
+        }
+
+        $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->findOrFail($this->templateId);
+
+        $template->update(['positions' => $positions]);
+        $template->saveVersion(trim($label) ?: now()->format('d/m/Y H:i'));
+
+        Notification::make()->title('Versió desada')->success()->send();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Posicions per al canvas Konva
+    // ─────────────────────────────────────────────────────────────
+
+    public function getPositionsJson(): string
+    {
+        // Si hi ha plantilla activa, retorna les seves posicions
+        if ($this->templateId) {
+            $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+                ->find($this->templateId);
+            if ($template && is_array($template->positions) && count($template->positions) > 0) {
+                return json_encode($template->positions);
+            }
+        }
+
+        // Genera posicions noves amb el motor
+        $motor    = app(PinyaMotor::class);
+        $n        = $this->familiaToBaixos();
+        $positions = $motor->generate($n, $this->pisos);
+
+        return json_encode($positions);
+    }
 
     // ─────────────────────────────────────────────────────────────
     // Dades dels castells
@@ -120,7 +267,65 @@ class GeneradorPage extends Page
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Generació SVG
+    // Planta: SVG estructural (mateixes posicions que l'Editor)
+    // ─────────────────────────────────────────────────────────────
+
+    public function getStructuralSvg(): string
+    {
+        $positions = json_decode($this->getPositionsJson(), true) ?: [];
+
+        if (empty($positions)) {
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"></svg>';
+        }
+
+        $xs  = array_column($positions, 'cx');
+        $ys  = array_column($positions, 'cy');
+        $pad = 50;
+        $minX = (float) min($xs) - $pad;
+        $maxX = (float) max($xs) + $pad;
+        $minY = (float) min($ys) - $pad;
+        $maxY = (float) max($ys) + $pad;
+
+        $parts = [];
+        foreach ($positions as $pos) {
+            $cx    = (float) ($pos['cx'] ?? 0);
+            $cy    = (float) ($pos['cy'] ?? 0);
+            $rx    = (float) ($pos['w'] ?? 30) / 2;
+            $ry    = (float) ($pos['h'] ?? 15) / 2;
+            $angle = (float) ($pos['angle'] ?? 0);
+            $fill  = $this->grupSvgColor($pos['grup'] ?? '');
+            $parts[] = sprintf(
+                '<ellipse cx="%.1f" cy="%.1f" rx="%.1f" ry="%.1f" fill="%s" stroke="#374151" stroke-width="0.8" transform="rotate(%.1f %.1f %.1f)"/>',
+                $cx, $cy, $rx, $ry, $fill, $angle, $cx, $cy
+            );
+        }
+
+        return sprintf(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%.1f %.1f %.1f %.1f" style="width:100%%;height:auto;max-height:520px;">%s</svg>',
+            $minX, $minY, $maxX - $minX, $maxY - $minY,
+            implode('', $parts)
+        );
+    }
+
+    private function grupSvgColor(string $grup): string
+    {
+        return [
+            'baix'      => '#37474f',
+            'nucli'     => '#ffcdd2',
+            'nucli_D'   => '#f8bbd0',
+            'nucli_E'   => '#f8bbd0',
+            'lateral_D' => '#c8e6c9',
+            'lateral_E' => '#bbdefb',
+            'rengle'    => '#fff9c4',
+            'falca_D'   => '#d1c4e9',
+            'falca_E'   => '#d1c4e9',
+            'angle_D'   => '#ffe0b2',
+            'angle_E'   => '#ffe0b2',
+        ][$grup] ?? '#e5e7eb';
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // SVG abstracte (conservat per referència, no usat)
     // ─────────────────────────────────────────────────────────────
 
     public function getGeneratedSvg(): string

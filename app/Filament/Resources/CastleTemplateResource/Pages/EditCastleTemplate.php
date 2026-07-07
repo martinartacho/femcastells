@@ -22,6 +22,15 @@ class EditCastleTemplate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('editarAlGenerador')
+                ->label('Editar al Generador')
+                ->icon(Heroicon::OutlinedPencilSquare)
+                ->color('gray')
+                ->url(fn () => route('filament.admin.pages.generador', [
+                    'tenant' => auth()->user()?->colla?->shortname,
+                ]) . '?template=' . $this->record->id)
+                ->openUrlInNewTab(false),
+
             Action::make('extractPositions')
                 ->label('Extreu posicions del SVG')
                 ->icon(Heroicon::OutlinedCog6Tooth)
