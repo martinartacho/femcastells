@@ -12,10 +12,12 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -75,6 +77,10 @@ class NoticiaResource extends Resource
                 DateTimePicker::make('published_at')
                     ->label('Publicat el')
                     ->helperText('Deixa buit per a esborrany'),
+                Toggle::make('is_public')
+                    ->label('Públic')
+                    ->helperText('Desactiva per a notícies internes (només admins)')
+                    ->default(true),
             ])->columns(3),
         ]);
     }
@@ -100,6 +106,13 @@ class NoticiaResource extends Resource
                     ->dateTime('d/m/Y')
                     ->sortable()
                     ->placeholder('Esborrany'),
+                IconColumn::make('is_public')
+                    ->label('Públic')
+                    ->boolean()
+                    ->trueIcon(Heroicon::OutlinedGlobeAlt)
+                    ->falseIcon(Heroicon::OutlinedLockClosed)
+                    ->trueColor('success')
+                    ->falseColor('warning'),
                 TextColumn::make('colla.name')
                     ->label('Colla')
                     ->placeholder('Global')

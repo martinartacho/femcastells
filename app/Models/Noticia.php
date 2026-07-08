@@ -14,12 +14,13 @@ class Noticia extends Model
 
     protected $fillable = [
         'colla_id', 'tag_id', 'title', 'summary', 'body',
-        'labels', 'version', 'published_at',
+        'labels', 'version', 'published_at', 'is_public',
     ];
 
     protected $casts = [
         'labels'       => 'array',
         'published_at' => 'datetime',
+        'is_public'    => 'boolean',
     ];
 
     public const LABELS = [
@@ -45,6 +46,11 @@ class Noticia extends Model
     {
         return $query->whereNotNull('published_at')
             ->where('published_at', '<=', now());
+    }
+
+    public function scopePublic(Builder $query): Builder
+    {
+        return $query->where('is_public', true);
     }
 
     public function scopeGlobal(Builder $query): Builder

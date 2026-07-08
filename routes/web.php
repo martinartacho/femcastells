@@ -8,13 +8,13 @@ Route::get('/', function () {
 });
 
 Route::get('/noticies', function () {
-    $noticies   = Noticia::published()->global()->orderByDesc('published_at')->get();
+    $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();
     $categories = Noticia::LABELS;
     return view('noticies.index', compact('noticies', 'categories'));
 })->name('noticies.index');
 
 Route::get('/novetats', function () {
-    $releases = Noticia::published()->global()
+    $releases = Noticia::published()->global()->public()
         ->whereJsonContains('labels', 'sistema')
         ->orderByDesc('published_at')
         ->get();
