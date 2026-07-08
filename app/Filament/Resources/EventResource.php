@@ -68,10 +68,12 @@ class EventResource extends Resource
                 DateTimePicker::make('open_date')
                     ->label('Obertura assistència')
                     ->displayFormat('d/m/Y H:i')
+                    ->default(now()->startOfDay())
                     ->seconds(false),
                 DateTimePicker::make('close_date')
                     ->label('Tancament assistència')
                     ->displayFormat('d/m/Y H:i')
+                    ->default(now()->startOfDay())
                     ->seconds(false),
             ])->columns(3),
 

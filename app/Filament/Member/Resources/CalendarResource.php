@@ -8,12 +8,12 @@ use App\Filament\Member\Resources\CalendarResource\Pages;
 use App\Models\Attendance;
 use App\Models\Event;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Radio;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Actions\Action;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,7 +32,17 @@ class CalendarResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where('visibility', true)
-            ->where('start_date', '>=', now()->subDays(7))
+            ->where(fn (Builder $q) => $q
+                ->where(fn (Builder $inner) => $inner
+                    ->where('type', 1)
+                    ->where('start_date', '>=', now()->subDays(7))
+                    ->where('start_date', '<=', now()->addWeeks(2))
+                )
+                ->orWhere(fn (Builder $inner) => $inner
+                    ->whereIn('type', [2, 3])
+                    ->where('start_date', '>=', now()->subDays(7))
+                )
+            )
             ->orderBy('start_date');
     }
 
@@ -50,7 +60,8 @@ class CalendarResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
                 TextColumn::make('name')
-                    ->label('Nom'),
+                    ->label('Nom')
+                    ->toggleable(),
                 TextColumn::make('type')
                     ->label('Tipus')
                     ->badge()
@@ -60,16 +71,17 @@ class CalendarResource extends Resource
                         2 => 'success',
                         3 => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('address')
                     ->label('Lloc')
                     ->toggleable(),
                 TextColumn::make('myStatus')
-                    ->label('La meva assistència')
+                    ->label('Assistència')
                     ->badge()
                     ->state(function (Event $record): string {
                         $attendance = $record->attendance()
-                            ->where('casteller_id', auth()->id())
+                            ->where('casteller_id', auth('member')->id())
                             ->first();
                         return $attendance?->status ?? 'unknown';
                     })
@@ -84,29 +96,34 @@ class CalendarResource extends Resource
                         default => 'warning',
                     }),
             ])
+            ->filters([])
             ->actions([
-                Action::make('attend')
-                    ->label('Assisteixo')
-                    ->icon(Heroicon::OutlinedCheck)
-                    ->color('success')
-                    ->action(function (Event $record): void {
-                        Attendance::updateOrCreate(
-                            ['event_id' => $record->id, 'casteller_id' => auth()->id()],
-                            ['status' => 'ok']
-                        );
-                        Notification::make()->title('Confirmat: assisteixo')->success()->send();
+                Action::make('confirmar')
+                    ->label('Confirmar')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->color('primary')
+                    ->form([
+                        Radio::make('status')
+                            ->label('La meva assistència')
+                            ->options([
+                                'ok'  => 'Assisteixo',
+                                'nok' => 'No assisteixo',
+                            ])
+                            ->required(),
+                    ])
+                    ->fillForm(function (Event $record): array {
+                        $attendance = $record->attendance()
+                            ->where('casteller_id', auth('member')->id())
+                            ->first();
+                        return ['status' => $attendance?->status];
                     })
-                    ->visible(fn (Event $record): bool => $record->close_date === null || $record->close_date->isFuture()),
-                Action::make('absent')
-                    ->label('No assisteixo')
-                    ->icon(Heroicon::OutlinedXMark)
-                    ->color('danger')
-                    ->action(function (Event $record): void {
+                    ->action(function (Event $record, array $data): void {
                         Attendance::updateOrCreate(
-                            ['event_id' => $record->id, 'casteller_id' => auth()->id()],
-                            ['status' => 'nok']
+                            ['event_id' => $record->id, 'casteller_id' => auth('member')->id()],
+                            ['status' => $data['status']]
                         );
-                        Notification::make()->title('Confirmat: no assisteixo')->warning()->send();
+                        $msg = $data['status'] === 'ok' ? 'Assisteixo ✓' : 'No assisteixo ✗';
+                        Notification::make()->title($msg)->success()->send();
                     })
                     ->visible(fn (Event $record): bool => $record->close_date === null || $record->close_date->isFuture()),
             ])
