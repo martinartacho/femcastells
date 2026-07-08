@@ -13,10 +13,4 @@ Route::get('/noticies', function () {
     return view('noticies.index', compact('noticies', 'categories'));
 })->name('noticies.index');
 
-Route::get('/novetats', function () {
-    $releases = Noticia::published()->global()->public()
-        ->whereJsonContains('labels', 'sistema')
-        ->orderByDesc('published_at')
-        ->get();
-    return view('noticies.novetats', compact('releases'));
-})->name('noticies.novetats');
+Route::redirect('/novetats', '/noticies?label=sistema', 301);
