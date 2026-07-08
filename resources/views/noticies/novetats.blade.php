@@ -56,7 +56,7 @@
         @endif
 
         {{-- ── Release notes estàtiques ── --}}
-        <section>
+        {{-- <section>
             <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-400 mb-8">Versions anteriors</h2>
 
             <div class="flex flex-col gap-6">
@@ -79,7 +79,7 @@
                 </article>
 
             </div>
-        </section>
+        </section> --}}
 
     </main>
 
