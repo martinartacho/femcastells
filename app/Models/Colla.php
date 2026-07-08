@@ -22,6 +22,7 @@ class Colla extends Model implements HasAvatar
         'logo',
         'color',
         'max_members',
+        'assaigs_weeks_visible',
     ];
 
     public function users(): HasMany

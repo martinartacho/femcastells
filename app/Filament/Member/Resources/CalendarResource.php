@@ -30,13 +30,15 @@ class CalendarResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $weeks = filament()->getTenant()?->assaigs_weeks_visible ?? 2;
+
         return parent::getEloquentQuery()
             ->where('visibility', true)
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $inner) => $inner
                     ->where('type', 1)
                     ->where('start_date', '>=', now()->subDays(7))
-                    ->where('start_date', '<=', now()->addWeeks(2))
+                    ->where('start_date', '<=', now()->addWeeks($weeks))
                 )
                 ->orWhere(fn (Builder $inner) => $inner
                     ->whereIn('type', [2, 3])
