@@ -1,6 +1,16 @@
 import Konva from 'konva';
 
 const GRUP_COLORS = {
+    // Generador abstracte (categories)
+    agulla:     '#1a237e',
+    tronc:      '#e65100',
+    contrafort: '#f9a825',
+    laterals:   '#2e7d32',
+    mitjans:    '#1565c0',
+    folre:      '#6a1b9a',
+    manilles:   '#c62828',
+    baixos:     '#90a4ae',
+    // Rols estructurals (PinyaMotor)
     baix:         '#37474f',
     nucli:        '#ffcdd2',
     nucli_D:      '#f8bbd0',
@@ -12,6 +22,7 @@ const GRUP_COLORS = {
     falca_E:      '#d1c4e9',
     angle_D:      '#ffe0b2',
     angle_E:      '#ffe0b2',
+    // Baixos del Cinc de 6 i Set de X (dades reals FemPinya)
     Plena:        '#f8bbd0',
     Carregada:    '#bbdefb',
     Buida:        '#c8e6c9',
