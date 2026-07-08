@@ -15,8 +15,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -106,7 +104,7 @@ class NoticiaResource extends Resource
                         ? $query->whereJsonContains('labels', $data['value'])
                         : $query),
             ])
-            ->actions([EditAction::make(), DeleteAction::make()]);
+            ->actions([]);
     }
 
     public static function getPages(): array
