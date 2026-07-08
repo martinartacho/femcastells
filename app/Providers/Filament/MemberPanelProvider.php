@@ -9,6 +9,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use App\Filament\Member\Pages\EditProfile;
 use App\Filament\Member\Widgets\NoticiesWidget;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
@@ -30,6 +31,7 @@ class MemberPanelProvider extends PanelProvider
             ->id('member')
             ->path('member')
             ->login()
+            ->profile(EditProfile::class)
             ->authGuard('member')
             ->colors([
                 'primary' => Color::Green,
