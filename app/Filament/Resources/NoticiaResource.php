@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\NoticiaResource\Pages;
 use App\Models\Noticia;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -32,6 +33,15 @@ class NoticiaResource extends Resource
     protected static ?int $navigationSort = 50;
 
     protected static bool $isScopedToTenant = false;
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        if (!auth()->user()?->hasRole('super-admin')) {
+            $query->where('colla_id', auth()->user()?->colla_id);
+        }
+        return $query;
+    }
 
     public static function form(Schema $schema): Schema
     {

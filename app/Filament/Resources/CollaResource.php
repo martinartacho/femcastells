@@ -33,8 +33,12 @@ class CollaResource extends Resource
 
     protected static ?string $slug = 'colles';
 
-    // No escopada per tenant — mostra totes les colles
     protected static bool $isScopedToTenant = false;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super-admin') ?? false;
+    }
 
     public static function form(Schema $schema): Schema
     {
