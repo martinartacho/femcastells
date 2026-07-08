@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notícies · FemPinya</title>
+    <title>{{ request('label') === 'sistema' ? 'Novetats' : 'Notícies' }} · FemPinya</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
     <header class="bg-white border-b border-gray-200">
         <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ route('noticies.novetats') }}"
+            <a href="{{ route('noticies.index', ['label' => 'sistema']) }}"
                class="text-sm text-gray-500 hover:text-gray-700 transition">Novetats →</a>
             <span class="text-sm font-bold text-gray-800">FemPinya</span>
             <a href="{{ url('/admin') }}"
@@ -21,9 +21,15 @@
     <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-14">
 
         <div class="mb-10">
+            @if(request('label') === 'sistema')
+            <p class="text-xs font-semibold uppercase tracking-widest text-red-500 mb-2">Changelog</p>
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Novetats de la plataforma</h1>
+            <p class="text-gray-500 text-sm">Historial de versions i canvis rellevants de FemPinya.</p>
+            @else
             <p class="text-xs font-semibold uppercase tracking-widest text-red-500 mb-2">Plataforma</p>
             <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Notícies</h1>
             <p class="text-gray-500 text-sm">Tot el que millora a FemPinya, explicat sense tecnicismes.</p>
+            @endif
         </div>
 
         {{-- Filtre per label --}}
@@ -107,7 +113,7 @@
     </main>
 
     <footer class="border-t border-gray-200 py-6 text-center text-xs text-gray-400">
-        FemPinya · <a href="{{ route('noticies.novetats') }}" class="hover:text-gray-600">Novetats</a>
+        FemPinya · <a href="{{ route('noticies.index', ['label' => 'sistema']) }}" class="hover:text-gray-600">Novetats</a>
     </footer>
 
 </body>
