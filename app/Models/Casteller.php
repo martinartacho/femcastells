@@ -46,6 +46,7 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants
             'birthdate' => 'date',
             'status' => 'integer',
             'password' => 'hashed',
+            'noticies_last_seen_at' => 'datetime',
         ];
     }
 
