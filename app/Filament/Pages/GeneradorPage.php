@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Models\CastleTemplate;
-use App\Services\PinyaMotor;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -170,12 +169,7 @@ class GeneradorPage extends Page
             }
         }
 
-        // Genera posicions noves amb el motor
-        $motor    = app(PinyaMotor::class);
-        $n        = $this->familiaToBaixos();
-        $positions = $motor->generate($n, $this->pisos);
-
-        return json_encode($positions);
+        return json_encode($this->getGeneratedPositions());
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -230,6 +224,54 @@ class GeneradorPage extends Page
             default    => '',
         };
         return $fam . ' de ' . $this->pisos . $suf;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Posicions generades (la mateixa lògica que getGeneratedSvg)
+    // ─────────────────────────────────────────────────────────────
+
+    public function getGeneratedPositions(): array
+    {
+        $scale   = $this->mida / 100;
+        $posR    = round(11 * $scale, 1);
+        $ringGap = round($posR * 2.3, 1);
+        $dens    = $this->densitat / 100;
+        $w       = round($posR * 2, 1);
+
+        $dist      = $this->getDistribution();
+        $ringIdx   = 0;
+        $id        = 0;
+        $positions = [];
+
+        $positions[] = [
+            'id' => 'pos_' . $id++, 'cx' => 0.0, 'cy' => 0.0,
+            'w'  => $w, 'h' => $w, 'angle' => 0.0,
+            'grup' => 'agulla', 'nom' => 'Agulla',
+        ];
+
+        foreach ($dist as $cat => $total) {
+            $nom       = $this->catLabel($cat);
+            $remaining = $total;
+            while ($remaining > 0) {
+                $ringIdx++;
+                $r        = $ringIdx * $ringGap;
+                $capacity = max(4, (int) floor(2 * M_PI * $r / ($posR * 2.2 / $dens)));
+                $inRing   = min($remaining, $capacity);
+                for ($i = 0; $i < $inRing; $i++) {
+                    $ang         = ($i / $inRing) * 2 * M_PI - M_PI / 2;
+                    $positions[] = [
+                        'id' => 'pos_' . $id++,
+                        'cx' => round($r * cos($ang), 1),
+                        'cy' => round($r * sin($ang), 1),
+                        'w'  => $w, 'h' => $w, 'angle' => 0.0,
+                        'grup' => $cat, 'nom' => $nom,
+                    ];
+                }
+                $remaining -= $inRing;
+            }
+        }
+
+        return $positions;
     }
 
     // ─────────────────────────────────────────────────────────────
