@@ -41,5 +41,22 @@ class NoticiesSeeder extends Seeder
             'version'      => '1.0.1',
             'published_at' => now()->subDays(1),
         ]);
+
+        Noticia::create([
+            'colla_id'     => null,
+            'tag_id'       => null,
+            'title'        => 'Novetats i millores generals',
+            'summary'      => 'Tauler de notícies, imatges als avisos, hora correcta i millores visuals.',
+            'body'         => '<p>En aquesta actualització hem afegit i arreglat diverses coses:</p>'
+                . '<ul>'
+                . '<li><strong>Tauler de notícies</strong> — ara pots veure les novetats de la plataforma a <em>/noticies</em> i el registre de versions a <em>/novetats</em>. Les notícies es poden filtrar per tema (pissarra, castellers, administració...)</li>'
+                . '<li><strong>Imatges als avisos</strong> — les imatges que puges als avisos ja es veuen correctament</li>'
+                . '<li><strong>Hora correcta</strong> — les notícies i events ara es mostren amb l\'hora de Catalunya (no UTC)</li>'
+                . '<li><strong>Colors dels filtres</strong> — els botons de filtre de notícies ja es veuen bé en tots els navegadors</li>'
+                . '</ul>',
+            'labels'       => ['sistema', 'general'],
+            'version'      => '1.0.2',
+            'published_at' => now(),
+        ]);
     }
 }
