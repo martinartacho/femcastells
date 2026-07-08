@@ -8,6 +8,7 @@ use App\Models\Colla;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,7 +17,10 @@ class DatabaseSeeder extends Seeder
         $adminPassword = env('SEEDER_ADMIN_PASSWORD')
             ?? throw new \RuntimeException('SEEDER_ADMIN_PASSWORD no definit al .env');
 
-        // Colla 1 — Demo
+        $rolSuperAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
+        $rolAdmin      = Role::firstOrCreate(['name' => 'admin',       'guard_name' => 'web']);
+
+        // Colla 1 — Demo (super-admin)
         $demo = Colla::create([
             'name'      => 'Demo Colla',
             'shortname' => 'demo',
@@ -29,9 +33,9 @@ class DatabaseSeeder extends Seeder
             'email'    => 'admin@fempinya.test',
             'password' => Hash::make($adminPassword),
             'colla_id' => $demo->id,
-        ]);
+        ])->assignRole($rolSuperAdmin);
 
-        // Colla 2 — Pitxapins
+        // Colla 2 — Pitxapins (admin)
         $pitxapins = Colla::create([
             'name'      => 'Pitxapins',
             'shortname' => 'pitxapins',
@@ -44,7 +48,7 @@ class DatabaseSeeder extends Seeder
             'email'    => 'pitxapins@fempinya.test',
             'password' => Hash::make($adminPassword),
             'colla_id' => $pitxapins->id,
-        ]);
+        ])->assignRole($rolAdmin);
 
         $this->call([
             CastellerSeeder::class,
