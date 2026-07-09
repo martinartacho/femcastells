@@ -27,4 +27,9 @@ class Attendance extends Model
     {
         return $this->belongsTo(Casteller::class);
     }
+
+    public function answers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EventAnswer::class);
+    }
 }

@@ -54,6 +54,13 @@ class Event extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    public function questions(): BelongsToMany
+    {
+        return $this->belongsToMany(Question::class)
+            ->withPivot(['required', 'order'])
+            ->orderByPivot('order');
+    }
+
     public static function typeLabel(int $type): string
     {
         return match ($type) {

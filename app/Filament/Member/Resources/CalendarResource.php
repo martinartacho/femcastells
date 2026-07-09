@@ -7,9 +7,13 @@ namespace App\Filament\Member\Resources;
 use App\Filament\Member\Resources\CalendarResource\Pages;
 use App\Models\Attendance;
 use App\Models\Event;
+use App\Models\EventAnswer;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -104,26 +108,91 @@ class CalendarResource extends Resource
                     ->label('Confirmar')
                     ->icon(Heroicon::OutlinedPencilSquare)
                     ->color('primary')
-                    ->form([
-                        Radio::make('status')
-                            ->label('La meva assistència')
-                            ->options([
-                                'ok'  => 'Assisteixo',
-                                'nok' => 'No assisteixo',
-                            ])
-                            ->required(),
-                    ])
+                    ->form(function (Event $record): array {
+                        $fields = [
+                            Radio::make('status')
+                                ->label('La meva assistència')
+                                ->options(['ok' => 'Assisteixo', 'nok' => 'No assisteixo'])
+                                ->required(),
+                        ];
+
+                        if ($record->companions) {
+                            $fields[] = TextInput::make('companions')
+                                ->label('Nombre d\'acompanyants')
+                                ->numeric()
+                                ->minValue(0)
+                                ->maxValue(20)
+                                ->default(0);
+                        }
+
+                        foreach ($record->questions()->get() as $question) {
+                            $field = match ($question->type) {
+                                'radio' => Radio::make("q_{$question->id}")
+                                    ->label($question->text)
+                                    ->options(collect($question->options)->pluck('value', 'value')->all())
+                                    ->required((bool) $question->pivot->required),
+                                'checkbox' => CheckboxList::make("q_{$question->id}")
+                                    ->label($question->text)
+                                    ->options(collect($question->options)->pluck('value', 'value')->all())
+                                    ->required((bool) $question->pivot->required),
+                                'text' => Textarea::make("q_{$question->id}")
+                                    ->label($question->text)
+                                    ->rows(2)
+                                    ->required((bool) $question->pivot->required),
+                                default => null,
+                            };
+                            if ($field) {
+                                $fields[] = $field;
+                            }
+                        }
+
+                        return $fields;
+                    })
                     ->fillForm(function (Event $record): array {
                         $attendance = $record->attendance()
                             ->where('casteller_id', auth('member')->id())
+                            ->with('answers')
                             ->first();
-                        return ['status' => $attendance?->status];
+
+                        $data = [
+                            'status' => $attendance?->status,
+                            'companions' => $attendance?->companions ?? 0,
+                        ];
+
+                        $questionTypes = $record->questions()->pluck('type', 'questions.id');
+
+                        foreach ($attendance?->answers ?? [] as $answer) {
+                            $value = $answer->answer;
+                            $type = $questionTypes->get($answer->question_id);
+                            if ($type !== 'checkbox' && is_array($value)) {
+                                $value = $value[0] ?? null;
+                            }
+                            $data["q_{$answer->question_id}"] = $value;
+                        }
+
+                        return $data;
                     })
                     ->action(function (Event $record, array $data): void {
-                        Attendance::updateOrCreate(
+                        $attendance = Attendance::updateOrCreate(
                             ['event_id' => $record->id, 'casteller_id' => auth('member')->id()],
-                            ['status' => $data['status']]
+                            [
+                                'status' => $data['status'],
+                                'companions' => $record->companions ? ($data['companions'] ?? 0) : 0,
+                            ]
                         );
+
+                        foreach ($record->questions()->get() as $question) {
+                            $key = "q_{$question->id}";
+                            if (array_key_exists($key, $data)) {
+                                EventAnswer::updateOrCreate(
+                                    ['attendance_id' => $attendance->id, 'question_id' => $question->id],
+                                    ['answer' => $question->type === 'checkbox'
+                                            ? (is_array($data[$key]) ? $data[$key] : [$data[$key]])
+                                            : $data[$key]]
+                                );
+                            }
+                        }
+
                         $msg = $data['status'] === 'ok' ? 'Assisteixo ✓' : 'No assisteixo ✗';
                         Notification::make()->title($msg)->success()->send();
                     })
