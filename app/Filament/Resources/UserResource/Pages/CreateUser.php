@@ -16,4 +16,10 @@ class CreateUser extends CreateRecord
         $data['colla_id'] = filament()->getTenant()->id;
         return $data;
     }
+
+    protected function afterCreate(): void
+    {
+        $this->record->profile_id = $this->data['profile_id'] ?? null;
+        $this->record->saveQuietly();
+    }
 }

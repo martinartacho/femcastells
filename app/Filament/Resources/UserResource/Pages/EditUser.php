@@ -16,4 +16,10 @@ class EditUser extends EditRecord
     {
         return [DeleteAction::make()];
     }
+
+    protected function afterSave(): void
+    {
+        $this->record->profile_id = $this->data['profile_id'] ?? null;
+        $this->record->saveQuietly();
+    }
 }
