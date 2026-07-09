@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProfileResource\Pages;
 use App\Models\Profile;
 use BackedEnum;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class ProfileResource extends Resource
 {
@@ -47,19 +49,18 @@ class ProfileResource extends Resource
             'generador'     => 'Generador',
         ];
 
-        $permissionSections = [];
-        foreach ($areas as $key => $label) {
-            $permissionSections[] = Section::make($label)->schema([
-                Grid::make(2)->schema([
-                    Toggle::make("permissions.{$key}.read")
-                        ->label('Lectura')
-                        ->default(false),
-                    Toggle::make("permissions.{$key}.write")
-                        ->label('Escriptura')
-                        ->default(false),
-                ]),
-            ])->columns(1);
-        }
+        $header = Grid::make(4)->schema([
+            Placeholder::make('_h_area')->hiddenLabel()->content(new HtmlString('<span class="text-sm font-semibold text-gray-500">Àrea</span>')),
+            Placeholder::make('_h_read')->hiddenLabel()->content(new HtmlString('<span class="text-sm font-semibold text-gray-500">Lectura</span>')),
+            Placeholder::make('_h_write')->hiddenLabel()->content(new HtmlString('<span class="text-sm font-semibold text-gray-500">Escriptura</span>')),
+            Placeholder::make('_h_empty')->hiddenLabel()->content(''),
+        ]);
+
+        $rows = collect($areas)->map(fn ($label, $key) => Grid::make(4)->schema([
+            Placeholder::make("_lbl_{$key}")->hiddenLabel()->content($label)->columnSpan(2),
+            Toggle::make("permissions.{$key}.read")->hiddenLabel()->default(false)->inline(),
+            Toggle::make("permissions.{$key}.write")->hiddenLabel()->default(false)->inline(),
+        ]))->values()->all();
 
         return $schema->components([
             Section::make('Identificació')->schema([
@@ -68,7 +69,7 @@ class ProfileResource extends Resource
                     ->required()
                     ->maxLength(100),
             ]),
-            Section::make('Permisos')->schema($permissionSections)->columns(4),
+            Section::make('Permisos')->schema([$header, ...$rows]),
         ]);
     }
 
