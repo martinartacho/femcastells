@@ -31,8 +31,10 @@ class MemberPanelProvider extends PanelProvider
             ->id('member')
             ->path('member')
             ->login()
+            ->passwordReset()
             ->profile(EditProfile::class)
             ->authGuard('member')
+            ->authPasswordBroker('castellers')
             ->colors([
                 'primary' => Color::Green,
             ])
