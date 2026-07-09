@@ -7,6 +7,8 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,9 +16,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 
-class Casteller extends Authenticatable implements FilamentUser, HasTenants
+class Casteller extends Authenticatable implements FilamentUser, HasTenants, CanResetPasswordContract
 {
-    use Notifiable;
+    use Notifiable, CanResetPassword;
 
     protected $fillable = [
         'colla_id',
