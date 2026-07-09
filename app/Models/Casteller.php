@@ -72,6 +72,11 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         return $this->colla ? collect([$this->colla]) : collect();
     }
 
+    public function getDefaultTenant(Panel $panel): ?\Illuminate\Database\Eloquent\Model
+    {
+        return $this->colla;
+    }
+
     public function canAccessTenant(\Illuminate\Database\Eloquent\Model $tenant): bool
     {
         return $this->colla_id === $tenant->id;
