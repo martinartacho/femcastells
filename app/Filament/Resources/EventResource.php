@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers\AttendanceRelationManager;
+use App\Filament\Resources\EventResource\RelationManagers\QuestionsRelationManager;
 use App\Models\Event;
 use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
@@ -156,13 +157,15 @@ class EventResource extends Resource
             ->bulkActions([
                 \Filament\Actions\DeleteBulkAction::make(),
             ])
-            ->defaultSort('start_date', 'desc');
+            ->defaultSort('start_date', 'desc')
+            ->persistFiltersInSession();
     }
 
     public static function getRelations(): array
     {
         return [
             AttendanceRelationManager::class,
+            QuestionsRelationManager::class,
         ];
     }
 
