@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use App\Models\Colla;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
-use BackedEnum;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -19,11 +21,6 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 class CollaSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
-
-    public function getView(): string
-    {
-        return 'filament.pages.colla-settings';
-    }
 
     protected static ?string $navigationLabel = 'Configuració';
 
@@ -58,7 +55,7 @@ class CollaSettings extends Page
                         ->maxSize(2048)
                         ->imagePreviewHeight('80')
                         ->getUploadedFileNameForStorageUsing(
-                            fn (TemporaryUploadedFile $file, $record) => 'colla-' . filament()->getTenant()?->shortname . '.' . $file->getClientOriginalExtension()
+                            fn (TemporaryUploadedFile $file) => 'colla-' . filament()->getTenant()?->shortname . '.' . $file->getClientOriginalExtension()
                         ),
                 ])->columns(1),
 
@@ -77,6 +74,18 @@ class CollaSettings extends Page
                         ->required(),
                 ]),
             ]);
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            Form::make([EmbeddedSchema::make('form')])
+                ->id('form')
+                ->livewireSubmitHandler('save')
+                ->footer([
+                    Actions::make($this->getFormActions()),
+                ]),
+        ]);
     }
 
     public function save(): void
