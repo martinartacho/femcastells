@@ -133,6 +133,9 @@ class EventResource extends Resource
                     ->color('info')
                     ->url(fn (Event $record): string => '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id),
             ])
+            ->bulkActions([
+                \Filament\Actions\DeleteBulkAction::make(),
+            ])
             ->defaultSort('start_date', 'desc');
     }
 
