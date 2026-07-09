@@ -32,7 +32,7 @@ class CollaSettings extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole(['super-admin', 'admin']) ?? false;
+        return auth()->user()?->canDo('config') ?? false;
     }
 
     public function mount(): void

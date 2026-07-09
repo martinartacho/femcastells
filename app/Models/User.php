@@ -18,7 +18,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'colla_id'])]
+#[Fillable(['name', 'email', 'password', 'colla_id', 'profile_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasTenants
 {
@@ -30,12 +30,30 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         return $this->belongsTo(Colla::class);
     }
 
+    public function profile(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class);
+    }
+
+    public function canDo(string $area, string $level = 'read'): bool
+    {
+        if ($this->hasRole(['super-admin', 'admin'])) {
+            return true;
+        }
+        return $this->profile?->can($area, $level) ?? false;
+    }
+
     public function getTenants(Panel $panel): Collection
     {
         if ($this->hasRole('super-admin')) {
             return Colla::all();
         }
         return $this->colla ? collect([$this->colla]) : collect();
+    }
+
+    public function getDefaultTenant(Panel $panel): ?Model
+    {
+        return $this->colla;
     }
 
     public function canAccessTenant(Model $tenant): bool

@@ -24,6 +24,11 @@ class BoardEditorPage extends Page
 
     protected static ?int $navigationSort = 1;
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->canDo('pissarra') ?? false;
+    }
+
     protected static \UnitEnum|string|null $navigationGroup = 'Pissarra';
 
     protected static ?string $slug = 'pissarra';

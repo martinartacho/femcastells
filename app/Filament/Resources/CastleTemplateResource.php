@@ -35,6 +35,26 @@ class CastleTemplateResource extends Resource
 
     protected static ?string $slug = 'templates';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->canDo('plantilles') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->canDo('plantilles', 'write') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('plantilles', 'write') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('plantilles', 'write') ?? false;
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
