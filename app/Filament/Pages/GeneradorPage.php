@@ -23,6 +23,11 @@ class GeneradorPage extends Page
 
     protected static ?int $navigationSort = 0;
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->canDo('generador') ?? false;
+    }
+
     protected static ?string $slug = 'generador';
 
     // ── Selecció del castell ──

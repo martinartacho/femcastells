@@ -36,6 +36,26 @@ class NoticiaResource extends Resource
 
     protected static bool $isScopedToTenant = false;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->canDo('noticies') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->canDo('noticies', 'write') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('noticies', 'write') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('noticies', 'write') ?? false;
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();

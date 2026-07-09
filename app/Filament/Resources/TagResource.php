@@ -27,6 +27,26 @@ class TagResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->canDo('tags') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->canDo('tags', 'write') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('tags', 'write') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('tags', 'write') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

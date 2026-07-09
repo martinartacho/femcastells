@@ -32,6 +32,26 @@ class EventResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->canDo('esdeveniments') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->canDo('esdeveniments', 'write') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('esdeveniments', 'write') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('esdeveniments', 'write') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -29,6 +29,26 @@ class CastellerResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->canDo('castellers') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->canDo('castellers', 'write') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('castellers', 'write') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->canDo('castellers', 'write') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
