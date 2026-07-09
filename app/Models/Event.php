@@ -24,6 +24,7 @@ class Event extends Model
         'companions',
         'photo',
         'comments',
+        'recurring_group_id',
     ];
 
     protected function casts(): array
