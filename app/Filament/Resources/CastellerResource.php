@@ -73,20 +73,83 @@ class CastellerResource extends Resource
                     ])
                     ->default(1)
                     ->required(),
+                TextInput::make('num_soci')
+                    ->label('Núm. soci')
+                    ->maxLength(20),
+                DatePicker::make('subscription_date')
+                    ->label('Data ingrés')
+                    ->displayFormat('d/m/Y'),
+            ])->columns(2),
+
+            Section::make('Dades personals')->schema([
+                Select::make('gender')
+                    ->label('Gènere')
+                    ->options([
+                        'M' => 'Home',
+                        'F' => 'Dona',
+                        'X' => 'No binari / Altre',
+                    ])
+                    ->native(false),
+                DatePicker::make('birthdate')
+                    ->label('Data de naixement')
+                    ->displayFormat('d/m/Y'),
+                Select::make('national_id_type')
+                    ->label('Tipus document')
+                    ->options([
+                        'DNI'      => 'DNI',
+                        'NIE'      => 'NIE',
+                        'Passaport' => 'Passaport',
+                        'Altre'    => 'Altre',
+                    ])
+                    ->native(false),
+                TextInput::make('national_id')
+                    ->label('Número document')
+                    ->maxLength(30),
+                TextInput::make('nationality')
+                    ->label('Nacionalitat')
+                    ->maxLength(100),
             ])->columns(2),
 
             Section::make('Contacte')->schema([
                 TextInput::make('email')
                     ->email()
                     ->maxLength(200),
+                TextInput::make('email2')
+                    ->label('Correu alternatiu')
+                    ->email()
+                    ->maxLength(200),
                 TextInput::make('phone')
                     ->label('Telèfon')
                     ->tel()
                     ->maxLength(20),
-                DatePicker::make('birthdate')
-                    ->label('Data de naixement')
-                    ->displayFormat('d/m/Y'),
-            ])->columns(3),
+                TextInput::make('mobile_phone')
+                    ->label('Mòbil')
+                    ->tel()
+                    ->maxLength(20),
+                TextInput::make('emergency_phone')
+                    ->label('Telèfon emergència')
+                    ->tel()
+                    ->maxLength(20),
+            ])->columns(2),
+
+            Section::make('Adreça')->schema([
+                TextInput::make('address')
+                    ->label('Adreça')
+                    ->maxLength(200)
+                    ->columnSpanFull(),
+                TextInput::make('postal_code')
+                    ->label('Codi postal')
+                    ->maxLength(10),
+                TextInput::make('city')
+                    ->label('Població')
+                    ->maxLength(100),
+                TextInput::make('province')
+                    ->label('Província')
+                    ->maxLength(100),
+                TextInput::make('country')
+                    ->label('País')
+                    ->maxLength(100),
+            ])->columns(2),
 
             Section::make('Accés al portal')->schema([
                 TextInput::make('password')

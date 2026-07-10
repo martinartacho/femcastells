@@ -10,7 +10,9 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use App\Filament\Member\Pages\EditProfile;
+use App\Filament\Member\Pages\GdprConsent;
 use App\Filament\Member\Widgets\NoticiesWidget;
+use App\Http\Middleware\CheckGdprConsent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -43,6 +45,7 @@ class MemberPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Member/Pages'), for: 'App\Filament\Member\Pages')
             ->pages([
                 Dashboard::class,
+                GdprConsent::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Member/Widgets'), for: 'App\Filament\Member\Widgets')
             ->widgets([
@@ -62,6 +65,7 @@ class MemberPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                CheckGdprConsent::class,
             ]);
     }
 }

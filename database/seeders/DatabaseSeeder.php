@@ -22,11 +22,13 @@ class DatabaseSeeder extends Seeder
 
         // Colla 1 — Demo (super-admin)
         $demo = Colla::create([
-            'name'      => 'Demo Colla',
-            'shortname' => 'demo',
-            'email'     => 'admin@fempinya.test',
-            'city'      => 'Barcelona',
-            'country'   => 'ES',
+            'name'         => 'Demo Colla',
+            'shortname'    => 'demo',
+            'email'        => 'admin@fempinya.test',
+            'city'         => 'Barcelona',
+            'country'      => 'ES',
+            'gdpr_version' => '1.0',
+            'gdpr_text'    => Colla::defaultGdprText('Demo Colla', 'admin@fempinya.test'),
         ]);
         User::create([
             'name'     => 'Admin Demo',
@@ -37,11 +39,13 @@ class DatabaseSeeder extends Seeder
 
         // Colla 2 — Pitxapins (admin)
         $pitxapins = Colla::create([
-            'name'      => 'Pitxapins',
-            'shortname' => 'pitxapins',
-            'email'     => 'admin@pitxapins.cat',
-            'city'      => 'Terrassa',
-            'country'   => 'ES',
+            'name'         => 'Pitxapins',
+            'shortname'    => 'pitxapins',
+            'email'        => 'admin@pitxapins.cat',
+            'city'         => 'Terrassa',
+            'country'      => 'ES',
+            'gdpr_version' => '1.0',
+            'gdpr_text'    => Colla::defaultGdprText('Pitxapins', 'admin@pitxapins.cat'),
         ]);
         User::create([
             'name'     => 'Admin Pitxapins',

@@ -8,6 +8,8 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
@@ -73,6 +75,24 @@ class CollaSettings extends Page
                         ->native(false)
                         ->required(),
                 ]),
+
+                Section::make('Protecció de dades (RGPD)')->schema([
+                    TextInput::make('gdpr_version')
+                        ->label('Versió del text RGPD')
+                        ->default('1.0')
+                        ->maxLength(20)
+                        ->helperText('Incrementar la versió obliga tots els membres a acceptar de nou.'),
+                    TextInput::make('gdpr_email')
+                        ->label('Correu de contacte RGPD (opcional)')
+                        ->email()
+                        ->maxLength(255)
+                        ->helperText('Si buida, s\'usa el correu general de la colla.'),
+                    Textarea::make('gdpr_text')
+                        ->label('Text de la política de privacitat')
+                        ->rows(12)
+                        ->columnSpanFull()
+                        ->helperText('S\'usa {nom_colla}, {email_colla} i {email_rgpd} com a variables.'),
+                ])->columns(2),
             ]);
     }
 

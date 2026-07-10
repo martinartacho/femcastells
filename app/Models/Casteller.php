@@ -26,15 +26,33 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         'name',
         'last_name',
         'email',
-        'password',
+        'email2',
         'phone',
+        'mobile_phone',
+        'emergency_phone',
+        'address',
+        'postal_code',
+        'city',
+        'province',
+        'country',
         'birthdate',
+        'subscription_date',
+        'gender',
+        'nationality',
+        'national_id',
+        'national_id_type',
+        'num_soci',
+        'family',
+        'family_head',
         'status',
         'height',
         'weight',
         'shoulder_height',
         'photo',
         'comments',
+        'password',
+        'gdpr_accepted_at',
+        'gdpr_version',
     ];
 
     protected $hidden = [
@@ -49,6 +67,7 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
             'status' => 'integer',
             'password' => 'hashed',
             'noticies_last_seen_at' => 'datetime',
+            'gdpr_accepted_at'      => 'datetime',
         ];
     }
 
