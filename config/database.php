@@ -64,6 +64,19 @@ return [
             ]) : [],
         ],
 
+        'mysql_fp3' => [
+            'driver'    => 'mysql',
+            'host'      => env('FP3_DB_HOST', '127.0.0.1'),
+            'port'      => env('FP3_DB_PORT', '3306'),
+            'database'  => env('FP3_DB_DATABASE', ''),
+            'username'  => env('FP3_DB_USERNAME', 'root'),
+            'password'  => env('FP3_DB_PASSWORD', ''),
+            'charset'   => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix'    => '',
+            'strict'    => false,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

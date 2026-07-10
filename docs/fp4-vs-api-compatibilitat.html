@@ -1,0 +1,283 @@
+<title>FP4 ↔ API: Compatibilitat</title>
+<style>
+  :root {
+    --bg:#F2F5FA; --surface:#FFF; --border:#DDE3EE; --text:#18233A; --muted:#607090;
+    --fp4:#197A56; --api:#4A5DC4; --warn:#B06A00; --ok:#156040; --danger:#A02020;
+    --ok-bg:#E6F4EE; --ok-fg:#156040;
+    --tr-bg:#FFF4E0; --tr-fg:#8A5A00;
+    --lo-bg:#FDECEA; --lo-fg:#A02020;
+    --new-bg:#EAF0FD; --new-fg:#2E50B8;
+    --na-bg:#F0F2F7; --na-fg:#6070A0;
+    --shadow:0 1px 4px rgba(0,0,0,.09),0 1px 2px rgba(0,0,0,.06);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.06);
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#0D1525;--surface:#162035;--border:#1F2E4A;--text:#DDE6F5;--muted:#6D84AA;
+    --fp4:#27B07A;--api:#7090F0;--warn:#DBA040;--ok:#27B07A;--danger:#E05050;
+    --ok-bg:#092B1C;--ok-fg:#27B07A;--tr-bg:#2A1A00;--tr-fg:#DBA040;
+    --lo-bg:#2C0C0C;--lo-fg:#E05050;--new-bg:#0D1E44;--new-fg:#7090F0;
+    --na-bg:#151E30;--na-fg:#4A6090;
+    --shadow:0 1px 4px rgba(0,0,0,.4);--shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  }}
+  :root[data-theme="light"]{--bg:#F2F5FA;--surface:#FFF;--border:#DDE3EE;--text:#18233A;--muted:#607090;--fp4:#197A56;--api:#4A5DC4;--ok-bg:#E6F4EE;--ok-fg:#156040;--tr-bg:#FFF4E0;--tr-fg:#8A5A00;--lo-bg:#FDECEA;--lo-fg:#A02020;--new-bg:#EAF0FD;--new-fg:#2E50B8;--na-bg:#F0F2F7;--na-fg:#6070A0;}
+  :root[data-theme="dark"]{--bg:#0D1525;--surface:#162035;--border:#1F2E4A;--text:#DDE6F5;--muted:#6D84AA;--fp4:#27B07A;--api:#7090F0;--ok-bg:#092B1C;--ok-fg:#27B07A;--tr-bg:#2A1A00;--tr-fg:#DBA040;--lo-bg:#2C0C0C;--lo-fg:#E05050;--new-bg:#0D1E44;--new-fg:#7090F0;--na-bg:#151E30;--na-fg:#4A6090;}
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;font-size:13.5px;line-height:1.55;background:var(--bg);color:var(--text);padding:2rem 1rem 4rem;}
+  .page{max-width:940px;margin:0 auto;}
+
+  .eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+  h1{font-size:1.55rem;font-weight:700;letter-spacing:-.02em;text-wrap:balance;margin-bottom:.4rem;}
+  .subtitle{color:var(--muted);font-size:13px;max-width:60ch;margin-bottom:1.5rem;}
+
+  /* arch diagram */
+  .arch{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:1.75rem;padding:1rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:var(--shadow-sm);font-size:12.5px;}
+  .arch-box{padding:.3rem .8rem;border-radius:6px;font-weight:600;border:1.5px solid;white-space:nowrap;}
+  .arch-box.flutter{color:var(--api);border-color:var(--api);background:color-mix(in srgb,var(--api) 8%,transparent);}
+  .arch-box.api{color:var(--api);border-color:var(--api);background:color-mix(in srgb,var(--api) 8%,transparent);}
+  .arch-box.fp3{color:var(--warn);border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);}
+  .arch-box.fp4{color:var(--fp4);border-color:var(--fp4);background:color-mix(in srgb,var(--fp4) 8%,transparent);}
+  .arch-arrow{color:var(--muted);font-size:14px;}
+  .arch-note{margin-left:auto;font-size:11.5px;color:var(--muted);font-style:italic;}
+
+  /* summary */
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.75rem;}
+  .sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;box-shadow:var(--shadow-sm);}
+  .sum-card h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.4rem;}
+  .sum-card h3.ok{color:var(--ok-fg);}
+  .sum-card h3.warn{color:var(--tr-fg);}
+  .sum-card h3.danger{color:var(--lo-fg);}
+  .sum-card ul{list-style:none;padding:0;}
+  .sum-card li{font-size:12px;color:var(--muted);padding:.15rem 0;display:flex;gap:.4rem;}
+  .sum-card li::before{font-size:10px;flex-shrink:0;margin-top:2px;}
+  .sum-card.ok li::before{content:'✓';color:var(--ok-fg);}
+  .sum-card.warn li::before{content:'⇄';color:var(--tr-fg);}
+  .sum-card.danger li::before{content:'✗';color:var(--lo-fg);}
+
+  /* section */
+  .section{margin-bottom:1.75rem;}
+  .sec-head{display:flex;align-items:baseline;gap:.65rem;margin-bottom:.55rem;}
+  .sec-head h2{font-size:13.5px;font-weight:700;}
+  .sec-head .dto{font-family:ui-monospace,'Cascadia Code',monospace;font-size:11px;color:var(--api);background:var(--new-bg);padding:.1rem .45rem;border-radius:4px;}
+  .wrap{overflow-x:auto;border-radius:9px;box-shadow:var(--shadow);}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+  thead th{padding:.48rem .8rem;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;}
+  thead th.c-api{color:var(--api);width:22%;}
+  thead th.c-fp4{color:var(--fp4);width:22%;}
+  thead th.c-stat{text-align:center;width:13%;}
+  thead th.c-note{width:auto;}
+  tr.row td{padding:.46rem .8rem;border-bottom:1px solid var(--border);vertical-align:top;font-size:12.5px;}
+  tr.row:last-child td{border-bottom:none;}
+  tr.row:hover td{background:color-mix(in srgb,var(--border) 20%,transparent);}
+  td.field{font-family:ui-monospace,'Cascadia Code',monospace;font-size:11.5px;font-weight:500;}
+  td.v{color:var(--muted);}
+  td.v code{font-family:ui-monospace,'Cascadia Code',monospace;font-size:10.5px;background:var(--na-bg);padding:.05rem .3rem;border-radius:3px;}
+  td.sc{text-align:center;}
+  td.no{font-size:12px;color:var(--muted);}
+
+  .chip{display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .5rem;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .chip.ok{background:var(--ok-bg);color:var(--ok-fg);}
+  .chip.tr{background:var(--tr-bg);color:var(--tr-fg);}
+  .chip.lo{background:var(--lo-bg);color:var(--lo-fg);}
+  .chip.new{background:var(--new-bg);color:var(--new-fg);}
+
+  /* decision box */
+  .decision{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--fp4);border-radius:8px;padding:1rem 1.1rem;box-shadow:var(--shadow-sm);margin-bottom:1.75rem;}
+  .decision h2{font-size:13px;font-weight:700;color:var(--fp4);margin-bottom:.7rem;}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .opt{padding:.75rem .9rem;border:1px solid var(--border);border-radius:7px;}
+  .opt-title{font-weight:700;font-size:12.5px;margin-bottom:.35rem;}
+  .opt-title.pref{color:var(--fp4);}
+  .opt-title.alt{color:var(--muted);}
+  .opt ul{list-style:none;padding:0;}
+  .opt li{font-size:12px;color:var(--muted);padding:.12rem 0;}
+
+  /* mapping boxes */
+  .mapping{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.75rem;}
+  .mbox{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;box-shadow:var(--shadow-sm);}
+  .mbox h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;}
+  .mrow{display:flex;align-items:center;gap:.5rem;font-size:12px;padding:.12rem 0;}
+  .mrow code{font-family:ui-monospace,'Cascadia Code',monospace;font-size:11px;background:var(--na-bg);padding:.05rem .35rem;border-radius:3px;}
+  .mrow .arr{color:var(--muted);font-size:11px;}
+  .mrow .ok{color:var(--ok-fg);font-weight:600;}
+  .mrow .warn{color:var(--tr-fg);font-weight:600;}
+</style>
+
+<div class="page">
+  <div class="eyebrow">Anàlisi tècnica · FemPinya</div>
+  <h1>Compatibilitat FP4 ↔ API (repo <code style="font-size:1rem">FemPinya/api</code>)</h1>
+  <p class="subtitle">L'API és la capa entre FP3 i l'app Flutter. Analitzem si FP4 pot substituir FP3 com a font de dades per a aquesta API, i quin esforç implica.</p>
+
+  <!-- Architecture -->
+  <div class="arch">
+    <div class="arch-box flutter">App Flutter</div>
+    <div class="arch-arrow">↔</div>
+    <div class="arch-box api">FemPinya/api (L11 + API Platform)</div>
+    <div class="arch-arrow">↔</div>
+    <div class="arch-box fp3">BD FP3 (mysql)</div>
+    <div class="arch-note">Arquitectura actual. La API no té BD pròpia — llegeix directament de FP3.</div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-grid">
+    <div class="sum-card ok">
+      <h3 class="ok">Migra bé</h3>
+      <ul>
+        <li>Events (nom, dates, adreça, tipus, visibilitat)</li>
+        <li>Perfil del casteller (alias, nom, cognoms)</li>
+        <li>Tipus d'event (1/2/3 ↔ training/performance/activity)</li>
+        <li>Auth via Sanctum (ja instal·lat a FP4)</li>
+        <li>Acompanyants a l'assistència</li>
+      </ul>
+    </div>
+    <div class="sum-card warn">
+      <h3 class="warn">Necessita adaptació</h3>
+      <ul>
+        <li>Status assistència: numeric → string enum</li>
+        <li>Auth: api_users + pivot → Casteller directe</li>
+        <li>User context: casteller actiu i vinculats</li>
+        <li>Tags d'event: re-mapear IDs</li>
+        <li>boards_enabled: colla_config → settings JSON</li>
+      </ul>
+    </div>
+    <div class="sum-card danger">
+      <h3 class="danger">Incompatible / pendent</h3>
+      <ul>
+        <li>Attendance options: JSON de tag IDs → event_answers (incompatible)</li>
+        <li>Rondes: taula no existent a FP4</li>
+        <li>Notificacions: sistema no existent a FP4</li>
+        <li>Public URL (pissarra): BoardEvent no implementat</li>
+        <li>Pissarra assignacions: Fase 3b no feta</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- MobileEventDto -->
+  <div class="section">
+    <div class="sec-head"><h2>Events</h2><span class="dto">MobileEventDto</span></div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-api">Camp API (DTO)</th>
+        <th class="c-fp4">FP4</th>
+        <th class="c-stat">Estat</th>
+        <th class="c-note">Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">id</td><td class="v"><code>events.id</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no">Canvi increments→bigInt, transparent</td></tr>
+        <tr class="row"><td class="field">title</td><td class="v"><code>events.name</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no">Camp diferent (name → title al DTO)</td></tr>
+        <tr class="row"><td class="field">startDate / endDate</td><td class="v"><code>start_date / close_date</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no"></td></tr>
+        <tr class="row"><td class="field">address / description</td><td class="v"><code>address / comments</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no"></td></tr>
+        <tr class="row"><td class="field">type</td><td class="v"><code>1→'training', 2→'performance', 3→'activity'</code></td><td class="sc"><span class="chip tr">⇄</span></td><td class="no">FP4 emmagatzema int (1/2/3), API retorna string. Cal mapa al provider.</td></tr>
+        <tr class="row"><td class="field">status</td><td class="v"><code>'ok'→'accepted', 'nok'→'declined', 'unknown'→'unknown', null→'undefined'</code></td><td class="sc"><span class="chip tr">⇄</span></td><td class="no">FP4 usa enum string, API espera strings diferents. Cal re-mapejar.</td></tr>
+        <tr class="row"><td class="field">companions</td><td class="v"><code>attendance.companions</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no"></td></tr>
+        <tr class="row"><td class="field">tags / comment (options)</td><td class="v">— <code>event_answers</code> (nova taula)</td><td class="sc"><span class="chip lo">✗</span></td><td class="no"><strong>Incompatible.</strong> API usa tag-IDs en JSON (<code>attendance.options</code>). FP4 té <code>event_answers</code> normalitzat. Conceptes diferents.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Auth -->
+  <div class="section">
+    <div class="sec-head"><h2>Autenticació</h2><span class="dto">AuthTokenController + casteller_api_user</span></div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-api">Concepte API</th>
+        <th class="c-fp4">FP4</th>
+        <th class="c-stat">Estat</th>
+        <th class="c-note">Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">api_users (taula)</td><td class="v">— (no existeix)</td><td class="sc"><span class="chip tr">⇄</span></td><td class="no">FP4 autentica directament amb <code>Casteller</code> model via Sanctum. Més simple.</td></tr>
+        <tr class="row"><td class="field">casteller_api_user pivot<br><small style="color:var(--muted);font-size:11px">1 api_user → N castellers</small></td><td class="v">— (un casteller = un compte)</td><td class="sc"><span class="chip lo">✗</span></td><td class="no">L'API permet que 1 usuari gestioni múltiples castellers (p.ex. pare i fill). FP4 no implementa això.</td></tr>
+        <tr class="row"><td class="field">Sanctum tokens</td><td class="v"><code>personal_access_tokens</code> ✓</td><td class="sc"><span class="chip ok">✓</span></td><td class="no">Sanctum ja instal·lat a FP4. Endpoint login fàcil d'afegir.</td></tr>
+        <tr class="row"><td class="field">2FA (TOTP)</td><td class="v">— (no implementat)</td><td class="sc"><span class="chip lo">✗</span></td><td class="no">L'API té columnes 2FA a users. FP4 no té 2FA.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- UserContext -->
+  <div class="section">
+    <div class="sec-head"><h2>Context d'usuari</h2><span class="dto">MobileUserContextDto + MobileUserProfileDto</span></div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-api">Camp DTO</th>
+        <th class="c-fp4">FP4</th>
+        <th class="c-stat">Estat</th>
+        <th class="c-note">Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">casteller_active_id / alias</td><td class="v"><code>castellers.id / alias</code></td><td class="sc"><span class="chip ok">✓</span></td><td class="no"></td></tr>
+        <tr class="row"><td class="field">linked_castellers</td><td class="v">— (FP4 1 compte = 1 casteller)</td><td class="sc"><span class="chip lo">✗</span></td><td class="no">Multi-casteller per compte no implementat a FP4</td></tr>
+        <tr class="row"><td class="field">boards_enabled</td><td class="v"><code>colles.settings</code> JSON</td><td class="sc"><span class="chip tr">⇄</span></td><td class="no">FP3 llegeix de <code>colla_config</code>, FP4 pot llegir de <code>settings</code></td></tr>
+        <tr class="row"><td class="field">casteller_info (perfil)</td><td class="v">camps bàsics ✓, adreça/DNI ✗</td><td class="sc"><span class="chip tr">⇄</span></td><td class="no">Perfil parcial. Els camps que FP4 té migren bé.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Endpoints no suportats -->
+  <div class="section">
+    <div class="sec-head"><h2>Endpoints sense suport a FP4</h2></div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-api">Endpoint / DTO</th>
+        <th class="c-stat">Estat</th>
+        <th class="c-note">Motiu</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">MobileRondaDto<br><small style="color:var(--muted)">GET /mobile_rondes</small></td><td class="sc"><span class="chip lo">✗</span></td><td class="no">Taula <code>rondes</code> no existent a FP4. Lligat a BoardEvent.</td></tr>
+        <tr class="row"><td class="field">MobileNotificationDto<br><small style="color:var(--muted)">GET /mobile_notifications</small></td><td class="sc"><span class="chip lo">✗</span></td><td class="no">Sistema de notificacions no implementat a FP4.</td></tr>
+        <tr class="row"><td class="field">MobilePublicUrlDto<br><small style="color:var(--muted)">GET /mobile_public_url</small></td><td class="sc"><span class="chip lo">✗</span></td><td class="no">Depèn de <code>BoardEvent</code> i pissarra pública. Fase 3b no feta.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- Mapping -->
+  <div class="mapping">
+    <div class="mbox">
+      <h3>Mapping status assistència</h3>
+      <div class="mrow"><code>FP3: null</code><span class="arr">→ API:</span><span class="ok">'undefined'</span></div>
+      <div class="mrow"><code>FP3: 1</code><span class="arr">→ API:</span><span class="ok">'accepted'</span></div>
+      <div class="mrow"><code>FP3: 2</code><span class="arr">→ API:</span><span class="ok">'declined'</span></div>
+      <div class="mrow"><code>FP3: 3</code><span class="arr">→ API:</span><span class="ok">'unknown'</span></div>
+      <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);">
+      <div class="mrow"><code>FP4: null</code><span class="arr">→ API:</span><span class="warn">'undefined'</span></div>
+      <div class="mrow"><code>FP4: 'ok'</code><span class="arr">→ API:</span><span class="warn">'accepted'</span></div>
+      <div class="mrow"><code>FP4: 'nok'</code><span class="arr">→ API:</span><span class="warn">'declined'</span></div>
+      <div class="mrow"><code>FP4: 'unknown'</code><span class="arr">→ API:</span><span class="warn">'unknown'</span></div>
+      </div>
+    </div>
+    <div class="mbox">
+      <h3>Mapping tipus d'event</h3>
+      <div class="mrow"><code>1</code><span class="arr">→</span><span class="ok">'training'</span></div>
+      <div class="mrow"><code>2</code><span class="arr">→</span><span class="ok">'performance'</span></div>
+      <div class="mrow"><code>3</code><span class="arr">→</span><span class="ok">'activity'</span></div>
+      <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border);font-size:12px;color:var(--muted);">
+        FP4 i FP3 usen els mateixos integers. Únic canvi: el DTO API retorna strings. Cal map al State Provider.
+      </div>
+    </div>
+  </div>
+
+  <!-- Decision -->
+  <div class="decision">
+    <h2>Decisió arquitectònica recomanada</h2>
+    <div class="opts">
+      <div class="opt">
+        <div class="opt-title pref">★ Opció A — API endpoints natius a FP4 (recomanat)</div>
+        <ul>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Sanctum ja instal·lat. Afegir rutes <code>/api/v1/</code> a FP4 directament.</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Elimina la dependència del repo <code>FemPinya/api</code>.</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">L'app Flutter adapta els nous endpoints (feina al costat Flutter).</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Permet evolucionar l'API amb les noves funcionalitats de FP4 (preguntes, etc.).</li>
+        </ul>
+      </div>
+      <div class="opt">
+        <div class="opt-title alt">Opció B — Adaptar FemPinya/api a FP4 DB</div>
+        <ul>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Canviar els models del repo api per llegir la BD de FP4.</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Mantenir dos repos separats (api + fp4) = complexitat operacional.</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Els DTOs i State Providers haurien d'adaptar els status mappings.</li>
+          <li style="font-size:12px;color:var(--muted);padding:.12rem 0;">Risc: el repo api quedarà obsolet igualment quan FP4 tingui tots els endpoints.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

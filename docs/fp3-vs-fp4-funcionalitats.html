@@ -1,0 +1,541 @@
+<title>FemPinya: FP3 vs FP4</title>
+<style>
+  :root {
+    --bg:       #F4F6FA;
+    --surface:  #FFFFFF;
+    --border:   #DDE2EC;
+    --text:     #1A2033;
+    --muted:    #64748B;
+    --fp3:      #C47E10;
+    --fp4:      #1F8A62;
+    --new:      #4F6FD8;
+    --done-bg:  #E8F5EF;
+    --done-fg:  #1A6E48;
+    --part-bg:  #FEF3DC;
+    --part-fg:  #9A5F08;
+    --miss-bg:  #F1F3F7;
+    --miss-fg:  #7A8599;
+    --new-bg:   #EBF0FD;
+    --new-fg:   #3A56B8;
+    --cat-bg:   #EEF1F8;
+    --cat-fg:   #374151;
+    --shadow:   0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:       #0F1320;
+      --surface:  #18202F;
+      --border:   #252F45;
+      --text:     #E2E8F4;
+      --muted:    #7D8FAD;
+      --fp3:      #E8A838;
+      --fp4:      #2DB87A;
+      --new:      #7896F0;
+      --done-bg:  #0E2B1E;
+      --done-fg:  #3DB87A;
+      --part-bg:  #2B1E06;
+      --part-fg:  #E8A838;
+      --miss-bg:  #1A2030;
+      --miss-fg:  #556070;
+      --new-bg:   #142044;
+      --new-fg:   #7896F0;
+      --cat-bg:   #1E2840;
+      --cat-fg:   #A0AECA;
+      --shadow:   0 1px 3px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#F4F6FA; --surface:#FFFFFF; --border:#DDE2EC; --text:#1A2033; --muted:#64748B;
+    --fp3:#C47E10; --fp4:#1F8A62; --new:#4F6FD8;
+    --done-bg:#E8F5EF; --done-fg:#1A6E48; --part-bg:#FEF3DC; --part-fg:#9A5F08;
+    --miss-bg:#F1F3F7; --miss-fg:#7A8599; --new-bg:#EBF0FD; --new-fg:#3A56B8;
+    --cat-bg:#EEF1F8; --cat-fg:#374151; --shadow:0 1px 3px rgba(0,0,0,.07);
+  }
+  :root[data-theme="dark"] {
+    --bg:#0F1320; --surface:#18202F; --border:#252F45; --text:#E2E8F4; --muted:#7D8FAD;
+    --fp3:#E8A838; --fp4:#2DB87A; --new:#7896F0;
+    --done-bg:#0E2B1E; --done-fg:#3DB87A; --part-bg:#2B1E06; --part-fg:#E8A838;
+    --miss-bg:#1A2030; --miss-fg:#556070; --new-bg:#142044; --new-fg:#7896F0;
+    --cat-bg:#1E2840; --cat-fg:#A0AECA; --shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page { max-width: 860px; margin: 0 auto; }
+
+  /* Header */
+  .header { margin-bottom: 2rem; }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .5rem;
+  }
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin-bottom: .75rem;
+  }
+  .subtitle { color: var(--muted); font-size: 13.5px; max-width: 52ch; }
+
+  /* Version pills */
+  .versions {
+    display: flex;
+    gap: .75rem;
+    margin: 1.25rem 0 1.5rem;
+    flex-wrap: wrap;
+  }
+  .vpill {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem .85rem;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: 1.5px solid;
+  }
+  .vpill.fp3 { color: var(--fp3); border-color: var(--fp3); background: color-mix(in srgb, var(--fp3) 8%, transparent); }
+  .vpill.fp4 { color: var(--fp4); border-color: var(--fp4); background: color-mix(in srgb, var(--fp4) 8%, transparent); }
+  .vpill-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .vpill.fp3 .vpill-dot { background: var(--fp3); }
+  .vpill.fp4 .vpill-dot { background: var(--fp4); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .75rem;
+    margin-bottom: 1.75rem;
+    padding: .75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+  }
+  .legend-label { font-size: 11px; color: var(--muted); align-self: center; font-weight: 500; margin-right: .25rem; }
+
+  /* Table wrapper */
+  .table-wrap { overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  thead th {
+    padding: .65rem 1rem;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+    background: var(--surface);
+  }
+  thead th.col-fp3 { color: var(--fp3); }
+  thead th.col-fp4 { color: var(--fp4); }
+  thead th.col-feat { width: 42%; }
+  thead th.col-fp3, thead th.col-fp4 { width: 18%; text-align: center; }
+  thead th.col-note { color: var(--muted); font-size: 10.5px; }
+
+  /* Category rows */
+  tr.cat td {
+    padding: .45rem 1rem;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: var(--cat-bg);
+    color: var(--cat-fg);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Data rows */
+  tr.row td {
+    padding: .55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr.row:last-child td { border-bottom: none; }
+  tr.row:hover td { background: color-mix(in srgb, var(--border) 25%, transparent); }
+
+  td.feat { font-size: 13.5px; color: var(--text); }
+  td.feat small { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  td.status { text-align: center; }
+  td.note { font-size: 12px; color: var(--muted); }
+
+  /* Status chips */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .55rem;
+    border-radius: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip.done  { background: var(--done-bg); color: var(--done-fg); }
+  .chip.part  { background: var(--part-bg); color: var(--part-fg); }
+  .chip.miss  { background: var(--miss-bg); color: var(--miss-fg); }
+  .chip.new   { background: var(--new-bg);  color: var(--new-fg); }
+
+  /* Footer */
+  .footer {
+    margin-top: 2.25rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem 2rem;
+  }
+  .footer strong { color: var(--text); font-weight: 600; }
+  .footer-title {
+    grid-column: 1/-1;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: .25rem;
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <div class="eyebrow">Reflexió tècnica</div>
+    <h1>FemPinya 3 vs FemPinya 4</h1>
+    <p class="subtitle">Comparativa de funcionalitats entre el sistema existent (FP3, Laravel 8) i la nova plataforma en construcció (FP4, Laravel 13 + Filament 5).</p>
+    <div class="versions">
+      <div class="vpill fp3"><span class="vpill-dot"></span> FP3 — AssociacioFemPinya/backend · Laravel 8 · AGPL-3.0</div>
+      <div class="vpill fp4"><span class="vpill-dot"></span> FP4 — martinartacho/fempinya4 · Laravel 13 · Privat</div>
+    </div>
+    <div class="legend">
+      <span class="legend-label">Llegenda:</span>
+      <span class="chip done">✓ Fet</span>
+      <span class="chip part">~ Parcial</span>
+      <span class="chip miss">✗ Pendent</span>
+      <span class="chip new">★ Nou a FP4</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-feat">Funcionalitat</th>
+          <th class="col-fp3">FP3</th>
+          <th class="col-fp4">FP4</th>
+          <th class="col-note">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- CORE -->
+        <tr class="cat"><td colspan="4">Gestió bàsica</td></tr>
+        <tr class="row">
+          <td class="feat">Multi-tenant (Colles)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note">FP4 usa Filament Teams, slug a la URL</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Castellers</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Usuaris / admins</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Tags</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Períodes</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">Model creat, sense gestió completa</td>
+        </tr>
+
+        <!-- PERMISOS -->
+        <tr class="cat"><td colspan="4">Permisos i configuració</td></tr>
+        <tr class="row">
+          <td class="feat">Rols fixos (admin, tècnica…)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">Substituït per perfils flexibles</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Perfils flexibles per colla<small>Permisos JSON per àrea read/write</small></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="status"><span class="chip new">★ Nou</span></td>
+          <td class="note">Cada colla crea els seus propis perfils</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Configuració per colla</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">CollaSettings bàsic existent</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Configuració per casteller</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">2FA (TOTP)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+
+        <!-- EVENTS -->
+        <tr class="cat"><td colspan="4">Events i assistència</td></tr>
+        <tr class="row">
+          <td class="feat">Events (assaig, actuació…)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Registre d'assistència</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note">Inclou acompanyants a FP4</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Preguntes personalitzades als events<small>Banc de preguntes reutilitzables + exportació CSV</small></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="status"><span class="chip new">★ Nou</span></td>
+          <td class="note">radio, checkbox, text; CSV amb BOM</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Multi-events</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">Varis events agrupats</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Rondes</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+
+        <!-- PISSARRA -->
+        <tr class="cat"><td colspan="4">Pissarres i pinyes</td></tr>
+        <tr class="row">
+          <td class="feat">Editor de pissarra</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">FP4: Konva.js, PoC funcional</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Plantilles de castell</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">CRUD existent, sense motor de generació</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Motor de generació de pinyes<small>Generació paramètrica per nombre de baixos i pisos</small></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">FP4: planificat (port de Python a PHP)</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Assignació pissarra ↔ event</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">Fase 3b</td>
+        </tr>
+
+        <!-- PORTAL MEMBRE -->
+        <tr class="cat"><td colspan="4">Portal membre</td></tr>
+        <tr class="row">
+          <td class="feat">Calendari d'events</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note">FP4: pestanyes per tipus</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Confirmació assistència + preguntes</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note">FP4: modal dinàmic per preguntes</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Recuperació de contrasenya</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="note">FP4: broker 'castellers' separat</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Vista de pinyes pròpies</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Perfil propi (membre)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Calendari mensual (vista de mes)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">M2 — planificat</td>
+        </tr>
+
+        <!-- NOTIFICACIONS -->
+        <tr class="cat"><td colspan="4">Notificacions</td></tr>
+        <tr class="row">
+          <td class="feat">Email (Laravel Mail)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">FP4: mail de reset funcionant</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Push (Firebase)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Telegram (BotMan)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Recordatoris programats</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">ScheduledNotification model a FP3</td>
+        </tr>
+
+        <!-- IMPORT / EXPORT -->
+        <tr class="cat"><td colspan="4">Import / Export</td></tr>
+        <tr class="row">
+          <td class="feat">Import castellers (CSV/Excel)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note"></td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Export castellers (Excel multi-full)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">maatwebsite/excel instal·lat a FP4</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Export respostes events (CSV)</td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="status"><span class="chip new">★ Nou</span></td>
+          <td class="note">Casteller × pregunta, UTF-8 BOM</td>
+        </tr>
+
+        <!-- ESTADISTIQUES -->
+        <tr class="cat"><td colspan="4">Estadístiques</td></tr>
+        <tr class="row">
+          <td class="feat">Estadístiques d'assistència</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">AttendanceStats service a FP3</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Estadístiques de colla</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">CollaStats service a FP3</td>
+        </tr>
+
+        <!-- CONTINGUT -->
+        <tr class="cat"><td colspan="4">Contingut i comunicació</td></tr>
+        <tr class="row">
+          <td class="feat">Notícies / novetats<small>Publicació interna i pública per categories</small></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="status"><span class="chip new">★ Nou</span></td>
+          <td class="note">Sistema de publicació amb etiquetes</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Pantalla pública (display)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip miss">✗ Pendent</span></td>
+          <td class="note">PublicDisplayController a FP3</td>
+        </tr>
+
+        <!-- STACK -->
+        <tr class="cat"><td colspan="4">Stack i infraestructura</td></tr>
+        <tr class="row">
+          <td class="feat">Framework</td>
+          <td class="status"><span style="font-size:12px;color:var(--fp3);font-weight:600;">Laravel 8</span></td>
+          <td class="status"><span style="font-size:12px;color:var(--fp4);font-weight:600;">Laravel 13</span></td>
+          <td class="note">PHP 8.3, tipat estricte</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Panell admin</td>
+          <td class="status"><span style="font-size:12px;color:var(--fp3);font-weight:600;">Blade custom</span></td>
+          <td class="status"><span style="font-size:12px;color:var(--fp4);font-weight:600;">Filament 5</span></td>
+          <td class="note">FP4 guanya molt en velocitat de dev</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">API Flutter (Sanctum)</td>
+          <td class="status"><span class="chip done">✓ Fet</span></td>
+          <td class="status"><span class="chip part">~ Parcial</span></td>
+          <td class="note">Sanctum instal·lat, endpoints pendent</td>
+        </tr>
+        <tr class="row">
+          <td class="feat">Llicència / Open Source</td>
+          <td class="status"><span style="font-size:12px;color:var(--fp3);font-weight:600;">AGPL-3.0</span></td>
+          <td class="status"><span style="font-size:12px;color:var(--muted);font-weight:600;">Privat</span></td>
+          <td class="note">FP4: futura donació a AssociacioFemPinya</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div class="footer-title">Resum</div>
+    <div><strong>FP3 té</strong> sistema madur i complet, però base tècnica obsoleta (L8, Blade manual) difícil de mantenir i ampliar</div>
+    <div><strong>FP4 guanya</strong> 3 funcionalitats noves (perfils flexibles, preguntes events, notícies) i una base moderna molt més àgil</div>
+    <div><strong>Prioritat alta</strong> Notificacions (push/Telegram), estadístiques i importació de castellers per arribar a paritat funcional</div>
+    <div><strong>Prioritat baixa</strong> 2FA, pantalla pública, multi-events i rondes (menys crítiques per a la majoria de colles)</div>
+  </div>
+</div>

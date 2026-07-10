@@ -1,0 +1,393 @@
+<title>FP3 → FP4: Anàlisi de migració</title>
+<style>
+  :root {
+    --bg:        #F2F5FA;
+    --surface:   #FFFFFF;
+    --border:    #DDE3EE;
+    --text:      #18233A;
+    --muted:     #60738F;
+    --fp3:       #B87010;
+    --fp4:       #197A56;
+    --ok-bg:     #E6F4EE; --ok-fg: #156040;
+    --tr-bg:     #FFF4E0; --tr-fg: #8A5A00;
+    --lo-bg:     #FDECEA; --lo-fg: #A02020;
+    --new-bg:    #EAF0FD; --new-fg: #2E50B8;
+    --na-bg:     #F0F2F7; --na-fg: #6070A0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+    --shadow:    0 1px 4px rgba(0,0,0,.09), 0 1px 2px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0D1525; --surface:#162035; --border:#1F2E4A; --text:#DDE6F5; --muted:#6D84AA;
+      --fp3:#DBA040; --fp4:#27B07A;
+      --ok-bg:#092B1C; --ok-fg:#27B07A;
+      --tr-bg:#2A1A00; --tr-fg:#DBA040;
+      --lo-bg:#2C0C0C; --lo-fg:#E05050;
+      --new-bg:#0D1E44; --new-fg:#7090F0;
+      --na-bg:#151E30; --na-fg:#4A6090;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+      --shadow:0 1px 4px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#F2F5FA; --surface:#FFFFFF; --border:#DDE3EE; --text:#18233A; --muted:#60738F;
+    --fp3:#B87010; --fp4:#197A56;
+    --ok-bg:#E6F4EE; --ok-fg:#156040; --tr-bg:#FFF4E0; --tr-fg:#8A5A00;
+    --lo-bg:#FDECEA; --lo-fg:#A02020; --new-bg:#EAF0FD; --new-fg:#2E50B8;
+    --na-bg:#F0F2F7; --na-fg:#6070A0; --shadow-sm:0 1px 2px rgba(0,0,0,.06); --shadow:0 1px 4px rgba(0,0,0,.09);
+  }
+  :root[data-theme="dark"] {
+    --bg:#0D1525; --surface:#162035; --border:#1F2E4A; --text:#DDE6F5; --muted:#6D84AA;
+    --fp3:#DBA040; --fp4:#27B07A;
+    --ok-bg:#092B1C; --ok-fg:#27B07A; --tr-bg:#2A1A00; --tr-fg:#DBA040;
+    --lo-bg:#2C0C0C; --lo-fg:#E05050; --new-bg:#0D1E44; --new-fg:#7090F0;
+    --na-bg:#151E30; --na-fg:#4A6090;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3); --shadow:0 1px 4px rgba(0,0,0,.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem 1rem 4rem;
+  }
+  .page { max-width: 920px; margin: 0 auto; }
+
+  /* Header */
+  .eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: .4rem;
+  }
+  h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; margin-bottom: .5rem; }
+  .subtitle { color: var(--muted); font-size: 13px; max-width: 58ch; margin-bottom: 1.5rem; }
+
+  /* Summary stats */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: .9rem 1rem; box-shadow: var(--shadow-sm);
+  }
+  .stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1; margin-bottom: .2rem; font-variant-numeric: tabular-nums; }
+  .stat-lbl { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-num.ok  { color: var(--ok-fg); }
+  .stat-num.tr  { color: var(--tr-fg); }
+  .stat-num.lo  { color: var(--lo-fg); }
+  .stat-num.new { color: var(--new-fg); }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: .4rem .65rem;
+    margin-bottom: 1.75rem; padding: .65rem .9rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; box-shadow: var(--shadow-sm);
+  }
+  .leg-lbl { font-size: 11px; color: var(--muted); align-self: center; margin-right: .3rem; font-weight: 600; }
+
+  /* Section */
+  .section { margin-bottom: 1.75rem; }
+  .section-head {
+    display: flex; align-items: baseline; gap: .65rem;
+    margin-bottom: .6rem;
+  }
+  .section-head h2 { font-size: 13.5px; font-weight: 700; }
+  .section-head .tname {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11.5px; color: var(--muted);
+    background: var(--na-bg); padding: .1rem .45rem; border-radius: 4px;
+  }
+  .section-head .tname span { color: var(--fp3); }
+  .section-head .tname i { color: var(--fp4); font-style: normal; }
+
+  /* Table */
+  .wrap { overflow-x: auto; border-radius: 9px; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  thead th {
+    padding: .5rem .8rem; font-size: 10.5px; font-weight: 700;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 2px solid var(--border); text-align: left; white-space: nowrap;
+  }
+  thead th.c-field { width: 22%; }
+  thead th.c-fp3  { width: 24%; color: var(--fp3); }
+  thead th.c-fp4  { width: 24%; color: var(--fp4); }
+  thead th.c-stat { width: 12%; text-align: center; }
+
+  tr.row td { padding: .48rem .8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr.row:last-child td { border-bottom: none; }
+  tr.row:hover td { background: color-mix(in srgb, var(--border) 20%, transparent); }
+
+  td.field {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11.5px; color: var(--text); font-weight: 500;
+  }
+  td.fp3-val, td.fp4-val { font-size: 12.5px; color: var(--muted); }
+  td.fp3-val code, td.fp4-val code {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11px; background: var(--na-bg); padding: .05rem .3rem; border-radius: 3px;
+  }
+  td.stat-cell { text-align: center; }
+  td.note-cell { font-size: 12px; color: var(--muted); }
+
+  /* Chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: .18rem .5rem; border-radius: 4px;
+    font-size: 11px; font-weight: 700; white-space: nowrap; letter-spacing: .01em;
+  }
+  .chip.ok  { background: var(--ok-bg); color: var(--ok-fg); }
+  .chip.tr  { background: var(--tr-bg); color: var(--tr-fg); }
+  .chip.lo  { background: var(--lo-bg); color: var(--lo-fg); }
+  .chip.new { background: var(--new-bg); color: var(--new-fg); }
+  .chip.na  { background: var(--na-bg); color: var(--na-fg); }
+
+  /* Lost block */
+  .lost-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--lo-fg);
+    border-radius: 8px; padding: 1rem 1.1rem;
+    box-shadow: var(--shadow-sm); margin-bottom: 1.75rem;
+  }
+  .lost-block h2 { font-size: 13px; font-weight: 700; color: var(--lo-fg); margin-bottom: .65rem; }
+  .lost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .75rem; }
+  .lost-item { display: flex; gap: .45rem; align-items: baseline; font-size: 12.5px; }
+  .lost-item::before { content: '✗'; color: var(--lo-fg); font-weight: 700; font-size: 11px; flex-shrink: 0; }
+  .lost-item strong { color: var(--text); font-weight: 600; font-size: 12px; }
+  .lost-item span { color: var(--muted); font-size: 11.5px; }
+
+  /* Strategy */
+  .strategy {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem 1.1rem; box-shadow: var(--shadow-sm);
+  }
+  .strategy h2 { font-size: 13px; font-weight: 700; margin-bottom: .75rem; }
+  .steps { display: flex; flex-direction: column; gap: .5rem; }
+  .step { display: flex; gap: .7rem; align-items: baseline; font-size: 12.5px; }
+  .step-n { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--na-bg); color: var(--muted); font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step strong { color: var(--text); font-weight: 600; }
+  .step span { color: var(--muted); }
+  code { font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 11px; background: var(--na-bg); padding: .05rem .35rem; border-radius: 3px; }
+</style>
+
+<div class="page">
+  <div class="eyebrow">Anàlisi tècnica · FemPinya</div>
+  <h1>Compatibilitat de migració FP3 → FP4</h1>
+  <p class="subtitle">Revisió camp per camp de les taules principals. Basada en les migracions reals dels dos sistemes.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num ok">67%</div><div class="stat-lbl">Migra directe</div></div>
+    <div class="stat"><div class="stat-num tr">12%</div><div class="stat-lbl">Necessita transformació</div></div>
+    <div class="stat"><div class="stat-num lo">21%</div><div class="stat-lbl">Es perd</div></div>
+    <div class="stat"><div class="stat-num new">+6</div><div class="stat-lbl">Camps nous a FP4</div></div>
+  </div>
+
+  <div class="legend">
+    <span class="leg-lbl">Llegenda:</span>
+    <span class="chip ok">✓ Directe</span>
+    <span class="chip tr">⇄ Transformació</span>
+    <span class="chip lo">✗ Es perd</span>
+    <span class="chip new">★ Nou FP4</span>
+    <span class="chip na">— No aplica</span>
+  </div>
+
+  <!-- COLLES -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Colles</h2>
+      <span class="tname"><span>colles</span> → <i>colles</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">id_colla</td><td class="fp3-val"><code>increments</code></td><td class="fp4-val"><code>id bigIncrements</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Claus foranies a re-mapear</td></tr>
+        <tr class="row"><td class="field">id_colla_external</td><td class="fp3-val"><code>int unsigned</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">ID extern de sistema antic</td></tr>
+        <tr class="row"><td class="field">name</td><td class="fp3-val"><code>string(50)</code></td><td class="fp4-val"><code>string</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">shortname</td><td class="fp3-val"><code>string(20)</code></td><td class="fp4-val"><code>string unique</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">email / phone</td><td class="fp3-val"><code>string</code></td><td class="fp4-val"><code>string nullable</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">country</td><td class="fp3-val"><code>string(100)</code> text complet</td><td class="fp4-val"><code>string(2)</code> ISO</td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">"España" → "ES" (cal mapa)</td></tr>
+        <tr class="row"><td class="field">city / logo / color</td><td class="fp3-val"><code>string</code></td><td class="fp4-val"><code>string nullable</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">banner</td><td class="fp3-val"><code>string(100)</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">No implementat a FP4</td></tr>
+        <tr class="row"><td class="field">max_members</td><td class="fp3-val">—</td><td class="fp4-val"><code>unsignedInt nullable</code></td><td class="stat-cell"><span class="chip new">★</span></td><td class="note-cell">Nou a FP4</td></tr>
+        <tr class="row"><td class="field">settings</td><td class="fp3-val">—</td><td class="fp4-val"><code>json</code></td><td class="stat-cell"><span class="chip new">★</span></td><td class="note-cell">Substitueix <code>colla_config</code> de FP3</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- CASTELLERS -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Castellers</h2>
+      <span class="tname"><span>castellers</span> → <i>castellers</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">id_casteller</td><td class="fp3-val"><code>increments</code></td><td class="fp4-val"><code>id bigIncrements</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Claus foranies a re-mapear</td></tr>
+        <tr class="row"><td class="field">id_casteller_external</td><td class="fp3-val"><code>int unsigned</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">colla_id</td><td class="fp3-val"><code>int → id_colla</code></td><td class="fp4-val"><code>foreignId → colles</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Cal re-mapear IDs</td></tr>
+        <tr class="row"><td class="field">alias</td><td class="fp3-val"><code>string(150)</code></td><td class="fp4-val"><code>string unique/colla</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">name / last_name</td><td class="fp3-val"><code>string(150) nullable</code></td><td class="fp4-val"><code>string nullable</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">email / phone</td><td class="fp3-val"><code>string nullable</code></td><td class="fp4-val"><code>string nullable</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell">FP3 té <code>phone</code> + <code>mobile_phone</code> → FP4 un sol <code>phone</code></td></tr>
+        <tr class="row"><td class="field">birthdate / status</td><td class="fp3-val"><code>date / tinyInt</code></td><td class="fp4-val"><code>date / tinyInt</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell">Mateixos valors (1=actiu…)</td></tr>
+        <tr class="row"><td class="field">height / weight / shoulder_height</td><td class="fp3-val"><code>float</code></td><td class="fp4-val"><code>smallInt (cm/kg)</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Float → integer arrodonit</td></tr>
+        <tr class="row"><td class="field">photo / comments</td><td class="fp3-val"><code>string/text</code></td><td class="fp4-val"><code>string/text nullable</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">num_soci</td><td class="fp3-val"><code>int nullable</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Número de soci. No modelat a FP4</td></tr>
+        <tr class="row"><td class="field">national_id_number / national_id_type</td><td class="fp3-val"><code>string(50)</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">DNI/NIE/passaport. Dada sensible</td></tr>
+        <tr class="row"><td class="field">family / family_head</td><td class="fp3-val"><code>string / tinyInt</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Agrupació familiar</td></tr>
+        <tr class="row"><td class="field">gender</td><td class="fp3-val"><code>tinyInt</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">nationality</td><td class="fp3-val"><code>string(50)</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">subscription_date</td><td class="fp3-val"><code>date</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Data d'alta</td></tr>
+        <tr class="row"><td class="field">email2 / emergency_phone</td><td class="fp3-val"><code>string</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Contactes addicionals</td></tr>
+        <tr class="row"><td class="field">address / postal_code / city / comarca / province / country</td><td class="fp3-val"><code>string nullable</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Adreça completa. <strong>Major pèrdua de dades</strong></td></tr>
+        <tr class="row"><td class="field">language / interaction_type</td><td class="fp3-val"><code>string(2) / int</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Preferències per notificacions</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Events</h2>
+      <span class="tname"><span>events</span> → <i>events</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">id_event</td><td class="fp3-val"><code>increments</code></td><td class="fp4-val"><code>id bigIncrements</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">name / address / comments / duration / start_date / open_date / close_date / visibility / type / photo</td><td class="fp3-val"><code>string/int/dateTime</code></td><td class="fp4-val">mateixos camps</td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell">Migra directe</td></tr>
+        <tr class="row"><td class="field">companions</td><td class="fp3-val"><code>tinyInt</code> (flag 0/1)</td><td class="fp4-val"><code>boolean</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell">Semàntica idèntica</td></tr>
+        <tr class="row"><td class="field">location_link</td><td class="fp3-val"><code>string nullable</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Afegit 2023, no a FP4</td></tr>
+        <tr class="row"><td class="field">id_event_external</td><td class="fp3-val"><code>int unsigned</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">recurring_group_id</td><td class="fp3-val">—</td><td class="fp4-val"><code>uuid nullable</code></td><td class="stat-cell"><span class="chip new">★</span></td><td class="note-cell">Agrupa events recurrents</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Assistència</h2>
+      <span class="tname"><span>attendance</span> → <i>attendance</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">status</td><td class="fp3-val"><code>tinyInt</code> 1=sí, 2=no, 3=?</td><td class="fp4-val"><code>enum</code> 'ok','nok','unknown'</td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell"><code>1→ok · 2→nok · 3/null→unknown</code></td></tr>
+        <tr class="row"><td class="field">companions</td><td class="fp3-val"><code>int unsigned nullable</code></td><td class="fp4-val"><code>tinyInt unsigned</code> default 0</td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">event_id / casteller_id</td><td class="fp3-val"><code>int unsigned</code></td><td class="fp4-val"><code>foreignId</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Re-mapear IDs</td></tr>
+        <tr class="row"><td class="field">status_verified</td><td class="fp3-val"><code>tinyInt nullable</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Doble verificació presencial</td></tr>
+        <tr class="row"><td class="field">source</td><td class="fp3-val"><code>tinyInt</code> (app/web/manual)</td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Canal d'origen de la confirmació</td></tr>
+        <tr class="row"><td class="field">options</td><td class="fp3-val"><code>json nullable</code></td><td class="fp4-val"><code>event_answers</code> (taula)</td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">FP3 guarda respostes inline al JSON. FP4 té taula normalitzada. <strong>Cal script ETL</strong></td></tr>
+        <tr class="row"><td class="field">comments</td><td class="fp3-val"><code>text nullable</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">Comentari lliure per assistència</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- TAGS -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Tags</h2>
+      <span class="tname"><span>tags</span> → <i>tags</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">name / value / group</td><td class="fp3-val"><code>string</code></td><td class="fp4-val"><code>string</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">type: CASTELLERS / EVENTS / BOARDS / POSITIONS</td><td class="fp3-val"><code>enum</code></td><td class="fp4-val"><code>enum</code> (mateixos)</td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">type: ATTENDANCE</td><td class="fp3-val"><code>ATTENDANCE</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">FP4 no té tags d'assistència. Descartables o convertibles en comentaris</td></tr>
+        <tr class="row"><td class="field">casteller_tag / event_tag pivots</td><td class="fp3-val">taules pivot</td><td class="fp4-val">taules pivot</td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell">Migra bé (re-mapeant IDs)</td></tr>
+        <tr class="row"><td class="field">event_attendance_tag / event_casteller_tag</td><td class="fp3-val">taules pivot</td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">No tenim equivalent a FP4</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- BOARDS -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Pissarres</h2>
+      <span class="tname"><span>boards + board_position</span> → <i>castle_templates</i></span>
+    </div>
+    <div class="wrap"><table>
+      <thead><tr>
+        <th class="c-field">Camp FP3</th>
+        <th class="c-fp3">Tipus FP3</th>
+        <th class="c-fp4">Equivalent FP4</th>
+        <th class="c-stat">Estat</th>
+        <th>Nota</th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td class="field">name / colla_id</td><td class="fp3-val"><code>string(100)</code></td><td class="fp4-val"><code>string</code></td><td class="stat-cell"><span class="chip ok">✓</span></td><td class="note-cell"></td></tr>
+        <tr class="row"><td class="field">type (PINYA/FOLRE…)</td><td class="fp3-val"><code>enum</code></td><td class="fp4-val"><code>key</code> string lliure</td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell">Convertible a key textual</td></tr>
+        <tr class="row"><td class="field">data / data_code (json)</td><td class="fp3-val"><code>json</code> format FP3</td><td class="fp4-val"><code>positions json</code></td><td class="stat-cell"><span class="chip tr">⇄</span></td><td class="note-cell"><strong>Formats incompatibles</strong>. Cal transformació de coordenades</td></tr>
+        <tr class="row"><td class="field">html_pinya / html_folre…</td><td class="fp3-val"><code>text HTML</code></td><td class="fp4-val">—</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">HTML estàtic obsolet. Descartable</td></tr>
+        <tr class="row"><td class="field">board_position (assignacions)</td><td class="fp3-val">taula + <code>row_id</code></td><td class="fp4-val">— (Fase 3b pendent)</td><td class="stat-cell"><span class="chip lo">✗</span></td><td class="note-cell">FP4 no té BD d'assignacions encara</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- COMPLETELY LOST -->
+  <div class="lost-block">
+    <h2>Taules de FP3 sense equivalent a FP4 (dades completament perdudes)</h2>
+    <div class="lost-grid">
+      <div class="lost-item"><strong>casteller_config</strong> <span>preferències personals per casteller</span></div>
+      <div class="lost-item"><strong>casteller_telegram</strong> <span>tokens Telegram per notificacions</span></div>
+      <div class="lost-item"><strong>casteller_web</strong> <span>tokens Firebase/push web</span></div>
+      <div class="lost-item"><strong>casteller_relationship</strong> <span>relacions entre castellers</span></div>
+      <div class="lost-item"><strong>auth_configs</strong> <span>secrets TOTP (2FA) per casteller</span></div>
+      <div class="lost-item"><strong>notifications / scheduled_notifications</strong> <span>historial i notificacions programades</span></div>
+      <div class="lost-item"><strong>notification_log / notification_order</strong> <span>registre d'enviaments</span></div>
+      <div class="lost-item"><strong>rows</strong> <span>files de la pinya (posicions FP3)</span></div>
+      <div class="lost-item"><strong>rondes</strong> <span>rondes d'assaig</span></div>
+      <div class="lost-item"><strong>multievents</strong> <span>agrupació d'events (afegit 2025)</span></div>
+      <div class="lost-item"><strong>board_event</strong> <span>vincle pissarra ↔ event</span></div>
+      <div class="lost-item"><strong>colla_config</strong> <span>parcialment migrat a <code>colles.settings</code> JSON</span></div>
+    </div>
+  </div>
+
+  <!-- STRATEGY -->
+  <div class="strategy">
+    <h2>Estratègia de migració recomanada</h2>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div><div><strong>Ampliar castellers FP4</strong> <span>Afegir els camps que manquen: <code>num_soci</code>, <code>address</code>, <code>gender</code>, <code>national_id</code> etc. Fer-ho <em>abans</em> de migrar, no després.</span></div></div>
+      <div class="step"><div class="step-n">2</div><div><strong>Script ETL per colla</strong> <span>Artisan command <code>php artisan fp3:import {colla_shortname}</code> que llegeixi la BD FP3 i insereixi a FP4, guardant la correspondència d'IDs en una taula temporal.</span></div></div>
+      <div class="step"><div class="step-n">3</div><div><strong>Transformacions crítiques</strong> <span>Status assistència: <code>1→ok, 2→nok, 3/null→unknown</code>. Country: text → ISO 2. Float mesures → integer. <code>options</code> JSON attendance → <code>event_answers</code> si cal.</span></div></div>
+      <div class="step"><div class="step-n">4</div><div><strong>Validació per colla</strong> <span>Comptar registres abans/després. Deixar que la colla validi les seves dades a FP4 durant un període paral·lel abans de donar de baixa FP3.</span></div></div>
+      <div class="step"><div class="step-n">5</div><div><strong>Dades sensibles</strong> <span>DNI/NIE i tokens TOTP s'han d'eliminar de FP3 o migrar amb xifrat. Consultar RGPD si la colla és a la UE.</span></div></div>
+    </div>
+  </div>
+</div>
