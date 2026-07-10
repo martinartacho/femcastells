@@ -190,12 +190,26 @@ class CastellerResource extends Resource
                     ->label('Nom')
                     ->searchable()
                     ->formatStateUsing(fn ($record) => $record->full_name),
+                TextColumn::make('last_name')
+                    ->label('Cognoms')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('email')
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('phone')
                     ->label('Telèfon')
+                    ->searchable()
                     ->toggleable(),
+                TextColumn::make('mobile_phone')
+                    ->label('Mòbil')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('num_soci')
+                    ->label('Núm. soci')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->label('Estat')
                     ->badge()

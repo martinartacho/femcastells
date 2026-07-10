@@ -16,7 +16,6 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\HtmlString;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ImportCastellers extends Page
@@ -27,12 +26,13 @@ class ImportCastellers extends Page
 
     protected string $view = 'filament.pages.import-castellers';
 
-    public ?string $file = null;
+    public array $data = [];
 
     /** @var array<int, array{row: int, errors: string[]}> */
     public array $importErrors = [];
 
-    public ?int $importedCount = null;
+    /** @var array{num_soci: int, alias: int, new: int, total: int}|null */
+    public ?array $importStats = null;
 
     public static function canAccess(array $parameters = []): bool
     {
@@ -41,21 +41,23 @@ class ImportCastellers extends Page
 
     public function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Selecciona el fitxer')->schema([
-                FileUpload::make('file')
-                    ->label('Fitxer CSV o Excel (.csv, .xlsx)')
-                    ->disk('local')
-                    ->directory('imports')
-                    ->acceptedFileTypes([
-                        'text/csv',
-                        'text/plain',
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'application/vnd.ms-excel',
-                    ])
-                    ->required(),
-            ]),
-        ]);
+        return $schema
+            ->statePath('data')
+            ->components([
+                Section::make('Selecciona el fitxer')->schema([
+                    FileUpload::make('file')
+                        ->label('Fitxer CSV o Excel (.csv, .xlsx)')
+                        ->disk('local')
+                        ->directory('imports')
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            'application/vnd.ms-excel',
+                        ])
+                        ->required(),
+                ]),
+            ]);
     }
 
     public function content(Schema $schema): Schema
@@ -72,15 +74,21 @@ class ImportCastellers extends Page
 
     public function import(): void
     {
-        $this->form->validate();
+        $state = $this->form->getState();
+        $filePath = $state['file'] ?? null;
 
-        $collaId = auth()->user()->colla_id;
+        if (! $filePath) {
+            Notification::make()->title('Cap fitxer seleccionat.')->danger()->send();
+            return;
+        }
+
+        $collaId  = filament()->getTenant()->id;
         $importer = new CastellerImport($collaId);
 
-        Excel::import($importer, $this->file, 'local');
+        Excel::import($importer, $filePath, 'local');
 
-        $this->importedCount = $importer->getImportedCount();
-        $this->importErrors  = [];
+        $this->importStats  = $importer->getStats();
+        $this->importErrors = [];
 
         foreach ($importer->getFailures() as $failure) {
             $this->importErrors[] = [
@@ -89,20 +97,22 @@ class ImportCastellers extends Page
             ];
         }
 
-        if (empty($this->importErrors)) {
+        $total      = $this->importStats['total'];
+        $errorCount = count($this->importErrors);
+
+        if ($errorCount === 0) {
             Notification::make()
-                ->title("Importació completada: {$this->importedCount} castellers processats.")
+                ->title("Importació completada: {$total} castellers processats.")
                 ->success()
                 ->send();
         } else {
-            $errorCount = count($this->importErrors);
             Notification::make()
-                ->title("{$this->importedCount} processats, {$errorCount} files amb errors.")
+                ->title("{$total} processats, {$errorCount} files amb errors.")
                 ->warning()
                 ->send();
         }
 
-        $this->file = null;
+        $this->data = [];
         $this->form->fill([]);
     }
 

@@ -13,6 +13,8 @@ class CollaStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         $collaId = filament()->getTenant()?->id;

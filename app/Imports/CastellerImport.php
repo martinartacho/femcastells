@@ -10,27 +10,28 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithUpserts;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Validators\Failure;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
-class CastellerImport implements ToModel, WithHeadingRow, WithUpserts, WithValidation, SkipsOnFailure, SkipsEmptyRows
+class CastellerImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsEmptyRows
 {
     /** @var Failure[] */
     private array $failures = [];
 
-    private int $imported = 0;
+    private int $matchedByNumSoci = 0;
+    private int $matchedByAlias   = 0;
+    private int $newInserts       = 0;
 
     public function __construct(private int $collaId) {}
 
     public function model(array $row): ?Casteller
     {
-        $this->imported++;
+        $numSoci = is_numeric($row['num_soci'] ?? null) ? (int) $row['num_soci'] : null;
+        $alias   = trim((string) $row['alias']);
 
-        return new Casteller([
-            'colla_id'         => $this->collaId,
-            'alias'            => trim((string) $row['alias']),
+        $data = [
+            'alias'            => $alias,
             'name'             => trim((string) ($row['name'] ?? '')),
             'last_name'        => $row['last_name'] ?? null,
             'email'            => $row['email'] ?? null,
@@ -41,7 +42,7 @@ class CastellerImport implements ToModel, WithHeadingRow, WithUpserts, WithValid
             'birthdate'        => $this->parseDate($row['birthdate'] ?? null),
             'gender'           => in_array($row['gender'] ?? '', ['M', 'F', 'X']) ? $row['gender'] : null,
             'status'           => in_array((int) ($row['status'] ?? 1), [1, 2, 3, 4]) ? (int) $row['status'] : 1,
-            'num_soci'         => $row['num_soci'] ?? null,
+            'num_soci'         => $numSoci,
             'subscription_date' => $this->parseDate($row['subscription_date'] ?? null),
             'national_id_type' => $row['national_id_type'] ?? null,
             'national_id'      => $row['national_id'] ?? null,
@@ -54,7 +55,35 @@ class CastellerImport implements ToModel, WithHeadingRow, WithUpserts, WithValid
             'city'             => $row['city'] ?? null,
             'province'         => $row['province'] ?? null,
             'country'          => $row['country'] ?? null,
-        ]);
+        ];
+
+        // Filament afegeix un global scope de tenant que interfereix — el desactivem
+        // 1. Cerca per num_soci (si ve informat)
+        if ($numSoci !== null) {
+            $byNumSoci = Casteller::withoutGlobalScopes()
+                ->where('colla_id', $this->collaId)
+                ->where('num_soci', $numSoci)
+                ->first();
+            if ($byNumSoci) {
+                $this->matchedByNumSoci++;
+                $byNumSoci->fill($data)->save();
+                return null;
+            }
+        }
+
+        // 2. updateOrCreate per àlies sense scopes de tenant
+        $casteller = Casteller::withoutGlobalScopes()->updateOrCreate(
+            ['colla_id' => $this->collaId, 'alias' => $alias],
+            $data
+        );
+
+        if ($casteller->wasRecentlyCreated) {
+            $this->newInserts++;
+        } else {
+            $this->matchedByAlias++;
+        }
+
+        return null;
     }
 
     public function rules(): array
@@ -82,20 +111,22 @@ class CastellerImport implements ToModel, WithHeadingRow, WithUpserts, WithValid
         }
     }
 
-    public function uniqueBy(): string|array
-    {
-        return ['colla_id', 'alias'];
-    }
-
     /** @return Failure[] */
     public function getFailures(): array
     {
         return $this->failures;
     }
 
-    public function getImportedCount(): int
+    /** @return array{num_soci: int, alias: int, new: int, total: int} */
+    public function getStats(): array
     {
-        return $this->imported;
+        $total = $this->matchedByNumSoci + $this->matchedByAlias + $this->newInserts;
+        return [
+            'num_soci' => $this->matchedByNumSoci,
+            'alias'    => $this->matchedByAlias,
+            'new'      => $this->newInserts,
+            'total'    => $total,
+        ];
     }
 
     private function parseDate(mixed $value): ?string

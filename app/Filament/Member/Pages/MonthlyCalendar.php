@@ -24,8 +24,8 @@ class MonthlyCalendar extends Page
 
     protected static ?string $title = 'Calendari';
 
-    public int $year;
-    public int $month;
+    public int $year  = 0;
+    public int $month = 0;
 
     public function mount(): void
     {
