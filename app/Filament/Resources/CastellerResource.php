@@ -229,9 +229,10 @@ class CastellerResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCastellers::route('/'),
+            'index'  => Pages\ListCastellers::route('/'),
             'create' => Pages\CreateCasteller::route('/create'),
-            'edit' => Pages\EditCasteller::route('/{record}/edit'),
+            'edit'   => Pages\EditCasteller::route('/{record}/edit'),
+            'import' => Pages\ImportCastellers::route('/import'),
         ];
     }
 }

@@ -53,6 +53,8 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         'password',
         'gdpr_accepted_at',
         'gdpr_version',
+        'last_login_at',
+        'login_count',
     ];
 
     protected $hidden = [
@@ -67,7 +69,9 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
             'status' => 'integer',
             'password' => 'hashed',
             'noticies_last_seen_at' => 'datetime',
-            'gdpr_accepted_at'      => 'datetime',
+            'gdpr_accepted_at' => 'datetime',
+            'last_login_at'    => 'datetime',
+            'login_count'      => 'integer',
         ];
     }
 
