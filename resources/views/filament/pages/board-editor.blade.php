@@ -30,7 +30,7 @@
     </style>
 
     <div id="board-wrapper"
-         x-data="{ showSave: false, saveName: '' }"
+         x-data="{ showSave: false, saveName: '', showCantar: false }"
          @board-apply.window="boardEditor.applyAssignments($event.detail.assignments)"
          @board-type-changed.window="boardEditor.loadCastleType($event.detail.type)">
 
@@ -89,6 +89,14 @@
                 📷 PNG
             </button>
 
+            @if($this->currentSnapshotId)
+                <button @click="showCantar = true"
+                    title="Veure llista d'assignacions per cantar la pinya"
+                    style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f0fdf4; border:1px solid #86efac; color:#166534; cursor:pointer; white-space:nowrap;">
+                    🎤 Canta la pinya
+                </button>
+            @endif
+
             <button id="btn-fullscreen" onclick="toggleFullscreen()"
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap;">
                 ⛶ Pantalla completa
@@ -126,6 +134,49 @@
                         Desa
                     </button>
                 </div>
+            </div>
+        </div>
+
+        {{-- Modal Canta la pinya --}}
+        <div x-show="showCantar" x-cloak
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:white; border-radius:12px; padding:20px; width:480px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:15px; font-weight:700; color:#111827;">
+                        🎤 Canta la pinya
+                        @if($this->currentSnapshotName)
+                            <span style="font-size:12px; font-weight:400; color:#6b7280; margin-left:6px;">— {{ $this->currentSnapshotName }}</span>
+                        @endif
+                    </div>
+                    <button @click="showCantar = false"
+                        style="font-size:14px; padding:2px 8px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; color:#6b7280;">✕</button>
+                </div>
+
+                @php $lines = $this->getCantarLines(); $currentGrup = null; @endphp
+
+                @if(empty($lines))
+                    <p style="font-size:13px; color:#9ca3af; text-align:center; padding:20px 0;">Carrega una pissarra primer.</p>
+                @else
+                    @foreach($lines as $line)
+                        @if($line['grup'] !== $currentGrup)
+                            @php $currentGrup = $line['grup']; @endphp
+                            <div style="font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-top:10px; margin-bottom:4px; padding-bottom:2px; border-bottom:1px solid #e5e7eb;">
+                                {{ $currentGrup }}
+                            </div>
+                        @endif
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:3px 0;">
+                            <span style="color:#6b7280;">{{ $line['nom'] }}</span>
+                            <span style="font-weight:600; color:#111827; font-family:monospace;">{{ $line['alias'] }}</span>
+                        </div>
+                    @endforeach
+
+                    <div style="margin-top:16px; padding-top:12px; border-top:1px solid #e5e7eb; text-align:right;">
+                        <button onclick="window.print()"
+                            style="font-size:12px; padding:5px 14px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; color:#374151;">
+                            🖨️ Imprimeix
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -187,18 +238,25 @@
                 </div>
                 <div style="overflow-y:auto; max-height:240px; padding:6px; border-bottom:2px solid #e5e7eb;">
                     @forelse($this->getSnapshots() as $snap)
-                        <div style="border:1px solid #e5e7eb; border-radius:6px; padding:6px; margin-bottom:6px; background:white;">
+                        <div style="border:1px solid {{ $snap->is_primary ? '#fbbf24' : '#e5e7eb' }}; border-radius:6px; padding:6px; margin-bottom:6px; background:{{ $snap->is_primary ? '#fffbeb' : 'white' }};">
                             <div style="font-size:11px; font-weight:600; color:#111827; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->name }}">
-                                {{ $snap->name }}
+                                @if($snap->is_primary) ⭐ @endif{{ $snap->name }}
                             </div>
                             <div style="font-size:10px; color:#9ca3af; margin-bottom:6px;">
                                 {{ $snap->created_at->format('d/m H:i') }}
                             </div>
-                            <div style="display:flex; gap:4px;">
+                            <div style="display:flex; gap:4px; flex-wrap:wrap;">
                                 <button wire:click="loadSnapshot({{ $snap->id }})"
                                     style="flex:1; font-size:10px; padding:3px 6px; border-radius:4px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer;">
                                     Carrega
                                 </button>
+                                @if(!$snap->is_primary)
+                                    <button wire:click="setPrimary({{ $snap->id }})"
+                                        title="Marca com a pissarra oficial d'aquest event"
+                                        style="font-size:10px; padding:3px 6px; border-radius:4px; background:#fef3c7; border:1px solid #fcd34d; color:#92400e; cursor:pointer;">
+                                        ⭐
+                                    </button>
+                                @endif
                                 <button wire:click="deleteSnapshot({{ $snap->id }})"
                                     wire:confirm="Eliminar '{{ addslashes($snap->name) }}'?"
                                     style="font-size:10px; padding:3px 6px; border-radius:4px; background:#fef2f2; border:1px solid #fecaca; color:#dc2626; cursor:pointer;">

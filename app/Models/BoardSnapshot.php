@@ -13,6 +13,7 @@ class BoardSnapshot extends Model
         'colla_id',
         'event_id',
         'castle_type',
+        'is_primary',
         'name',
         'assignments',
     ];
@@ -21,6 +22,7 @@ class BoardSnapshot extends Model
     {
         return [
             'assignments' => 'array',
+            'is_primary'  => 'boolean',
         ];
     }
 
