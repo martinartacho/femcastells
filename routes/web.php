@@ -62,3 +62,35 @@ Route::get('/admin/{shortname}/events/{event}/export-answers', function (string 
         'Content-Disposition' => "attachment; filename=\"{$filename}\"",
     ]);
 })->middleware(['web', 'auth']);
+
+Route::get('/admin/{tenant}/castellers/import-template', function () {
+    $headers = [
+        'alias', 'name', 'last_name', 'email', 'email2',
+        'phone', 'mobile_phone', 'emergency_phone',
+        'birthdate', 'gender', 'status', 'num_soci', 'subscription_date',
+        'national_id_type', 'national_id', 'nationality',
+        'height', 'weight', 'shoulder_height',
+        'address', 'postal_code', 'city', 'province', 'country',
+    ];
+    $example = [
+        'alba', 'Alba', 'Garcia Puig', 'alba@example.cat', '',
+        '600000001', '', '',
+        '15/03/1990', 'F', '1', '42', '01/09/2020',
+        'DNI', '12345678A', 'Espanyola',
+        '165', '60', '145',
+        'Carrer Major 1', '08001', 'Barcelona', 'Barcelonès', 'ES',
+    ];
+
+    $callback = function () use ($headers, $example): void {
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, $headers, ';');
+        fputcsv($out, $example, ';');
+        fclose($out);
+    };
+
+    return response()->stream($callback, 200, [
+        'Content-Type'        => 'text/csv; charset=UTF-8',
+        'Content-Disposition' => 'attachment; filename="plantilla-castellers.csv"',
+    ]);
+})->middleware(['web', 'auth'])->name('castellers.import-template');

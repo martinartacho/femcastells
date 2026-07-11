@@ -23,6 +23,9 @@ class Colla extends Model implements HasAvatar
         'color',
         'max_members',
         'assaigs_weeks_visible',
+        'gdpr_text',
+        'gdpr_version',
+        'gdpr_email',
     ];
 
     public function users(): HasMany
@@ -38,5 +41,43 @@ class Colla extends Model implements HasAvatar
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? asset('storage/'.$this->logo) : null;
+    }
+
+    public function resolveGdprText(): string
+    {
+        $contactEmail = $this->gdpr_email ?: ($this->email ?? '');
+
+        return strtr($this->gdpr_text ?? '', [
+            '{nom_colla}'   => $this->name,
+            '{email_colla}' => $this->email ?? '',
+            '{email_rgpd}'  => $contactEmail,
+        ]);
+    }
+
+    public static function defaultGdprText(string $collaName, string $collaEmail): string
+    {
+        return <<<TEXT
+        POLÍTICA DE PROTECCIÓ DE DADES PERSONALS
+
+        Responsable del tractament: {$collaName}
+        Correu de contacte: {$collaEmail}
+
+        En compliment del Reglament (UE) 2016/679 (RGPD) i la Llei Orgànica 3/2018 (LOPDGDD), l'informem que les seves dades personals seran tractades per {$collaName} amb les finalitats següents:
+
+        • Gestió de la participació en activitats castelleres (assajos, actuacions i esdeveniments).
+        • Comunicació d'informació relacionada amb la colla.
+        • Compliment d'obligacions legals, si escau.
+
+        BASE JURÍDICA
+        El tractament es basa en el seu consentiment explícit i en l'execució de la relació associativa.
+
+        DRETS
+        Podeu exercir els drets d'accés, rectificació, supressió, portabilitat, limitació i oposició adreçant-vos a {$collaEmail}.
+
+        CONSERVACIÓ
+        Les dades es conservaran mentre es mantingui la relació associativa i durant el temps necessari per a complir les obligacions legals.
+
+        Acceptant aquesta política, doneu el vostre consentiment explícit al tractament de les vostres dades personals per les finalitats descrites.
+        TEXT;
     }
 }

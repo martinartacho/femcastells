@@ -24,24 +24,42 @@ class CastellerExport implements FromCollection, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'Sobrenom', 'Nom', 'Cognoms', 'Email', 'Telèfon',
-            'Data naixement', 'Estat', 'Alçada', 'Pes', 'Alçada espatlles',
+            'alias', 'name', 'last_name', 'email', 'email2',
+            'phone', 'mobile_phone', 'emergency_phone',
+            'birthdate', 'gender', 'status', 'num_soci', 'subscription_date',
+            'national_id_type', 'national_id', 'nationality',
+            'height', 'weight', 'shoulder_height',
+            'address', 'postal_code', 'city', 'province', 'country',
         ];
     }
 
-    public function map(mixed $casteller): array
+    public function map(mixed $c): array
     {
         return [
-            $casteller->alias,
-            $casteller->name,
-            $casteller->last_name,
-            $casteller->email,
-            $casteller->phone,
-            $casteller->birthdate?->format('d/m/Y'),
-            Casteller::statusLabel($casteller->status),
-            $casteller->height,
-            $casteller->weight,
-            $casteller->shoulder_height,
+            $c->alias,
+            $c->name,
+            $c->last_name,
+            $c->email,
+            $c->email2,
+            $c->phone,
+            $c->mobile_phone,
+            $c->emergency_phone,
+            $c->birthdate?->format('d/m/Y'),
+            $c->gender,
+            $c->status,
+            $c->num_soci,
+            $c->subscription_date?->format('d/m/Y'),
+            $c->national_id_type,
+            $c->national_id,
+            $c->nationality,
+            $c->height,
+            $c->weight,
+            $c->shoulder_height,
+            $c->address,
+            $c->postal_code,
+            $c->city,
+            $c->province,
+            $c->country,
         ];
     }
 }
