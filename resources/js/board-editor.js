@@ -1,6 +1,7 @@
 import Konva from 'konva';
 
 const CASTLE_POSITIONS = window.__boardPositions ?? {};
+const READ_ONLY = window.__readOnly ?? false;
 
 const SCALE = 0.9;
 const ASSIGNED_FILL = '#86efac';
@@ -226,15 +227,17 @@ function initBoard(type = '3d6') {
             if (info) info.textContent = '';
         });
 
-        group.on('click tap', () => {
-            if (!selectedCasteller) return;
-            assignCasteller(pos.id, selectedCasteller);
-            deselectCasteller();
-        });
+        if (!READ_ONLY) {
+            group.on('click tap', () => {
+                if (!selectedCasteller) return;
+                assignCasteller(pos.id, selectedCasteller);
+                deselectCasteller();
+            });
 
-        group.on('dblclick dbltap', () => {
-            unassignPosition(pos.id);
-        });
+            group.on('dblclick dbltap', () => {
+                unassignPosition(pos.id);
+            });
+        }
     });
 
     layer.draw();
@@ -263,6 +266,7 @@ function setHoverRect(posId, hover) {
 }
 
 function setupDragDrop() {
+    if (READ_ONLY) return;
     const wrapper = document.getElementById('board-canvas').parentElement;
 
     document.addEventListener('dragstart', (e) => {
@@ -432,4 +436,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.__autoLoadAssignments && Object.keys(window.__autoLoadAssignments).length > 0) {
         window.boardEditor.applyAssignments(window.__autoLoadAssignments);
     }
+});
+
+// Ressaltar una posició concreta (Pissarra Personal)
+document.addEventListener('board-highlight', (e) => {
+    const posId = e.detail?.posId;
+    if (!posId || !positionGroups[posId] || !layer) return;
+    const { rect } = positionGroups[posId];
+    rect.stroke('#fbbf24');
+    rect.strokeWidth(3);
+    layer.draw();
 });

@@ -14,6 +14,7 @@ class BoardSnapshot extends Model
         'event_id',
         'castle_type',
         'is_primary',
+        'public_token',
         'name',
         'assignments',
     ];

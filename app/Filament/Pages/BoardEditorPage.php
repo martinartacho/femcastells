@@ -46,6 +46,10 @@ class BoardEditorPage extends Page
 
     public ?string $currentSnapshotName = null;
 
+    public ?string $shareUrl = null;
+
+    public ?string $shareSnapshotName = null;
+
     public function mount(): void
     {
         if ($this->autoLoad && $this->selectedEventId) {
@@ -236,6 +240,43 @@ class BoardEditorPage extends Page
         $snapshot->update(['is_primary' => true]);
 
         Notification::make()->title('⭐ Pissarra oficial: ' . $snapshot->name)->success()->send();
+    }
+
+    public function getProjectorUrl(): string
+    {
+        return auth()->user()->colla->getDisplayUrl();
+    }
+
+    public function projectSnapshot(int $snapshotId): void
+    {
+        $collaId  = auth()->user()?->colla_id;
+        $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
+
+        auth()->user()->colla->update(['projected_snapshot_id' => $snapshot->id]);
+
+        Notification::make()->title('📡 Projectant: ' . $snapshot->name)->success()->send();
+    }
+
+    public function unproject(): void
+    {
+        auth()->user()->colla->update(['projected_snapshot_id' => null]);
+        Notification::make()->title('Projecció aturada')->warning()->send();
+    }
+
+    public function generateShareUrl(int $snapshotId): void
+    {
+        $collaId  = auth()->user()?->colla_id;
+        $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
+
+        if (!$snapshot->public_token) {
+            $snapshot->update(['public_token' => \Illuminate\Support\Str::uuid()]);
+        }
+
+        $this->shareUrl          = route('display.pinya', [
+            'shortname' => auth()->user()->colla->shortname,
+            'token'     => $snapshot->public_token,
+        ]);
+        $this->shareSnapshotName = $snapshot->name;
     }
 
     public function deleteSnapshot(int $snapshotId): void
