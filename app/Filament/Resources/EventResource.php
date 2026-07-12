@@ -7,7 +7,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers\AttendanceRelationManager;
 use App\Filament\Resources\EventResource\RelationManagers\QuestionsRelationManager;
-use App\Models\BoardSnapshot;
 use App\Models\Event;
 use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
@@ -138,18 +137,6 @@ class EventResource extends Resource
                 IconColumn::make('visibility')
                     ->label('Visible')
                     ->boolean(),
-                TextColumn::make('board_snapshots_count')
-                    ->label('Pissarra')
-                    ->counts('boardSnapshots')
-                    ->formatStateUsing(function (int $state, Event $record): string {
-                        if ($state === 0) {
-                            return '—';
-                        }
-                        $hasPrimary = $record->boardSnapshots()->where('is_primary', true)->exists();
-                        return ($hasPrimary ? '⭐ ' : '') . $state . ' vers.';
-                    })
-                    ->sortable()
-                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')
@@ -162,14 +149,21 @@ class EventResource extends Resource
             ])
             ->actions([
                 Action::make('pissarra')
-                    ->label('Pissarra')
+                    ->label('')
                     ->icon(Heroicon::OutlinedTableCells)
-                    ->color('info')
-                    ->url(fn (Event $record): string => '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id),
+                    ->color(fn (Event $record) => ($record->board_snapshots_count ?? 0) > 0 ? 'info' : 'gray')
+                    ->tooltip(fn (Event $record) => ($record->board_snapshots_count ?? 0) > 0
+                        ? 'Pissarra: ' . $record->board_snapshots_count . ' versió/ns'
+                        : 'Obrir pissarra (sense pinyes desades)')
+                    ->url(fn (Event $record): string =>
+                        '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id
+                        . (($record->board_snapshots_count ?? 0) > 0 ? '&autoLoad=1' : '')
+                    ),
             ])
             ->bulkActions([
                 \Filament\Actions\DeleteBulkAction::make(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->withCount('boardSnapshots'))
             ->defaultSort('start_date', 'desc')
             ->persistFiltersInSession();
     }

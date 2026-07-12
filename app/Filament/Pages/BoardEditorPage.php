@@ -39,9 +39,40 @@ class BoardEditorPage extends Page
     #[Url]
     public string $castleType = '3d6';
 
+    #[Url]
+    public bool $autoLoad = false;
+
     public ?int $currentSnapshotId = null;
 
     public ?string $currentSnapshotName = null;
+
+    public function mount(): void
+    {
+        if ($this->autoLoad && $this->selectedEventId) {
+            $collaId = auth()->user()?->colla_id;
+            $snap = BoardSnapshot::where('colla_id', $collaId)
+                ->where('event_id', $this->selectedEventId)
+                ->orderByDesc('is_primary')
+                ->orderByDesc('created_at')
+                ->first();
+            if ($snap) {
+                $this->currentSnapshotId   = $snap->id;
+                $this->currentSnapshotName = $snap->name;
+                $this->castleType          = $snap->castle_type;
+            }
+        }
+    }
+
+    public function getAutoLoadAssignments(): ?array
+    {
+        if (!$this->autoLoad || !$this->currentSnapshotId) {
+            return null;
+        }
+        $collaId = auth()->user()?->colla_id;
+        return BoardSnapshot::where('colla_id', $collaId)
+            ->find($this->currentSnapshotId)
+            ?->assignments;
+    }
 
     public function getCastleTypes(): Collection
     {

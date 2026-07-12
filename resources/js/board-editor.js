@@ -327,4 +327,9 @@ window.boardEditor = {
     },
 };
 
-document.addEventListener('DOMContentLoaded', () => initBoard());
+document.addEventListener('DOMContentLoaded', () => {
+    initBoard();
+    if (window.__autoLoadAssignments && Object.keys(window.__autoLoadAssignments).length > 0) {
+        window.boardEditor.applyAssignments(window.__autoLoadAssignments);
+    }
+});

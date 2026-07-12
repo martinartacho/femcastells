@@ -1,6 +1,7 @@
 <x-filament-panels::page>
     @vite('resources/js/board-editor.js')
     <script>window.__boardPositions = @json($this->getCastlePositions());</script>
+    <script>window.__autoLoadAssignments = @json($this->getAutoLoadAssignments() ?? []);</script>
 
     <style>
         body.board-fullscreen aside,
