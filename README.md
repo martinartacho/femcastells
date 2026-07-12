@@ -116,6 +116,18 @@ resources/
 
 ---
 
+## Motivació
+
+FemPinya 4 neix de l'auditoria de l'ecosistema existent (juny 2026):
+
+- **FP3 backend** ([AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend), Laravel 8) és el repo més actiu, en producció, però tecnològicament desfasat. Migrar-lo a Laravel 11+ seria una reescriptura gairebé total: canvi de Blade tradicional, model de permisos, Livewire/Filament... Un risc alt si l'organització no hi participa activament.
+- **FP3 api** (Laravel 11) té una arquitectura correcta com a pont entre backend i app Flutter, però l'activitat és escassa i els endpoints cobreixen poc domini.
+- L'organització **AssociacioFemPinya** és semi-activa. Contribuir via PR requereix coordinació i cessió del codi (AGPL-3.0).
+
+La decisió: **fork privat + reescriptura neta** amb stack modern (Laravel 13 + Filament 5), llibertat total de disseny, i opció d'oferir-lo upstream quan estigui madur.
+
+L'autor va crear FemPinya v1 i v2 (primera app del mercat, usada pel 50% de colles) i va impulsar la creació de l'AssociacioFemPinya i el grup dev que va desenvolupar FP3.
+
 ## Referència FP3
 
 Els repos de FP3 estan disponibles a [AssociacioFemPinya](https://github.com/AssociacioFemPinya/backend) per a consulta de domini. No se'n copia codi directament.
