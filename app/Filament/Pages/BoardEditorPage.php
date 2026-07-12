@@ -39,9 +39,40 @@ class BoardEditorPage extends Page
     #[Url]
     public string $castleType = '3d6';
 
+    #[Url]
+    public bool $autoLoad = false;
+
     public ?int $currentSnapshotId = null;
 
     public ?string $currentSnapshotName = null;
+
+    public function mount(): void
+    {
+        if ($this->autoLoad && $this->selectedEventId) {
+            $collaId = auth()->user()?->colla_id;
+            $snap = BoardSnapshot::where('colla_id', $collaId)
+                ->where('event_id', $this->selectedEventId)
+                ->orderByDesc('is_primary')
+                ->orderByDesc('created_at')
+                ->first();
+            if ($snap) {
+                $this->currentSnapshotId   = $snap->id;
+                $this->currentSnapshotName = $snap->name;
+                $this->castleType          = $snap->castle_type;
+            }
+        }
+    }
+
+    public function getAutoLoadAssignments(): ?array
+    {
+        if (!$this->autoLoad || !$this->currentSnapshotId) {
+            return null;
+        }
+        $collaId = auth()->user()?->colla_id;
+        return BoardSnapshot::where('colla_id', $collaId)
+            ->find($this->currentSnapshotId)
+            ?->assignments;
+    }
 
     public function getCastleTypes(): Collection
     {
@@ -88,11 +119,14 @@ class BoardEditorPage extends Page
 
     public function getUpcomingEvents(): Collection
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId     = auth()->user()?->colla_id;
+        $currentType = $this->castleType;
 
         return Event::where('colla_id', $collaId)
+            ->withCount(['boardSnapshots as type_count' => fn ($q) => $q->where('castle_type', $currentType)])
+            ->orderByDesc('type_count')
             ->orderByDesc('start_date')
-            ->limit(20)
+            ->limit(30)
             ->get(['id', 'name', 'start_date', 'type']);
     }
 
@@ -107,8 +141,9 @@ class BoardEditorPage extends Page
         return BoardSnapshot::where('colla_id', $collaId)
             ->where('event_id', $this->selectedEventId)
             ->where('castle_type', $this->castleType)
+            ->orderByDesc('is_primary')
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'created_at', 'event_id']);
+            ->get(['id', 'name', 'is_primary', 'created_at', 'event_id']);
     }
 
     public function getAllCollaSnapshots(): Collection
@@ -188,6 +223,21 @@ class BoardEditorPage extends Page
         $this->dispatch('board-apply', assignments: json_encode($snapshot->assignments));
     }
 
+    public function setPrimary(int $snapshotId): void
+    {
+        $collaId  = auth()->user()?->colla_id;
+        $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
+
+        BoardSnapshot::where('colla_id', $collaId)
+            ->where('event_id', $snapshot->event_id)
+            ->where('castle_type', $snapshot->castle_type)
+            ->update(['is_primary' => false]);
+
+        $snapshot->update(['is_primary' => true]);
+
+        Notification::make()->title('⭐ Pissarra oficial: ' . $snapshot->name)->success()->send();
+    }
+
     public function deleteSnapshot(int $snapshotId): void
     {
         $collaId = auth()->user()?->colla_id;
@@ -200,5 +250,48 @@ class BoardEditorPage extends Page
         }
 
         Notification::make()->title('Pissarra eliminada')->success()->send();
+    }
+
+    public function getCantarLines(): array
+    {
+        if (!$this->currentSnapshotId) {
+            return [];
+        }
+
+        $collaId  = auth()->user()?->colla_id;
+        $snapshot = BoardSnapshot::where('colla_id', $collaId)->find($this->currentSnapshotId);
+
+        if (!$snapshot || empty($snapshot->assignments)) {
+            return [];
+        }
+
+        $template = CastleTemplate::where('colla_id', $collaId)
+            ->where('key', $this->castleType)
+            ->first();
+
+        if (!$template || empty($template->positions)) {
+            // Sense plantilla: simple llista positionId → alias
+            return array_map(
+                fn ($posId, $alias) => ['grup' => '—', 'nom' => $posId, 'alias' => $alias],
+                array_keys($snapshot->assignments),
+                $snapshot->assignments,
+            );
+        }
+
+        // Construim un mapa positionId → {grup, nom}
+        $posMap = [];
+        foreach ($template->positions as $pos) {
+            $posMap[$pos['id']] = ['grup' => $pos['grup'] ?? '—', 'nom' => $pos['nom'] ?? $pos['id']];
+        }
+
+        $lines = [];
+        foreach ($snapshot->assignments as $posId => $alias) {
+            $info   = $posMap[$posId] ?? ['grup' => '—', 'nom' => $posId];
+            $lines[] = ['grup' => $info['grup'], 'nom' => $info['nom'], 'alias' => $alias];
+        }
+
+        usort($lines, fn ($a, $b) => $a['grup'] <=> $b['grup'] ?: $a['nom'] <=> $b['nom']);
+
+        return $lines;
     }
 }
