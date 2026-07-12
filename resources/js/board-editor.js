@@ -16,7 +16,6 @@ const ZONE_COLORS = {
 
 // Role-based colors: generador categories + motor PHP + FemPinya imports
 const GRUP_COLORS = {
-    // Generador abstracte (categories)
     agulla:     '#1a237e',
     tronc:      '#e65100',
     contrafort: '#f9a825',
@@ -25,7 +24,6 @@ const GRUP_COLORS = {
     folre:      '#6a1b9a',
     manilles:   '#c62828',
     baixos:     '#90a4ae',
-    // Rols estructurals (PinyaMotor)
     baix:      '#37474f',
     nucli:     '#ffcdd2',
     nucli_D:   '#f8bbd0',
@@ -37,13 +35,11 @@ const GRUP_COLORS = {
     falca_E:   '#d1c4e9',
     angle_D:   '#ffe0b2',
     angle_E:   '#ffe0b2',
-    // Baixos del Cinc de 6 (dades reals FemPinya)
     Plena:        '#f8bbd0',
     Carregada:    '#bbdefb',
     Buida:        '#c8e6c9',
     Rengle:       '#fff9c4',
     Descarregada: '#d1c4e9',
-    // Baixos del Set de X (dades reals FemPinya)
     Una:    '#f8bbd0',
     Dues:   '#bbdefb',
     Tres:   '#c8e6c9',
@@ -53,6 +49,57 @@ const GRUP_COLORS = {
     Set:    '#b2dfdb',
 };
 
+// --- Historial (undo) ---
+const assignmentHistory = [];
+const MAX_HISTORY = 30;
+let suppressDepth = 0;   // >0 = no afegir a l'historial
+let lastSavedJson = '{}';
+
+function suppressPush() { suppressDepth++; }
+function suppressPop()  { suppressDepth = Math.max(0, suppressDepth - 1); }
+
+function snapshotToHistory() {
+    if (suppressDepth > 0) return;
+    assignmentHistory.push({ ...assignments });
+    if (assignmentHistory.length > MAX_HISTORY) assignmentHistory.shift();
+}
+
+function undo() {
+    if (assignmentHistory.length === 0) return;
+    const prev = assignmentHistory.pop();
+    suppressPush();
+    clearBoardInternal();
+    Object.entries(prev).forEach(([posId, alias]) => {
+        if (positionGroups[posId]) assignCasteller(posId, alias);
+    });
+    suppressPop();
+    layer?.batchDraw();
+    updateCounter();
+    updateUI();
+}
+
+function isDirty() {
+    return Object.keys(assignments).length > 0 && JSON.stringify(assignments) !== lastSavedJson;
+}
+
+function markSaved() {
+    lastSavedJson = JSON.stringify(assignments);
+    updateUI();
+}
+
+function updateUI() {
+    // Botó undo
+    const undoBtn = document.getElementById('btn-undo');
+    if (undoBtn) {
+        undoBtn.disabled = assignmentHistory.length === 0;
+        undoBtn.style.opacity = assignmentHistory.length === 0 ? '0.35' : '1';
+    }
+    // Indicador "no desat"
+    const dirty = document.getElementById('board-dirty');
+    if (dirty) dirty.style.display = isDirty() ? '' : 'none';
+}
+
+// --- Helpers --
 function computeCentroid(positions) {
     const n = positions.length;
     return {
@@ -95,6 +142,10 @@ function initBoard(type = '3d6') {
         assignments = {};
         dragOverPosId = null;
     }
+
+    // Reset historial en canviar de plantilla
+    assignmentHistory.length = 0;
+    lastSavedJson = '{}';
 
     const positions = CASTLE_POSITIONS[type] ?? Object.values(CASTLE_POSITIONS)[0] ?? [];
     const centroid  = computeCentroid(positions);
@@ -188,6 +239,7 @@ function initBoard(type = '3d6') {
 
     layer.draw();
     updateCounter();
+    updateUI();
     setupDragDrop();
 }
 
@@ -206,11 +258,7 @@ function getPosIdAtPoint(clientX, clientY) {
 function setHoverRect(posId, hover) {
     if (!posId || !positionGroups[posId]) return;
     const { rect } = positionGroups[posId];
-    if (hover) {
-        rect.fill(HOVER_FILL);
-    } else {
-        rect.fill(assignments[posId] ? ASSIGNED_FILL : (positionGroups[posId]?.emptyFill ?? '#e5e7eb'));
-    }
+    rect.fill(hover ? HOVER_FILL : (assignments[posId] ? ASSIGNED_FILL : (positionGroups[posId]?.emptyFill ?? '#e5e7eb')));
     layer.draw();
 }
 
@@ -260,9 +308,14 @@ function setListVisible(alias, visible) {
 }
 
 function assignCasteller(posId, alias) {
+    snapshotToHistory();
+    // Si el casteller ja estava en una altra posició, el movem sense re-snapshot
     const prev = Object.entries(assignments).find(([, v]) => v === alias);
-    if (prev) unassignPosition(prev[0]);
-
+    if (prev) {
+        suppressPush();
+        unassignPosition(prev[0]);
+        suppressPop();
+    }
     assignments[posId] = alias;
     const { rect, label } = positionGroups[posId];
     rect.fill(ASSIGNED_FILL);
@@ -270,9 +323,11 @@ function assignCasteller(posId, alias) {
     layer.draw();
     setListVisible(alias, false);
     updateCounter();
+    updateUI();
 }
 
 function unassignPosition(posId) {
+    snapshotToHistory();
     const alias = assignments[posId];
     delete assignments[posId];
     const { rect, label, emptyFill } = positionGroups[posId];
@@ -281,6 +336,7 @@ function unassignPosition(posId) {
     layer.draw();
     if (alias) setListVisible(alias, true);
     updateCounter();
+    updateUI();
 }
 
 function deselectCasteller() {
@@ -292,9 +348,48 @@ function deselectCasteller() {
     selectedCasteller = null;
 }
 
-function clearBoard() {
-    Object.keys(assignments).forEach(posId => unassignPosition(posId));
+// Buit intern el canvas sense tocar l'historial
+function clearBoardInternal() {
+    Object.keys({ ...assignments }).forEach(posId => {
+        const alias = assignments[posId];
+        delete assignments[posId];
+        const pg = positionGroups[posId];
+        if (pg) {
+            pg.rect.fill(pg.emptyFill);
+            pg.label.text('');
+            if (alias) setListVisible(alias, true);
+        }
+    });
+    layer?.batchDraw();
+    updateCounter();
 }
+
+function clearBoard() {
+    snapshotToHistory();
+    suppressPush();
+    clearBoardInternal();
+    suppressPop();
+    updateUI();
+}
+
+// Escoltadors d'events de desar — marca l'estat com a desat
+document.addEventListener('board-save',      () => markSaved());
+document.addEventListener('board-overwrite', () => markSaved());
+
+// Ctrl+Z / Cmd+Z
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+    }
+});
+
+// Avís si hi ha canvis no desats al tancar/recarregar
+window.addEventListener('beforeunload', (e) => {
+    if (isDirty()) {
+        e.preventDefault();
+    }
+});
 
 window.boardEditor = {
     selectCasteller(alias) {
@@ -306,13 +401,18 @@ window.boardEditor = {
         });
     },
     clearBoard,
+    undo,
     getAssignments: () => ({ ...assignments }),
     applyAssignments(json) {
-        clearBoard();
+        suppressPush();
+        clearBoardInternal();
         const data = typeof json === 'string' ? JSON.parse(json) : json;
         Object.entries(data).forEach(([posId, alias]) => {
             if (positionGroups[posId]) assignCasteller(posId, alias);
         });
+        suppressPop();
+        assignmentHistory.length = 0;  // Nova base — no té sentit fer undo aquí
+        markSaved();
     },
     loadCastleType(type) {
         initBoard(type);

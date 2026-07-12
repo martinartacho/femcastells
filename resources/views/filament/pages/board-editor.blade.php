@@ -83,6 +83,15 @@
                 Neteja
             </button>
 
+            <button id="btn-undo" onclick="boardEditor.undo()"
+                title="Desfés l'última assignació (Ctrl+Z)"
+                disabled
+                style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; white-space:nowrap; opacity:0.35;">
+                ↩ Desfés
+            </button>
+
+            <span id="board-dirty" style="display:none; font-size:10px; color:#d97706; background:#fef3c7; border:1px solid #fcd34d; border-radius:4px; padding:2px 6px; white-space:nowrap;">● No desat</span>
+
             @if($this->currentSnapshotId)
                 {{-- Snapshot actiu: Desa (sobreescriu) + Desa com... (nou) --}}
                 <button
