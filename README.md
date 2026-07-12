@@ -1,58 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# FemPinya 4
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https://github.com/AssociacioFemPinya/backend) (Laravel 8), reescrit des de zero amb Laravel 13 i Filament 5.
 
-## About Laravel
+> Projecte personal de [H. Artacho](https://github.com/martinartacho). Intenció futura d'oferir-lo a l'organització AssociacioFemPinya.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Capa | Tecnologia |
+|---|---|
+| Framework | Laravel 13 · PHP 8.3 |
+| Panell admin | Filament 5 |
+| Portal membre | Filament 5 (guard `member`, model `Casteller`) |
+| Multi-tenancy | Colla com a tenant (slug `shortname`) |
+| Base de dades | MySQL |
+| Frontend | Blade + Alpine.js + Tailwind CSS |
+| Canvas interactiu | Konva.js (via Vite) |
+| Assets | Vite |
+| Permisos | spatie/laravel-permission |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Funcionalitats
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Panell admin (`/admin/{shortname}/`)
+- **Castellers** — CRUD complet, import CSV, grups, assignació de rols
+- **Esdeveniments** — calendari, gestió d'assistència amb respostes personalitzades, export CSV
+- **Pissarra** — editor visual de pinyes (Konva.js):
+  - Assignació de castellers a posicions (clic, drag & drop)
+  - Múltiples versions desades per event (`board_snapshots`)
+  - Pissarra oficial (⭐) per event
+  - Undo (Ctrl+Z), indicador de canvis no desats
+  - **Projector** — URL permanent per colla per a TV/Raspberry Pi en mode quiosc
+  - **Compartir** — URL pública per a un snapshot concret
+  - **Canta la pinya** — vista d'impressió agrupada per posició
+- **Plantilles de castell** — generació i gestió de mapes de posicions (Cinc de 6, Set de X, 3d6…)
+- **Noticies** — tauler d'anuncis intern
+- **Configuració** — gestió de la colla, GDPR, permisos per rol
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Portal membre (`/member/{shortname}/`)
+- **Calendari** — events visibles amb confirmació d'assistència i respostes a preguntes
+- **La meva pinya** — mostra la pinya projectada per la tècnica i destaca la posició del casteller
 
-## Agentic Development
+### Pantalles públiques (sense login)
+- `/display/{shortname}/{token}` — projector en temps real (auto-refresh 30s)
+- `/share/{shortname}/{token}` — snapshot específic compartible
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
+
+## Instal·lació en local
+
+### Requisits
+- PHP 8.3+, Composer
+- Node.js 20+, npm
+- MySQL
+- Laragon (Windows) o equivalent
+
+### Passos
 
 ```bash
-composer require laravel/boost --dev
+git clone git@github.com:martinartacho/fempinya4.git
+cd fempinya4
 
-php artisan boost:install
+composer install
+npm install
+
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Edita `.env`:
+```
+APP_URL=http://fempinya4.test
+DB_DATABASE=fempinya4
+DB_USERNAME=root
+DB_PASSWORD=
+SEEDER_ADMIN_PASSWORD=<contrasenya-segura>
+SEEDER_ADMIN_EMAIL=<email>
+```
 
-## Contributing
+```bash
+php artisan migrate --seed
+npm run build
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Accés: `http://fempinya4.test/admin`
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Estructura clau
 
-## Security Vulnerabilities
+```
+app/
+├── Filament/
+│   ├── Pages/BoardEditorPage.php        ← Editor de pissarres (Livewire)
+│   ├── Resources/EventResource.php
+│   ├── Resources/CastellerResource.php
+│   └── Member/                          ← Recursos del portal membre
+├── Http/Controllers/
+│   ├── ProjectorDisplayController.php   ← Pantalla TV/Raspberry
+│   └── DisplayPinyaController.php       ← Snapshot compartit
+├── Models/
+│   ├── Colla.php                        ← Tenant (display_token, projected_snapshot_id)
+│   ├── BoardSnapshot.php                ← Versions de pinya desades
+│   ├── CastleTemplate.php               ← Mapes de posicions
+│   └── Casteller.php                    ← Autenticable (guard member)
+resources/
+├── js/board-editor.js                   ← Canvas Konva.js (assignacions, undo)
+└── views/
+    ├── filament/pages/board-editor.blade.php
+    ├── filament/member/pages/pinya.blade.php
+    └── display/                         ← Vistes públiques del projector
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Referència FP3
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Els repos de FP3 estan disponibles a [AssociacioFemPinya](https://github.com/AssociacioFemPinya/backend) per a consulta de domini. No se'n copia codi directament.
+
+---
+
+## Llicència
+
+Projecte privat. Tots els drets reservats © H. Artacho.
