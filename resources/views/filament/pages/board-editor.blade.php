@@ -41,7 +41,7 @@
     @endphp
 
     <div id="board-wrapper"
-         x-data="{ showSave: false, saveName: '', showCantar: false, showEventPicker: false, eventSearch: '', showImport: false }"
+         x-data="{ showSave: false, saveName: '', showCantar: false, showEventPicker: false, eventSearch: '', showImport: false, showShare: false, showProjector: false }"
          @board-apply.window="boardEditor.applyAssignments($event.detail.assignments)"
          @board-type-changed.window="boardEditor.loadCastleType($event.detail.type)">
 
@@ -125,6 +125,12 @@
                     🎤 Canta la pinya
                 </button>
             @endif
+
+            <button @click="showProjector = true"
+                title="Configuració del projector / URL de la TV"
+                style="font-size:11px; padding:4px 10px; border-radius:6px; background:{{ auth()->user()->colla->projected_snapshot_id ? '#064e3b' : '#1f2937' }}; border:1px solid {{ auth()->user()->colla->projected_snapshot_id ? '#059669' : '#374151' }}; color:{{ auth()->user()->colla->projected_snapshot_id ? '#d1fae5' : '#9ca3af' }}; cursor:pointer; white-space:nowrap;">
+                📡 Projector
+            </button>
 
             <button id="btn-fullscreen" onclick="toggleFullscreen()"
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap;">
@@ -225,6 +231,89 @@
                     @empty
                         <p style="font-size:12px; color:#9ca3af; text-align:center; padding:24px 0;">No hi ha pinyes d'altres events.</p>
                     @endforelse
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal Compartir --}}
+        <div x-show="showShare" x-cloak
+            @keydown.escape.window="showShare = false"
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:white; border-radius:12px; padding:20px; width:380px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:4px;">📤 Compartir pinya</div>
+                @if($this->shareSnapshotName)
+                    <div style="font-size:11px; color:#6b7280; margin-bottom:12px;">{{ $this->shareSnapshotName }}</div>
+                @endif
+                @if($this->shareUrl)
+                    <div style="display:flex; gap:6px; align-items:center; margin-bottom:12px;">
+                        <input type="text" readonly value="{{ $this->shareUrl }}"
+                            style="flex:1; font-size:11px; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; background:#f9fafb; color:#374151;"
+                            onclick="this.select()">
+                        <button onclick="(function(btn, text){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000)}).catch(()=>{}); } else { var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000); } })(this, '{{ $this->shareUrl }}')"
+                            style="font-size:11px; padding:6px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+                            Copia
+                        </button>
+                    </div>
+                    <div style="text-align:center; margin-bottom:12px;">
+                        <a href="{{ $this->shareUrl }}" target="_blank"
+                            style="font-size:11px; color:#6d28d9; text-decoration:underline;">
+                            Obrir en una nova pestanya →
+                        </a>
+                    </div>
+                    <p style="font-size:11px; color:#9ca3af;">Qualsevol persona amb aquest enllaç pot veure la pinya sense necessitat de compte.</p>
+                @endif
+                <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+                    <button @click="showShare = false"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer;">
+                        Tanca
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal Projector --}}
+        <div x-show="showProjector" x-cloak
+            @keydown.escape.window="showProjector = false"
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:#111827; border-radius:12px; padding:20px; width:400px; box-shadow:0 10px 40px rgba(0,0,0,0.5); border:1px solid #374151;">
+                <div style="font-size:14px; font-weight:600; color:#f9fafb; margin-bottom:4px;">📡 URL del Projector</div>
+                <div style="font-size:11px; color:#6b7280; margin-bottom:14px;">
+                    URL permanent de la colla. Apunta la TV o Raspberry Pi aquí. Mostra sempre la pinya que estigui projectada.
+                </div>
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:12px;">
+                    <input type="text" readonly value="{{ $this->getProjectorUrl() }}"
+                        style="flex:1; font-size:10px; padding:6px 8px; border:1px solid #374151; border-radius:6px; background:#1f2937; color:#d1d5db;"
+                        onclick="this.select()">
+                    <button onclick="(function(btn, text){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000)}).catch(()=>{}); } else { var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000); } })(this, '{{ $this->getProjectorUrl() }}')"
+                        style="font-size:11px; padding:6px 10px; border-radius:6px; background:#1d4ed8; border:none; color:white; cursor:pointer; white-space:nowrap; flex-shrink:0;">
+                        Copia
+                    </button>
+                </div>
+                <div style="text-align:center; margin-bottom:14px;">
+                    <a href="{{ $this->getProjectorUrl() }}" target="_blank"
+                        style="font-size:11px; color:#60a5fa; text-decoration:underline;">
+                        Obrir pantalla del projector →
+                    </a>
+                </div>
+                @php $projectedId = auth()->user()->colla->projected_snapshot_id; @endphp
+                @if($projectedId)
+                    <div style="background:#064e3b; border:1px solid #059669; border-radius:8px; padding:8px 12px; font-size:12px; color:#d1fae5; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <span>📡 Projectant ara</span>
+                        <button wire:click="unproject" @click="showProjector = false"
+                            style="font-size:10px; padding:3px 8px; border-radius:4px; background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; cursor:pointer; white-space:nowrap;">
+                            Atura
+                        </button>
+                    </div>
+                @else
+                    <div style="background:#1f2937; border:1px solid #374151; border-radius:8px; padding:8px 12px; font-size:12px; color:#6b7280; margin-bottom:12px;">
+                        Cap pinya projectada. Usa el botó 📡 a cada pinya per projectar-la.
+                    </div>
+                @endif
+                <div style="display:flex; justify-content:flex-end;">
+                    <button @click="showProjector = false"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#374151; border:1px solid #4b5563; color:#d1d5db; cursor:pointer;">
+                        Tanca
+                    </button>
                 </div>
             </div>
         </div>
@@ -383,6 +472,16 @@
                                         ⭐
                                     </button>
                                 @endif
+                                <button wire:click="projectSnapshot({{ $snap->id }})"
+                                    title="{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? 'Projectant ara' : 'Projectar aquesta pinya' }}"
+                                    style="font-size:10px; padding:3px 6px; border-radius:4px; background:{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#064e3b' : '#f3f4f6' }}; border:1px solid {{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#059669' : '#d1d5db' }}; color:{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#d1fae5' : '#374151' }}; cursor:pointer;">
+                                    📡
+                                </button>
+                                <button @click="$wire.generateShareUrl({{ $snap->id }}); showShare = true"
+                                    title="Compartir / URL pública"
+                                    style="font-size:10px; padding:3px 6px; border-radius:4px; background:#f5f3ff; border:1px solid #c4b5fd; color:#6d28d9; cursor:pointer;">
+                                    📤
+                                </button>
                                 <button wire:click="deleteSnapshot({{ $snap->id }})"
                                     wire:confirm="Eliminar '{{ addslashes($snap->name) }}'?"
                                     style="font-size:10px; padding:3px 6px; border-radius:4px; background:#fef2f2; border:1px solid #fecaca; color:#dc2626; cursor:pointer;">

@@ -6,7 +6,9 @@ namespace App\Models;
 
 use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Colla extends Model implements HasAvatar
 {
@@ -26,11 +28,34 @@ class Colla extends Model implements HasAvatar
         'gdpr_text',
         'gdpr_version',
         'gdpr_email',
+        'display_token',
+        'projected_snapshot_id',
     ];
 
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function projectedSnapshot(): BelongsTo
+    {
+        return $this->belongsTo(BoardSnapshot::class, 'projected_snapshot_id');
+    }
+
+    public function ensureDisplayToken(): string
+    {
+        if (!$this->display_token) {
+            $this->update(['display_token' => Str::uuid()]);
+        }
+        return $this->display_token;
+    }
+
+    public function getDisplayUrl(): string
+    {
+        return route('display.projector', [
+            'shortname' => $this->shortname,
+            'token'     => $this->ensureDisplayToken(),
+        ]);
     }
 
     public function castellers(): HasMany

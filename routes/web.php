@@ -1,11 +1,19 @@
 <?php
 
+use App\Http\Controllers\DisplayPinyaController;
+use App\Http\Controllers\ProjectorDisplayController;
 use App\Models\Noticia;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Projector permanent per colla (token de la colla, URL per TV/Raspberry)
+Route::get('/display/{shortname}/{token}', ProjectorDisplayController::class)->name('display.projector');
+
+// Compartir un snapshot específic (token del snapshot)
+Route::get('/share/{shortname}/{token}', DisplayPinyaController::class)->name('display.pinya');
 
 Route::get('/noticies', function () {
     $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();
