@@ -30,32 +30,44 @@
         }
     </style>
 
+    @php
+        $selectedEventName = null;
+        if ($this->selectedEventId) {
+            $ev = \App\Models\Event::find($this->selectedEventId);
+            $selectedEventName = $ev ? $ev->start_date?->format('d/m') . ' · ' . Str::limit($ev->name, 22) : null;
+        }
+        $currentTemplateName = $this->getCastleTypes()->firstWhere('key', $this->castleType)?->name ?? $this->castleType;
+        $collaShortname = auth()->user()?->colla?->shortname ?? '';
+    @endphp
+
     <div id="board-wrapper"
-         x-data="{ showSave: false, saveName: '', showCantar: false }"
+         x-data="{ showSave: false, saveName: '', showCantar: false, showEventPicker: false, eventSearch: '' }"
          @board-apply.window="boardEditor.applyAssignments($event.detail.assignments)"
          @board-type-changed.window="boardEditor.loadCastleType($event.detail.type)">
 
         {{-- Toolbar --}}
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
 
-            {{-- Selector d'event --}}
-            <select wire:model.live="selectedEventId"
-                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; flex:1; min-width:0;">
-                <option value="">— Sense event —</option>
-                @foreach($this->getUpcomingEvents() as $event)
-                    <option value="{{ $event->id }}">
-                        {{ $event->start_date?->format('d/m') }} · {{ Str::limit($event->name, 28) }}
-                    </option>
-                @endforeach
-            </select>
+            {{-- Botó selector d'event (compacte) --}}
+            <button @click="showEventPicker = true; eventSearch = ''"
+                title="{{ $selectedEventName ?? 'Tria un event per vincular la pissarra' }}"
+                style="font-size:11px; padding:4px 10px; border-radius:6px; border:1px solid #d1d5db; background:white; color:{{ $this->selectedEventId ? '#1d4ed8' : '#6b7280' }}; cursor:pointer; white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;flex-shrink:0"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Z" clip-rule="evenodd"/></svg>
+                <span>{{ $selectedEventName ?? 'Sense event' }}</span>
+            </button>
 
-            {{-- Selector tipus de castell --}}
-            <select wire:model.live="castleType"
-                style="font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; width:110px;">
-                @foreach($this->getCastleTypes() as $template)
-                    <option value="{{ $template->key }}">{{ $template->name }}</option>
-                @endforeach
-            </select>
+            {{-- Selector tipus de castell (compacte) + botó nova plantilla --}}
+            <div style="display:flex; align-items:center; gap:4px;">
+                <select wire:model.live="castleType"
+                    style="font-size:11px; padding:3px 6px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; max-width:100px;">
+                    @foreach($this->getCastleTypes() as $template)
+                        <option value="{{ $template->key }}">{{ $template->name }}</option>
+                    @endforeach
+                </select>
+                <a href="/admin/{{ $collaShortname }}/templates/create"
+                    title="Nova plantilla de castell"
+                    style="font-size:14px; font-weight:700; padding:2px 7px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; color:#374151; cursor:pointer; text-decoration:none; line-height:1.4;">+</a>
+            </div>
 
             <span id="board-counter" style="font-size:11px; color:#6b7280; white-space:nowrap;">0/0</span>
 
@@ -102,6 +114,62 @@
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; cursor:pointer; white-space:nowrap;">
                 ⛶ Pantalla completa
             </button>
+        </div>
+
+        {{-- Modal selecció d'event --}}
+        <div x-show="showEventPicker" x-cloak
+            @keydown.escape.window="showEventPicker = false"
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; padding:16px;">
+            <div style="background:white; border-radius:12px; width:420px; max-height:70vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+                <div style="padding:14px 16px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                    <div style="font-size:14px; font-weight:700; color:#111827;">Selecciona un event</div>
+                    <button @click="showEventPicker = false"
+                        style="font-size:13px; padding:2px 8px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer; color:#6b7280;">✕</button>
+                </div>
+                <div style="padding:10px 12px; border-bottom:1px solid #f3f4f6; flex-shrink:0;">
+                    <input x-model="eventSearch" type="text" placeholder="Cerca event..."
+                        x-ref="eventSearchInput"
+                        x-init="$watch('showEventPicker', v => v && $nextTick(() => $refs.eventSearchInput.focus()))"
+                        style="width:100%; font-size:12px; padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; box-sizing:border-box;">
+                </div>
+                <div style="overflow-y:auto; flex:1; padding:8px;">
+                    {{-- Opció "sense event" --}}
+                    <div x-show="!eventSearch || 'sense event'.includes(eventSearch.toLowerCase())"
+                        @click="$wire.set('selectedEventId', null); showEventPicker = false"
+                        style="padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12px; color:#6b7280; display:flex; align-items:center; gap:8px; margin-bottom:2px;"
+                        @mouseenter="$el.style.background='#f9fafb'" @mouseleave="$el.style.background=''">
+                        <span style="opacity:0.5;">📅</span> Sense event
+                    </div>
+                    @php $events = $this->getUpcomingEvents(); $prevHasType = null; @endphp
+                    @foreach($events as $event)
+                        @php
+                            $hasType = ($event->type_count ?? 0) > 0;
+                            $label   = $event->start_date?->format('d/m/Y') . ' · ' . $event->name;
+                            $type    = match($event->type) { 2 => '🏟', 3 => '🎯', default => '🔁' };
+                        @endphp
+                        @if($prevHasType === true && !$hasType)
+                            <div style="font-size:10px; color:#9ca3af; padding:6px 10px 2px; text-transform:uppercase; letter-spacing:0.05em;">Altres events</div>
+                        @endif
+                        @php $prevHasType = $hasType; @endphp
+                        <div
+                            x-show="!eventSearch || '{{ strtolower($label) }}'.includes(eventSearch.toLowerCase())"
+                            @click="$wire.set('selectedEventId', {{ $event->id }}); showEventPicker = false"
+                            style="padding:7px 10px; border-radius:6px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:8px; margin-bottom:2px; border:1px solid {{ $hasType ? '#bfdbfe' : 'transparent' }}; background:{{ $hasType ? '#eff6ff' : '' }};"
+                            @mouseenter="$el.style.background='{{ $hasType ? '#dbeafe' : '#f9fafb' }}'" @mouseleave="$el.style.background='{{ $hasType ? '#eff6ff' : '' }}'">
+                            <span>{{ $type }}</span>
+                            <div style="flex:1; overflow:hidden;">
+                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:{{ $this->selectedEventId == $event->id ? '#1d4ed8' : '#111827' }}; font-weight:{{ $this->selectedEventId == $event->id ? '600' : '400' }};">
+                                    {{ $event->name }}
+                                </div>
+                                <div style="font-size:10px; color:#9ca3af;">{{ $event->start_date?->format('d/m/Y') }}</div>
+                            </div>
+                            @if($hasType)
+                                <span style="font-size:10px; background:#dbeafe; color:#1e40af; border-radius:10px; padding:1px 6px; white-space:nowrap;">{{ $event->type_count }} pinya/es</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
 
         {{-- Diàleg Desa --}}

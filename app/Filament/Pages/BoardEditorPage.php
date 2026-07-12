@@ -119,11 +119,14 @@ class BoardEditorPage extends Page
 
     public function getUpcomingEvents(): Collection
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId     = auth()->user()?->colla_id;
+        $currentType = $this->castleType;
 
         return Event::where('colla_id', $collaId)
+            ->withCount(['boardSnapshots as type_count' => fn ($q) => $q->where('castle_type', $currentType)])
+            ->orderByDesc('type_count')
             ->orderByDesc('start_date')
-            ->limit(20)
+            ->limit(30)
             ->get(['id', 'name', 'start_date', 'type']);
     }
 
