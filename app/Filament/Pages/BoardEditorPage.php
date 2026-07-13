@@ -147,7 +147,7 @@ class BoardEditorPage extends Page
             ->where('castle_type', $this->castleType)
             ->orderByDesc('is_primary')
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'is_primary', 'created_at', 'event_id']);
+            ->get(['id', 'name', 'is_primary', 'ronda_number', 'created_at', 'event_id']);
     }
 
     public function getAllCollaSnapshots(): Collection
@@ -277,6 +277,25 @@ class BoardEditorPage extends Page
             'token'     => $snapshot->public_token,
         ]);
         $this->shareSnapshotName = $snapshot->name;
+    }
+
+    public function renameSnapshot(int $id, string $name): void
+    {
+        $collaId = auth()->user()?->colla_id;
+        $name    = trim($name);
+
+        if ($name === '') {
+            return;
+        }
+
+        $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($id);
+        $snapshot->update(['name' => $name]);
+
+        if ($this->currentSnapshotId === $id) {
+            $this->currentSnapshotName = $name;
+        }
+
+        Notification::make()->title('Pinya reanomenada: ' . $name)->success()->send();
     }
 
     public function deleteSnapshot(int $snapshotId): void

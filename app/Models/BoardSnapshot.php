@@ -14,6 +14,7 @@ class BoardSnapshot extends Model
         'event_id',
         'castle_type',
         'is_primary',
+        'ronda_number',
         'public_token',
         'name',
         'assignments',
@@ -22,8 +23,9 @@ class BoardSnapshot extends Model
     protected function casts(): array
     {
         return [
-            'assignments' => 'array',
-            'is_primary'  => 'boolean',
+            'assignments'  => 'array',
+            'is_primary'   => 'boolean',
+            'ronda_number' => 'integer',
         ];
     }
 
