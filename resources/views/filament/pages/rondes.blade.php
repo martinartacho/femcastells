@@ -6,6 +6,42 @@
         $collaShortname = auth()->user()?->colla?->shortname ?? '';
     @endphp
 
+    {{-- Modal URL Publica Rondes --}}
+    @if($this->rondesUrl)
+    <div x-data="{ show: true }"
+         x-show="show" x-cloak
+         @keydown.escape.window="show = false"
+         style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:#111827; border-radius:14px; padding:24px; width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.5); border:1px solid #1d4ed8;">
+            <div style="font-size:15px; font-weight:700; color:#f1f5f9; margin-bottom:6px;">🔗 Rondes publicades</div>
+            <div style="font-size:12px; color:#64748b; margin-bottom:16px;">
+                Comparteix aquest enllaç amb els castellers. Podran veure totes les rondes des del mòbil.
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:14px;">
+                <input type="text" readonly value="{{ $this->rondesUrl }}"
+                    style="flex:1; font-size:11px; padding:7px 10px; border:1px solid #334155; border-radius:8px; background:#1e293b; color:#cbd5e1;"
+                    onclick="this.select()">
+                <button onclick="(function(btn, text){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000)}).catch(()=>{}); } })(this, '{{ $this->rondesUrl }}')"
+                    style="font-size:11px; padding:7px 12px; border-radius:8px; background:#1d4ed8; border:none; color:white; cursor:pointer; white-space:nowrap; flex-shrink:0; font-weight:600;">
+                    Copia
+                </button>
+            </div>
+            <div style="text-align:center; margin-bottom:16px;">
+                <a href="{{ $this->rondesUrl }}" target="_blank"
+                    style="font-size:12px; color:#60a5fa; text-decoration:underline;">
+                    Obrir pàgina de rondes →
+                </a>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+                <button @click="show = false"
+                    style="font-size:12px; padding:6px 16px; border-radius:8px; background:#1e293b; border:1px solid #334155; color:#94a3b8; cursor:pointer;">
+                    Tanca
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Capçalera: selector d'event --}}
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
         <div style="font-size:13px; font-weight:600; color:#374151;">
@@ -24,6 +60,12 @@
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; text-decoration:none; white-space:nowrap;">
                 🎨 Pissarra d'aquest event
             </a>
+            @if($rondes->isNotEmpty())
+                <button wire:click="publishRondes"
+                    style="font-size:11px; padding:4px 12px; border-radius:6px; background:{{ $event->public_token ? '#064e3b' : '#1d4ed8' }}; border:1px solid {{ $event->public_token ? '#059669' : '#3b82f6' }}; color:white; cursor:pointer; white-space:nowrap; font-weight:600;">
+                    🔗 {{ $event->public_token ? 'URL rondes' : 'Publica rondes' }}
+                </button>
+            @endif
         @endif
     </div>
 

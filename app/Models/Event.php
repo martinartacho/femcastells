@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\BoardSnapshot;
+use Illuminate\Support\Str;
 
 class Event extends Model
 {
@@ -25,6 +25,7 @@ class Event extends Model
         'companions',
         'photo',
         'comments',
+        'public_token',
         'recurring_group_id',
     ];
 
@@ -65,6 +66,15 @@ class Event extends Model
     public function boardSnapshots(): HasMany
     {
         return $this->hasMany(BoardSnapshot::class);
+    }
+
+    public function ensurePublicToken(): string
+    {
+        if (!$this->public_token) {
+            $this->update(['public_token' => (string) Str::uuid()]);
+        }
+
+        return $this->public_token;
     }
 
     public static function typeLabel(int $type): string

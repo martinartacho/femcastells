@@ -35,6 +35,8 @@ class RondesPage extends Page
     #[Url]
     public ?int $eventId = null;
 
+    public ?string $rondesUrl = null;
+
     public function getView(): string
     {
         return 'filament.pages.rondes';
@@ -181,6 +183,24 @@ class RondesPage extends Page
         auth()->user()->colla->update(['projected_snapshot_id' => $snapshot->id]);
 
         Notification::make()->title('📡 Projectant: ' . $snapshot->name)->success()->send();
+    }
+
+    public function publishRondes(): void
+    {
+        $event = $this->getEvent();
+
+        if (!$event) {
+            return;
+        }
+
+        $token = $event->ensurePublicToken();
+
+        $this->rondesUrl = route('display.rondes', [
+            auth()->user()->colla->shortname,
+            $token,
+        ]);
+
+        Notification::make()->title('URL de rondes generada')->success()->send();
     }
 
     public function getProjectorUrl(): string
