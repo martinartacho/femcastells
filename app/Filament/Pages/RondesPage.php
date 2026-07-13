@@ -185,6 +185,16 @@ class RondesPage extends Page
         Notification::make()->title('📡 Projectant: ' . $snapshot->name)->success()->send();
     }
 
+    public function toggleDisplayMode(): void
+    {
+        $colla = auth()->user()->colla;
+        $newMode = $colla->rondes_display === 'tabs' ? 'cards' : 'tabs';
+        $colla->update(['rondes_display' => $newMode]);
+
+        $label = $newMode === 'tabs' ? 'Mode pestanyes activat' : 'Mode targetes activat';
+        Notification::make()->title($label)->success()->send();
+    }
+
     public function publishRondes(): void
     {
         $event = $this->getEvent();

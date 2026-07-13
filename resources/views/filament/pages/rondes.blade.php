@@ -55,6 +55,12 @@
             style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; color:#374151; text-decoration:none; white-space:nowrap;">
             ← Events
         </a>
+        @php $displayMode = auth()->user()->colla->rondes_display ?? 'cards'; @endphp
+        <button wire:click="toggleDisplayMode"
+            title="Canvia entre mode targetes i mode pestanyes+canvas per a la pàgina pública"
+            style="font-size:11px; padding:4px 10px; border-radius:6px; background:{{ $displayMode === 'tabs' ? '#f5f3ff' : '#f3f4f6' }}; border:1px solid {{ $displayMode === 'tabs' ? '#c4b5fd' : '#d1d5db' }}; color:{{ $displayMode === 'tabs' ? '#6d28d9' : '#374151' }}; cursor:pointer; white-space:nowrap;">
+            {{ $displayMode === 'tabs' ? '🖼 Mode pestanyes' : '🃏 Mode targetes' }}
+        </button>
         @if($event)
             <a href="/admin/{{ $collaShortname }}/pissarra?selectedEventId={{ $this->eventId }}&autoLoad=1"
                 style="font-size:11px; padding:4px 10px; border-radius:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; text-decoration:none; white-space:nowrap;">
