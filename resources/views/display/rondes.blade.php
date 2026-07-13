@@ -6,17 +6,20 @@
     <title>Rondes · {{ $event->name }} — {{ $colla->name }}</title>
     @if($colla->rondes_display === 'tabs')
         @vite('resources/js/board-editor.js')
-        <script>
-            window.__boardPositions      = @json($boardPositions);
-            window.__autoLoadAssignments = @json($rondes->first()?->assignments ?? []);
-            window.__readOnly            = true;
-            window.__rondesData          = @json($rondes->map(fn($r) => [
+        @php
+            $rondesData = $rondes->map(fn($r) => [
                 'ronda_number' => $r->ronda_number,
                 'name'         => $r->name,
                 'castle_type'  => $r->castle_type,
                 'assignments'  => $r->assignments ?? [],
                 'public_token' => $r->public_token,
-            ])->values());
+            ])->values();
+        @endphp
+        <script>
+            window.__boardPositions      = @json($boardPositions);
+            window.__autoLoadAssignments = @json($rondes->first()?->assignments ?? []);
+            window.__readOnly            = true;
+            window.__rondesData          = @json($rondesData);
         </script>
     @endif
     <style>
