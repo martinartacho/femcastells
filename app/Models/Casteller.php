@@ -15,10 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Laravel\Sanctum\HasApiTokens;
 
 class Casteller extends Authenticatable implements FilamentUser, HasTenants, CanResetPasswordContract
 {
-    use Notifiable, CanResetPassword;
+    use HasApiTokens, Notifiable, CanResetPassword;
 
     protected $fillable = [
         'colla_id',
