@@ -53,7 +53,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function getDefaultTenant(Panel $panel): ?Model
     {
-        return $this->colla;
+        return $this->colla ?? ($this->hasRole('super-admin') ? Colla::first() : null);
     }
 
     public function canAccessTenant(Model $tenant): bool
