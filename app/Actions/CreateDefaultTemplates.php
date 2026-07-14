@@ -9,79 +9,40 @@ use Illuminate\Support\Facades\DB;
 
 class CreateDefaultTemplates
 {
-    private const PINYA_SOURCES = [
-        'cinc_de_6' => ['file' => 'cinc_de_6_amb_baix.json', 'name' => 'Cinc de 6'],
-        'set_de_x'  => ['file' => 'set_de_x_baixos.json',    'name' => 'Set de X'],
+    // Totes les plantilles per defecte llegides de resources/js/boards/
+    // Format: 'clau' => ['file' => 'fitxer.json', 'name' => 'Nom visible']
+    // Els fitxers han d'estar en format board-editor (cx, cy, w, h, angle).
+    private const TEMPLATES = [
+        '3d6'      => ['file' => '3d6.json',       'name' => '3 de 6'],
+        'cinc_de_6' => ['file' => 'cinc_de_6.json', 'name' => 'Cinc de 6'],
+        'set_de_x'  => ['file' => 'set_de_x.json',  'name' => 'Set de X'],
     ];
 
     public function execute(Colla $colla): void
     {
-        $this->upsert3d6($colla);
-        $this->upsertFromPinyaData($colla, 'cinc_de_6');
-        $this->upsertFromPinyaData($colla, 'set_de_x');
+        foreach (self::TEMPLATES as $key => $meta) {
+            $this->upsertTemplate($colla, $key, $meta);
+        }
     }
 
-    private function upsert3d6(Colla $colla): void
+    private function upsertTemplate(Colla $colla, string $key, array $meta): void
     {
-        $jsonPath = base_path('resources/js/boards/3d6.json');
-        if (! file_exists($jsonPath)) {
+        $path = base_path('resources/js/boards/' . $meta['file']);
+        if (! file_exists($path)) {
             return;
         }
 
-        $positions = json_decode(file_get_contents($jsonPath), true);
-        $now       = now()->toDateTimeString();
-
-        // INSERT IGNORE INTO — atòmic, no llença excepció si ja existeix
-        DB::table('castle_templates')->insertOrIgnore([
-            'colla_id'   => $colla->id,
-            'key'        => '3d6',
-            'name'       => '3 de 6',
-            'positions'  => json_encode($positions),
-            'ready'      => true,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-    }
-
-    private function upsertFromPinyaData(Colla $colla, string $key): void
-    {
-        $source   = self::PINYA_SOURCES[$key];
-        $dataPath = base_path('temp/projecte_pinyes_castelleres/projecte_pinyes/data/' . $source['file']);
-
-        if (! file_exists($dataPath)) {
-            return;
-        }
-
-        $raw       = json_decode(file_get_contents($dataPath), true);
-        $positions = $this->transform($raw);
+        $positions = json_decode(file_get_contents($path), true);
         $now       = now()->toDateTimeString();
 
         DB::table('castle_templates')->insertOrIgnore([
             'colla_id'   => $colla->id,
             'key'        => $key,
-            'name'       => $source['name'],
+            'name'       => $meta['name'],
             'positions'  => json_encode($positions),
             'ready'      => true,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-    }
-
-    private function transform(array $raw): array
-    {
-        $positions = [];
-        foreach ($raw as $i => $item) {
-            $positions[] = [
-                'id'    => 'pos_' . $i,
-                'cx'    => round((float) $item['fx'], 4),
-                'cy'    => round((float) $item['fy'], 4),
-                'w'     => round((float) $item['w'], 4),
-                'h'     => round((float) $item['h'], 4),
-                'angle' => round((float) $item['rot'], 4),
-                'grup'  => $item['baix'],
-                'nom'   => $item['baix'],
-            ];
-        }
-        return $positions;
     }
 }
