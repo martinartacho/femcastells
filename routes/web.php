@@ -10,6 +10,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/login', fn () => response()->json(['message' => 'Unauthenticated.'], 401))->name('login');
+
 // Projector permanent per colla (token de la colla, URL per TV/Raspberry)
 Route::get('/display/{shortname}/{token}', ProjectorDisplayController::class)->name('display.projector');
 
