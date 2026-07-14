@@ -21,7 +21,7 @@
                 <input type="text" readonly value="{{ $this->rondesUrl }}"
                     style="flex:1; font-size:11px; padding:7px 10px; border:1px solid #334155; border-radius:8px; background:#1e293b; color:#cbd5e1;"
                     onclick="this.select()">
-                <button onclick="(function(btn, text){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000)}).catch(()=>{}); } })(this, '{{ $this->rondesUrl }}')"
+                <button onclick="(function(btn, text){ if(navigator.clipboard){ navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000)}).catch(()=>{}); } else { var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); btn.textContent='✓'; setTimeout(()=>btn.textContent='Copia',2000); } })(this, '{{ $this->rondesUrl }}')"
                     style="font-size:11px; padding:7px 12px; border-radius:8px; background:#1d4ed8; border:none; color:white; cursor:pointer; white-space:nowrap; flex-shrink:0; font-weight:600;">
                     Copia
                 </button>
