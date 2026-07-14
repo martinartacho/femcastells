@@ -41,7 +41,7 @@
     @endphp
 
     <div id="board-wrapper"
-         x-data="{ showSave: false, saveName: '', showCantar: false, showEventPicker: false, eventSearch: '', showImport: false, showShare: false, showProjector: false }"
+         x-data="{ showSave: false, saveName: '', showCantar: false, showEventPicker: false, eventSearch: '', showImport: false, showShare: false, showProjector: false, showRename: false, renameId: null, renameName: '' }"
          @board-apply.window="boardEditor.applyAssignments($event.detail.assignments)"
          @board-type-changed.window="boardEditor.loadCastleType($event.detail.type)">
 
@@ -100,13 +100,13 @@
                     style="font-size:11px; padding:4px 10px; border-radius:6px; background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; cursor:pointer; font-weight:600; white-space:nowrap;">
                     💾 Desa
                 </button>
-                <button @click="saveName = ''; showSave = true"
+                <button @click="saveName = '{{ addslashes($currentTemplateName) }}'; showSave = true"
                     style="font-size:11px; padding:4px 10px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; color:#374151; cursor:pointer; white-space:nowrap;">
                     💾 Desa com...
                 </button>
             @else
                 {{-- Sense snapshot: Desa obre el diàleg de nom --}}
-                <button @click="saveName = ''; showSave = true"
+                <button @click="saveName = '{{ addslashes($currentTemplateName) }}'; showSave = true"
                     style="font-size:11px; padding:4px 10px; border-radius:6px; background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; cursor:pointer; font-weight:600; white-space:nowrap;">
                     💾 Desa
                 </button>
@@ -352,6 +352,30 @@
             </div>
         </div>
 
+        {{-- Modal Reanomena snapshot --}}
+        <div x-show="showRename" x-cloak
+            @keydown.escape.window="showRename = false"
+            style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">
+            <div style="background:white; border-radius:12px; padding:20px; width:320px; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                <div style="font-size:14px; font-weight:600; color:#111827; margin-bottom:12px;">✏ Reanomena la pinya</div>
+                <input x-model="renameName" type="text" maxlength="100"
+                    @keydown.enter="if(renameName.trim()) { $wire.renameSnapshot(renameId, renameName.trim()); showRename = false; }"
+                    style="width:100%; font-size:12px; padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; margin-bottom:12px; box-sizing:border-box;"
+                    x-ref="renameInput"
+                    x-init="$watch('showRename', v => v && $nextTick(() => { $refs.renameInput.focus(); $refs.renameInput.select(); }))">
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button @click="showRename = false"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#f3f4f6; border:1px solid #d1d5db; cursor:pointer;">
+                        Cancel·la
+                    </button>
+                    <button @click="if(renameName.trim()) { $wire.renameSnapshot(renameId, renameName.trim()); showRename = false; }"
+                        style="font-size:12px; padding:5px 14px; border-radius:6px; background:#059669; border:none; color:white; cursor:pointer; font-weight:600;">
+                        Desa
+                    </button>
+                </div>
+            </div>
+        </div>
+
         {{-- Modal Canta la pinya --}}
         <div x-show="showCantar" x-cloak
             style="position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:16px;">
@@ -456,6 +480,9 @@
                         <div style="border:1px solid {{ $snap->is_primary ? '#fbbf24' : '#e5e7eb' }}; border-radius:6px; padding:6px; margin-bottom:6px; background:{{ $snap->is_primary ? '#fffbeb' : 'white' }};">
                             <div style="font-size:11px; font-weight:600; color:#111827; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $snap->name }}">
                                 @if($snap->is_primary) ⭐ @endif{{ $snap->name }}
+                                @if($snap->ronda_number)
+                                    <span style="font-size:9px; font-weight:700; background:#1d4ed8; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; vertical-align:middle;">R{{ $snap->ronda_number }}</span>
+                                @endif
                             </div>
                             <div style="font-size:10px; color:#9ca3af; margin-bottom:6px;">
                                 {{ $snap->created_at->format('d/m H:i') }}
@@ -476,6 +503,11 @@
                                     title="{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? 'Projectant ara' : 'Projectar aquesta pinya' }}"
                                     style="font-size:10px; padding:3px 6px; border-radius:4px; background:{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#064e3b' : '#f3f4f6' }}; border:1px solid {{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#059669' : '#d1d5db' }}; color:{{ auth()->user()->colla->projected_snapshot_id === $snap->id ? '#d1fae5' : '#374151' }}; cursor:pointer;">
                                     📡
+                                </button>
+                                <button @click="renameId = {{ $snap->id }}; renameName = '{{ addslashes($snap->name) }}'; showRename = true"
+                                    title="Reanomena"
+                                    style="font-size:10px; padding:3px 6px; border-radius:4px; background:#f3f4f6; border:1px solid #d1d5db; color:#374151; cursor:pointer;">
+                                    ✏
                                 </button>
                                 <button @click="$wire.generateShareUrl({{ $snap->id }}); showShare = true"
                                     title="Compartir / URL pública"

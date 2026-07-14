@@ -159,11 +159,24 @@ class EventResource extends Resource
                         '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id
                         . (($record->board_snapshots_count ?? 0) > 0 ? '&autoLoad=1' : '')
                     ),
+                Action::make('rondes')
+                    ->label('')
+                    ->icon(Heroicon::OutlinedQueueList)
+                    ->color(fn (Event $record) => ($record->rondes_count ?? 0) > 0 ? 'success' : 'gray')
+                    ->tooltip(fn (Event $record) => ($record->rondes_count ?? 0) > 0
+                        ? 'Rondes: ' . $record->rondes_count . ' assignades'
+                        : 'Gestionar rondes (sense rondes)')
+                    ->url(fn (Event $record): string =>
+                        '/admin/' . auth()->user()->colla->shortname . '/rondes?eventId=' . $record->id
+                    ),
             ])
             ->bulkActions([
                 \Filament\Actions\DeleteBulkAction::make(),
             ])
-            ->modifyQueryUsing(fn ($query) => $query->withCount('boardSnapshots'))
+            ->modifyQueryUsing(fn ($query) => $query
+                ->withCount('boardSnapshots')
+                ->withCount(['boardSnapshots as rondes_count' => fn ($q) => $q->whereNotNull('ronda_number')])
+            )
             ->defaultSort('start_date', 'desc')
             ->persistFiltersInSession();
     }

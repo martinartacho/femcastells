@@ -45,12 +45,19 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
 - **Esdeveniments** — calendari, gestió d'assistència amb respostes personalitzades, export CSV
 - **Pissarra** — editor visual de pinyes (Konva.js):
   - Assignació de castellers a posicions (clic, drag & drop)
-  - Múltiples versions desades per event (`board_snapshots`)
+  - Múltiples versions desades per event (`board_snapshots`), reanomenables
+  - Nom per defecte al desar = tipologia del castell actual
   - Pissarra oficial (⭐) per event
   - Undo (Ctrl+Z), indicador de canvis no desats
   - **Projector** — URL permanent per colla per a TV/Raspberry Pi en mode quiosc
   - **Compartir** — URL pública per a un snapshot concret
   - **Canta la pinya** — vista d'impressió agrupada per posició
+  - **Rondes** — gestió de l'ordre d'actuació per event:
+    - Assignació de pinyes a rondes (Ronda 1, 2, 3…) amb reordenació ▲▼
+    - Publicació amb URL pública per als castellers (sense login)
+    - Mode pestanyes: vista interactiva amb canvas Konva.js integrat
+    - Mode targetes: llista clicable cap a cada pinya individual
+    - Configurable per colla (pestanyes / targetes)
 - **Plantilles de castell** — generació i gestió de mapes de posicions (Cinc de 6, Set de X, 3d6…)
 - **Noticies** — tauler d'anuncis intern
 - **Configuració** — gestió de la colla, GDPR, permisos per rol
@@ -58,10 +65,12 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
 ### Portal membre (`/member/{shortname}/`)
 - **Calendari** — events visibles amb confirmació d'assistència i respostes a preguntes
 - **La meva pinya** — mostra la pinya projectada per la tècnica i destaca la posició del casteller
+- **Rondes** — vista de les rondes de l'event més proper, en mode pestanyes o targetes
 
 ### Pantalles públiques (sense login)
 - `/display/{shortname}/{token}` — projector en temps real (auto-refresh 30s)
 - `/share/{shortname}/{token}` — snapshot específic compartible
+- `/display/{shortname}/rondes/{token}` — rondes publicades d'un event
 
 ---
 

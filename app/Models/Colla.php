@@ -30,6 +30,7 @@ class Colla extends Model implements HasAvatar
         'gdpr_email',
         'display_token',
         'projected_snapshot_id',
+        'rondes_display',
     ];
 
     public function users(): HasMany

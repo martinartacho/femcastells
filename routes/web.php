@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DisplayPinyaController;
+use App\Http\Controllers\DisplayRondesController;
 use App\Http\Controllers\ProjectorDisplayController;
 use App\Models\Noticia;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,9 @@ Route::get('/display/{shortname}/{token}', ProjectorDisplayController::class)->n
 
 // Compartir un snapshot específic (token del snapshot)
 Route::get('/share/{shortname}/{token}', DisplayPinyaController::class)->name('display.pinya');
+
+// Pàgina pública de rondes d'un event
+Route::get('/display/{shortname}/rondes/{token}', DisplayRondesController::class)->name('display.rondes');
 
 Route::get('/noticies', function () {
     $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();
