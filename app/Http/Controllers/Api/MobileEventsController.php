@@ -97,6 +97,37 @@ class MobileEventsController extends Controller
         return response()->json($result);
     }
 
+    public function show(Request $request, int $id): JsonResponse
+    {
+        /** @var Casteller $casteller */
+        $casteller = $request->user();
+
+        $event = Event::where('id', $id)
+            ->where('colla_id', $casteller->colla_id)
+            ->where('visibility', true)
+            ->firstOrFail();
+
+        $att    = Attendance::where('casteller_id', $casteller->id)
+            ->where('event_id', $event->id)
+            ->first();
+        $status = $att ? (self::STATUS_TO_STRING[$att->status] ?? 'undefined') : 'undefined';
+
+        return response()->json([
+            'id'          => $event->id,
+            'title'       => $event->name,
+            'type'        => self::TYPE_MAP[$event->type] ?? 'ACTIVITAT',
+            'status'      => $status,
+            'startDate'   => $event->start_date?->toIso8601String(),
+            'endDate'     => $event->start_date?->addMinutes((int) ($event->duration ?? 60))->toIso8601String(),
+            'dateHour'    => $event->start_date?->format('H:i'),
+            'address'     => $event->address,
+            'description' => $event->comments,
+            'companions'  => $att?->companions ?? 0,
+            'comment'     => null,
+            'tags'        => [],
+        ]);
+    }
+
     public function updateAttendance(Request $request, int $id): JsonResponse
     {
         /** @var Casteller $casteller */
