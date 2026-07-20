@@ -18,6 +18,7 @@ return new class extends Migration
             $table->json('labels')->nullable();
             $table->string('version', 20)->nullable();
             $table->timestamp('published_at')->nullable();
+            $table->boolean('is_public')->default(true);
             $table->timestamps();
         });
     }

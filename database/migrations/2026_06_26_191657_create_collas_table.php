@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('colles', function (Blueprint $table) {
@@ -22,13 +19,18 @@ return new class extends Migration
             $table->string('logo')->nullable();
             $table->string('color', 7)->nullable();
             $table->unsignedInteger('max_members')->nullable();
+            $table->unsignedTinyInteger('assaigs_weeks_visible')->default(2);
+            $table->text('gdpr_text')->nullable();
+            $table->string('gdpr_version', 20)->default('1.0');
+            $table->string('gdpr_email', 255)->nullable();
+            $table->uuid('display_token')->nullable()->unique();
+            // FK sense constraint: board_snapshots es crea en una migració posterior
+            $table->unsignedBigInteger('projected_snapshot_id')->nullable()->index();
+            $table->string('rondes_display')->default('cards');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('colles');

@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->boolean('visibility')->default(true);
             $table->boolean('companions')->default(false);
+            $table->uuid('recurring_group_id')->nullable()->index();
+            $table->string('public_token')->nullable()->unique();
             $table->string('photo')->nullable();
             $table->text('comments')->nullable();
             $table->timestamps();

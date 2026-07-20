@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -18,6 +15,12 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+            // FKs sense constraint: colles i profiles es creen en migracions posteriors
+            $table->unsignedBigInteger('colla_id')->nullable()->index();
+            $table->unsignedBigInteger('profile_id')->nullable()->index();
+            $table->timestamp('noticies_last_seen_at')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->unsignedInteger('login_count')->default(0);
             $table->timestamps();
         });
 
@@ -37,9 +40,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
