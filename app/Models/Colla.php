@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Filament\Models\Contracts\HasAvatar;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Event;
 use Illuminate\Support\Str;
 
 class Colla extends Model implements HasAvatar
 {
+    use HasFactory;
+
     protected $table = 'colles';
 
     protected $fillable = [
@@ -62,6 +66,11 @@ class Colla extends Model implements HasAvatar
     public function castellers(): HasMany
     {
         return $this->hasMany(Casteller::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
     }
 
     public function getFilamentAvatarUrl(): ?string
