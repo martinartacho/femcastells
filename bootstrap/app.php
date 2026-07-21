@@ -27,13 +27,31 @@ return Application::configure(basePath: dirname(__DIR__))
             \Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e,
             Request $request
         ) {
-            // Només interceptem /admin/{shortname} i /admin/{shortname}/ (no sub-pàgines)
-            if (!preg_match('#^admin/[^/]+(/?$)#', $request->path())) return null;
-            if (!auth()->check()) return null;
+            \Illuminate\Support\Facades\Log::debug('[Admin404] handler invoked', [
+                'path'           => $request->path(),
+                'auth_check'     => auth()->check(),
+                'user_id'        => auth()->id(),
+            ]);
+
+            if (!preg_match('#^admin/[^/]+(/?$)#', $request->path())) {
+                \Illuminate\Support\Facades\Log::debug('[Admin404] path no coincideix — ignorat');
+                return null;
+            }
+            if (!auth()->check()) {
+                \Illuminate\Support\Facades\Log::debug('[Admin404] usuari no autenticat — ignorat');
+                return null;
+            }
 
             $user  = auth()->user();
             $colla = $user->colla_id ? \App\Models\Colla::find($user->colla_id) : null;
             $colla ??= $user->hasRole('super-admin') ? \App\Models\Colla::first() : null;
+
+            \Illuminate\Support\Facades\Log::debug('[Admin404] resolució', [
+                'user_id'       => $user->id,
+                'user_colla_id' => $user->colla_id,
+                'colla_trobada' => $colla?->shortname ?? 'NULL',
+                'redirect_to'   => $colla ? "/admin/{$colla->shortname}" : 'cap',
+            ]);
 
             return $colla ? redirect("/admin/{$colla->shortname}") : null;
         });

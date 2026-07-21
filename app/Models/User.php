@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'colla_id'])]
@@ -53,9 +54,17 @@ class User extends Authenticatable implements FilamentUser, HasTenants
 
     public function getDefaultTenant(Panel $panel): ?Model
     {
-        // $this->colla pot ser null si colla_id apunta a una colla eliminada
         $colla = $this->colla_id ? Colla::find($this->colla_id) : null;
-        return $colla ?? ($this->hasRole('super-admin') ? Colla::first() : null);
+        $colla ??= $this->hasRole('super-admin') ? Colla::first() : null;
+
+        Log::debug('[User::getDefaultTenant]', [
+            'user_id'       => $this->id,
+            'user_colla_id' => $this->colla_id,
+            'colla_trobada' => $colla?->shortname ?? 'NULL',
+            'is_super_admin' => $this->hasRole('super-admin'),
+        ]);
+
+        return $colla;
     }
 
     public function canAccessTenant(Model $tenant): bool
