@@ -15,18 +15,19 @@ class MobileEventsController extends Controller
 {
     private const TYPE_MAP = [1 => 'ASSAIG', 2 => 'ACTUACIO', 3 => 'ACTIVITAT'];
 
+    // DB usa enum 'ok'/'nok'/'unknown'; l'app Flutter usa 'accepted'/'declined'/'undefined'
     private const STATUS_TO_STRING = [
-        1  => 'accepted',
-        -1 => 'declined',
-        0  => 'undefined',
+        'ok'      => 'accepted',
+        'nok'     => 'declined',
+        'unknown' => 'undefined',
     ];
 
     private const STATUS_FROM_STRING = [
-        'accepted'  => 1,
-        'declined'  => -1,
-        'undefined' => 0,
-        'warning'   => 0,
-        'unknown'   => 0,
+        'accepted'  => 'ok',
+        'declined'  => 'nok',
+        'undefined' => 'unknown',
+        'warning'   => 'unknown',
+        'unknown'   => 'unknown',
     ];
 
     public function index(Request $request): JsonResponse
@@ -137,12 +138,11 @@ class MobileEventsController extends Controller
             ->where('colla_id', $casteller->colla_id)
             ->firstOrFail();
 
-        $statusString = $request->input('status', 'undefined');
-        $statusInt    = self::STATUS_FROM_STRING[$statusString] ?? 0;
+        $statusEnum = self::STATUS_FROM_STRING[$request->input('status', 'undefined')] ?? 'unknown';
 
         Attendance::updateOrCreate(
             ['casteller_id' => $casteller->id, 'event_id' => $event->id],
-            ['status' => $statusInt, 'companions' => (int) $request->input('companions', 0)]
+            ['status' => $statusEnum, 'companions' => (int) $request->input('companions', 0)]
         );
 
         return response()->json(['message' => 'Assistència actualitzada']);
