@@ -50,7 +50,7 @@ class Colla extends Model implements HasAvatar
     public function ensureDisplayToken(): string
     {
         if (!$this->display_token) {
-            $this->update(['display_token' => Str::uuid()]);
+            $this->update(['display_token' => (string) Str::uuid()]);
         }
         return $this->display_token;
     }
