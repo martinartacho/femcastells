@@ -37,8 +37,16 @@ class MobileEventsController extends Controller
         $casteller = $request->user();
         $colla     = $casteller->colla;
 
+        $weeksAhead = (int) ($colla->assaigs_weeks_visible ?? 2);
+        $assaigLimit = now()->startOfDay()->addWeeks($weeksAhead);
+
         $query = Event::where('colla_id', $colla->id)
             ->where('visibility', true)
+            ->where('start_date', '>=', now()->startOfDay())
+            ->where(function ($q) use ($assaigLimit) {
+                $q->where('type', '!=', 1)
+                  ->orWhere('start_date', '<=', $assaigLimit);
+            })
             ->orderBy('start_date');
 
         if ($request->filled('startDate')) {
@@ -73,18 +81,20 @@ class MobileEventsController extends Controller
                 $status = $att ? (self::STATUS_TO_STRING[$att->status] ?? 'undefined') : 'undefined';
 
                 return [
-                    'id'          => $event->id,
-                    'title'       => $event->name,
-                    'type'        => self::TYPE_MAP[$event->type] ?? 'ACTIVITAT',
-                    'status'      => $status,
-                    'startDate'   => $event->start_date?->toIso8601String(),
-                    'endDate'     => $event->start_date?->addMinutes((int) ($event->duration ?? 60))->toIso8601String(),
-                    'dateHour'    => $event->start_date?->format('H:i'),
-                    'address'     => $event->address,
-                    'description' => $event->comments,
-                    'companions'  => $att?->companions ?? 0,
-                    'comment'     => null,
-                    'tags'        => [],
+                    'id'              => $event->id,
+                    'title'           => $event->name,
+                    'type'            => self::TYPE_MAP[$event->type] ?? 'ACTIVITAT',
+                    'status'          => $status,
+                    'startDate'       => $event->start_date?->toIso8601String(),
+                    'endDate'         => $event->start_date?->addMinutes((int) ($event->duration ?? 60))->toIso8601String(),
+                    'closeDate'       => $event->close_date?->toIso8601String(),
+                    'dateHour'        => $event->start_date?->format('H:i'),
+                    'address'         => $event->address,
+                    'description'     => $event->comments,
+                    'allowCompanions' => (bool) $event->companions,
+                    'companions'      => $att?->companions ?? 0,
+                    'comment'         => null,
+                    'tags'            => [],
                 ];
             })
             ->filter(function (array $event) use ($showAnswered, $showUndefined): bool {
@@ -139,19 +149,21 @@ class MobileEventsController extends Controller
         });
 
         return response()->json([
-            'id'          => $event->id,
-            'title'       => $event->name,
-            'type'        => self::TYPE_MAP[$event->type] ?? 'ACTIVITAT',
-            'status'      => $status,
-            'startDate'   => $event->start_date?->toIso8601String(),
-            'endDate'     => $event->start_date?->addMinutes((int) ($event->duration ?? 60))->toIso8601String(),
-            'dateHour'    => $event->start_date?->format('H:i'),
-            'address'     => $event->address,
-            'description' => $event->comments,
-            'companions'  => $att?->companions ?? 0,
-            'comment'     => null,
-            'tags'        => [],
-            'questions'   => $questions,
+            'id'              => $event->id,
+            'title'           => $event->name,
+            'type'            => self::TYPE_MAP[$event->type] ?? 'ACTIVITAT',
+            'status'          => $status,
+            'startDate'       => $event->start_date?->toIso8601String(),
+            'endDate'         => $event->start_date?->addMinutes((int) ($event->duration ?? 60))->toIso8601String(),
+            'closeDate'       => $event->close_date?->toIso8601String(),
+            'dateHour'        => $event->start_date?->format('H:i'),
+            'address'         => $event->address,
+            'description'     => $event->comments,
+            'allowCompanions' => (bool) $event->companions,
+            'companions'      => $att?->companions ?? 0,
+            'comment'         => null,
+            'tags'            => [],
+            'questions'       => $questions,
         ]);
     }
 
