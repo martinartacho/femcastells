@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckGdprConsent
@@ -33,7 +34,17 @@ class CheckGdprConsent
         $needsConsent = $casteller->gdpr_accepted_at === null
             || $casteller->gdpr_version !== $colla->gdpr_version;
 
+        Log::debug('[CheckGdprConsent] evaluation', [
+            'path'               => $request->path(),
+            'casteller_id'       => $casteller->id,
+            'gdpr_accepted_at'   => $casteller->gdpr_accepted_at?->toDateTimeString() ?? 'NULL',
+            'casteller_version'  => $casteller->gdpr_version ?? 'NULL',
+            'colla_version'      => $colla->gdpr_version ?? 'NULL',
+            'needs_consent'      => $needsConsent,
+        ]);
+
         if ($needsConsent) {
+            Log::debug('[CheckGdprConsent] redirecting to GDPR consent', ['route' => $gdprRoute]);
             return redirect($gdprRoute);
         }
 

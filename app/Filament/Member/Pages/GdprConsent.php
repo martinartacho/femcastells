@@ -8,6 +8,7 @@ use App\Models\Casteller;
 use App\Models\Colla;
 use BackedEnum;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\Log;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Notifications\Notification;
@@ -100,17 +101,51 @@ class GdprConsent extends Page
     {
         $this->form->validate();
 
-        $casteller = auth('member')->user();
-        $colla     = $this->getColla();
+        $casteller   = auth('member')->user();
+        $filamentTenant = filament()->getTenant();
+        $colla       = $filamentTenant ?? $casteller?->colla;
+        $redirectUrl = $colla ? filament()->getUrl($colla) : null;
+
+        Log::debug('[GdprConsent::accept] start', [
+            'casteller_id'     => $casteller?->id,
+            'casteller_colla_id' => $casteller?->colla_id,
+            'filament_tenant'  => $filamentTenant?->shortname ?? 'NULL',
+            'resolved_colla'   => $colla?->shortname ?? 'NULL',
+            'redirect_url'     => $redirectUrl ?? 'NULL',
+            'request_path'     => request()->path(),
+        ]);
+
+        if (! $casteller) {
+            Log::error('[GdprConsent::accept] casteller null — cannot save GDPR consent');
+            return;
+        }
 
         $casteller->update([
             'gdpr_accepted_at' => now(),
             'gdpr_version'     => $colla?->gdpr_version ?? '1.0',
         ]);
 
+        Log::debug('[GdprConsent::accept] saved', [
+            'gdpr_accepted_at' => $casteller->fresh()->gdpr_accepted_at,
+            'gdpr_version'     => $casteller->fresh()->gdpr_version,
+            'colla_gdpr_version' => $colla?->gdpr_version ?? 'NULL',
+        ]);
+
         Notification::make()->title('Gràcies! Dades acceptades.')->success()->send();
 
-        $this->redirect(filament()->getUrl($colla));
+        if (! $redirectUrl) {
+            Log::error('[GdprConsent::accept] redirect URL null — colla not resolved', [
+                'casteller_id' => $casteller->id,
+            ]);
+            // Fallback: use the colla_id to load directly
+            $collaFallback = $casteller->colla_id ? Colla::find($casteller->colla_id) : null;
+            $redirectUrl   = $collaFallback
+                ? route('filament.member.pages.dashboard', ['tenant' => $collaFallback->shortname])
+                : route('filament.member.auth.login');
+            Log::debug('[GdprConsent::accept] fallback redirect', ['url' => $redirectUrl]);
+        }
+
+        $this->redirect($redirectUrl);
     }
 
     protected function getFormActions(): array
