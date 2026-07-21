@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Casteller;
 use App\Models\Event;
+use App\Models\EventAnswer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -106,12 +107,36 @@ class MobileEventsController extends Controller
         $event = Event::where('id', $id)
             ->where('colla_id', $casteller->colla_id)
             ->where('visibility', true)
+            ->with(['questions' => fn ($q) => $q->orderByPivot('order')])
             ->firstOrFail();
 
         $att    = Attendance::where('casteller_id', $casteller->id)
             ->where('event_id', $event->id)
             ->first();
         $status = $att ? (self::STATUS_TO_STRING[$att->status] ?? 'undefined') : 'undefined';
+
+        $answersMap = $att
+            ? EventAnswer::where('attendance_id', $att->id)
+                ->get()
+                ->keyBy('question_id')
+            : collect();
+
+        $questions = $event->questions->map(function ($q) use ($answersMap): array {
+            $raw     = $q->options ?? [];
+            $options = collect($raw)->map(
+                fn ($o) => is_array($o) ? ($o['value'] ?? '') : $o
+            )->values()->all();
+
+            return [
+                'id'       => $q->id,
+                'text'     => $q->text,
+                'type'     => $q->type,
+                'required' => (bool) $q->pivot->required,
+                'order'    => (int) $q->pivot->order,
+                'options'  => $options,
+                'answer'   => $answersMap->get($q->id)?->answer,
+            ];
+        });
 
         return response()->json([
             'id'          => $event->id,
@@ -126,7 +151,36 @@ class MobileEventsController extends Controller
             'companions'  => $att?->companions ?? 0,
             'comment'     => null,
             'tags'        => [],
+            'questions'   => $questions,
         ]);
+    }
+
+    public function saveAnswers(Request $request, int $id): JsonResponse
+    {
+        /** @var Casteller $casteller */
+        $casteller = $request->user();
+
+        $event = Event::where('id', $id)
+            ->where('colla_id', $casteller->colla_id)
+            ->firstOrFail();
+
+        $att = Attendance::firstOrCreate(
+            ['casteller_id' => $casteller->id, 'event_id' => $event->id],
+            ['status' => 'unknown', 'companions' => 0]
+        );
+
+        foreach ((array) $request->input('answers', []) as $item) {
+            $questionId = (int) ($item['question_id'] ?? 0);
+            $answer     = $item['answer'] ?? null;
+            if (! $questionId) continue;
+
+            EventAnswer::updateOrCreate(
+                ['attendance_id' => $att->id, 'question_id' => $questionId],
+                ['answer' => $answer]
+            );
+        }
+
+        return response()->json(['message' => 'Respostes guardades']);
     }
 
     public function updateAttendance(Request $request, int $id): JsonResponse
