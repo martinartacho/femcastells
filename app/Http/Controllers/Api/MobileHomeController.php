@@ -32,10 +32,11 @@ class MobileHomeController extends Controller
 
         $recent = (clone $base)
             ->limit(5)
-            ->get(['id', 'title', 'labels', 'published_at'])
+            ->get(['id', 'title', 'body', 'labels', 'published_at'])
             ->map(fn ($n) => [
                 'id'           => $n->id,
                 'title'        => $n->title,
+                'body'         => $n->body,
                 'labels'       => $n->labels ?? [],
                 'published_at' => $n->published_at,
                 'unread'       => $seenAt === null || $n->published_at > $seenAt,
