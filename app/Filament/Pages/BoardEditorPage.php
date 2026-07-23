@@ -150,6 +150,22 @@ class BoardEditorPage extends Page
             ->get(['id', 'name', 'is_primary', 'ronda_number', 'created_at', 'event_id']);
     }
 
+    public function getAllEventSnapshots(): Collection
+    {
+        if (!$this->selectedEventId) {
+            return collect();
+        }
+
+        $collaId = auth()->user()?->colla_id;
+
+        return BoardSnapshot::where('colla_id', $collaId)
+            ->where('event_id', $this->selectedEventId)
+            ->orderBy('ronda_number')
+            ->orderByDesc('is_primary')
+            ->orderByDesc('created_at')
+            ->get(['id', 'name', 'is_primary', 'ronda_number', 'castle_type', 'created_at']);
+    }
+
     public function getAllCollaSnapshots(): Collection
     {
         $collaId = auth()->user()?->colla_id;

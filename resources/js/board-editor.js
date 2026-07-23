@@ -4,9 +4,11 @@ const CASTLE_POSITIONS = window.__boardPositions ?? {};
 const READ_ONLY = window.__readOnly ?? false;
 
 const SCALE = 0.9;
-const ASSIGNED_FILL = '#86efac';
-const HOVER_FILL    = '#fde68a';
-const STROKE = '#374151';
+const HOVER_FILL = '#fde68a';
+const STROKE     = '#374151';
+const BASE_FONT  = 7;
+const CHAR_RATIO = 0.68;
+const ATTENDANCE_STROKE = { ok: '#16a34a', nok: '#dc2626', pendent: '#d97706' };
 
 // Zone colors — fallback when pos.grup is absent (distance-based approximation)
 const ZONE_COLORS = {
@@ -100,6 +102,13 @@ function updateUI() {
     if (dirty) dirty.style.display = isDirty() ? '' : 'none';
 }
 
+function fitFontSize(alias, textW, textH) {
+    if (!alias) return BASE_FONT;
+    const byWidth  = (textW * 0.88) / (alias.length * CHAR_RATIO);
+    const byHeight = textH * 0.72;
+    return Math.max(4.5, Math.min(9, byWidth, byHeight));
+}
+
 // --- Helpers --
 function computeCentroid(positions) {
     const n = positions.length;
@@ -125,6 +134,9 @@ let stage = null;
 let positionGroups = {};
 let assignments = {};
 let dragOverPosId = null;
+let fitScale = SCALE;
+let fitCenterX = 0;
+let fitCenterY = 0;
 
 function updateCounter() {
     const el = document.getElementById('board-counter');
@@ -134,6 +146,7 @@ function updateCounter() {
 function initBoard(type = '3d6') {
     const container = document.getElementById('board-canvas');
     if (!container) return;
+    const wrapper = container.parentElement;
 
     if (stage) {
         stage.destroy();
@@ -157,16 +170,47 @@ function initBoard(type = '3d6') {
     const svgW = maxX - minX + 80;
     const svgH = maxY - minY + 80;
 
+    // Stage ocupa tot el contenidor disponible
+    const availW = Math.max(300, wrapper.clientWidth);
+    const availH = Math.max(300, wrapper.clientHeight);
+
+    // Escala per encabir el contingut amb marge del 5%
+    fitScale   = Math.min(availW / svgW, availH / svgH) * 0.95;
+    fitCenterX = (availW - svgW * fitScale) / 2;
+    fitCenterY = (availH - svgH * fitScale) / 2;
+
     stage = new Konva.Stage({
         container: 'board-canvas',
-        width: Math.round(svgW * SCALE),
-        height: Math.round(svgH * SCALE),
-        scaleX: SCALE,
-        scaleY: SCALE,
+        width:  availW,
+        height: availH,
+        scaleX: fitScale,
+        scaleY: fitScale,
+        x: fitCenterX,
+        y: fitCenterY,
     });
 
     layer = new Konva.Layer();
     stage.add(layer);
+
+    // Zoom amb roda del ratolí centrat al punter
+    stage.on('wheel', (e) => {
+        e.evt.preventDefault();
+        const scaleBy = 1.1;
+        const old = stage.scaleX();
+        const pointer = stage.getPointerPosition();
+        const origin = {
+            x: (pointer.x - stage.x()) / old,
+            y: (pointer.y - stage.y()) / old,
+        };
+        const newScale = Math.max(0.25, Math.min(5.0, e.evt.deltaY < 0 ? old * scaleBy : old / scaleBy));
+        stage.scale({ x: newScale, y: newScale });
+        stage.position({ x: pointer.x - origin.x * newScale, y: pointer.y - origin.y * newScale });
+        updateZoomDisplay();
+    });
+
+    // Pan arrossegant (sense conflicte amb click: Konva diferencia drag de click)
+    stage.draggable(true);
+    updateZoomDisplay();
 
     positions.forEach(pos => {
         const group = new Konva.Group({
@@ -209,14 +253,14 @@ function initBoard(type = '3d6') {
             align: 'center',
             verticalAlign: 'middle',
             wrap: 'none',
-            ellipsis: true,
+            ellipsis: false,
             listening: false,
         });
 
         group.add(rect);
         group.add(label);
         layer.add(group);
-        positionGroups[pos.id] = { group, rect, label, pos, emptyFill };
+        positionGroups[pos.id] = { group, rect, label, pos, emptyFill, textW, textH };
 
         group.on('mouseenter', () => {
             const info = document.getElementById('board-info');
@@ -247,21 +291,33 @@ function initBoard(type = '3d6') {
 }
 
 function getPosIdAtPoint(clientX, clientY) {
+    if (!stage) return null;
     const canvasEl = stage.container().querySelector('canvas');
     if (!canvasEl) return null;
     const rect = canvasEl.getBoundingClientRect();
-    const x = (clientX - rect.left) / SCALE;
-    const y = (clientY - rect.top) / SCALE;
+    const x = (clientX - rect.left - stage.x()) / stage.scaleX();
+    const y = (clientY - rect.top  - stage.y()) / stage.scaleY();
     const shape = layer.getIntersection({ x, y });
     if (!shape) return null;
     const group = shape.getParent();
     return group?.getAttr('posId') ?? null;
 }
 
+function updateZoomDisplay() {
+    const el = document.getElementById('board-zoom');
+    if (el && stage) el.textContent = Math.round(stage.scaleX() / fitScale * 100) + '%';
+}
+
+function attendanceStrokeForAlias(alias) {
+    const btn = document.querySelector(`[data-alias="${CSS.escape(alias)}"]`);
+    const status = btn?.dataset?.attendance ?? 'pendent';
+    return ATTENDANCE_STROKE[status] ?? STROKE;
+}
+
 function setHoverRect(posId, hover) {
     if (!posId || !positionGroups[posId]) return;
-    const { rect } = positionGroups[posId];
-    rect.fill(hover ? HOVER_FILL : (assignments[posId] ? ASSIGNED_FILL : (positionGroups[posId]?.emptyFill ?? '#e5e7eb')));
+    const { rect, emptyFill } = positionGroups[posId];
+    rect.fill(hover ? HOVER_FILL : emptyFill);
     layer.draw();
 }
 
@@ -321,9 +377,11 @@ function assignCasteller(posId, alias) {
         suppressPop();
     }
     assignments[posId] = alias;
-    const { rect, label } = positionGroups[posId];
-    rect.fill(ASSIGNED_FILL);
+    const { rect, label, textW, textH } = positionGroups[posId];
+    rect.stroke(attendanceStrokeForAlias(alias));
+    rect.strokeWidth(2);
     label.text(alias);
+    label.fontSize(fitFontSize(alias, textW, textH));
     layer.draw();
     setListVisible(alias, false);
     updateCounter();
@@ -335,8 +393,10 @@ function unassignPosition(posId) {
     const alias = assignments[posId];
     delete assignments[posId];
     const { rect, label, emptyFill } = positionGroups[posId];
-    rect.fill(emptyFill);
+    rect.stroke(STROKE);
+    rect.strokeWidth(0.8);
     label.text('');
+    label.fontSize(BASE_FONT);
     layer.draw();
     if (alias) setListVisible(alias, true);
     updateCounter();
@@ -421,6 +481,9 @@ window.boardEditor = {
     loadCastleType(type) {
         initBoard(type);
     },
+    zoomIn()  { if (!stage) return; const s = Math.min(5.0, stage.scaleX() * 1.25); stage.scale({ x: s, y: s }); updateZoomDisplay(); },
+    zoomOut() { if (!stage) return; const s = Math.max(0.25, stage.scaleX() / 1.25); stage.scale({ x: s, y: s }); updateZoomDisplay(); },
+    zoomReset() { if (!stage) return; stage.scale({ x: fitScale, y: fitScale }); stage.position({ x: fitCenterX, y: fitCenterY }); updateZoomDisplay(); },
     exportPng(filename = 'pissarra.png') {
         if (!stage) return;
         const url = stage.toDataURL({ mimeType: 'image/png', pixelRatio: 2 });
@@ -435,6 +498,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initBoard();
     if (window.__autoLoadAssignments && Object.keys(window.__autoLoadAssignments).length > 0) {
         window.boardEditor.applyAssignments(window.__autoLoadAssignments);
+    }
+
+    // Redimensiona el stage si canvia el contenidor (ex: pantalla completa)
+    const wrapper = document.getElementById('board-canvas')?.parentElement;
+    if (wrapper && typeof ResizeObserver !== 'undefined') {
+        let resizeTimer;
+        new ResizeObserver(() => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (!stage) return;
+                const w = Math.max(300, wrapper.clientWidth);
+                const h = Math.max(300, wrapper.clientHeight);
+                stage.width(w);
+                stage.height(h);
+            }, 100);
+        }).observe(wrapper);
     }
 });
 
