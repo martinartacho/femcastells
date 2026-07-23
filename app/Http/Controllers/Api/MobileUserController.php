@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Casteller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class MobileUserController extends Controller
 {
@@ -28,6 +30,36 @@ class MobileUserController extends Controller
             ],
             'boardsEnabled' => true,
         ]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        /** @var Casteller $casteller */
+        $casteller = $request->user();
+
+        $data = $request->validate([
+            'email'           => ['required', 'email', 'unique:castellers,email,' . $casteller->id],
+            'email2'          => ['nullable', 'email'],
+            'phone'           => ['nullable', 'string', 'max:30'],
+            'mobile_phone'    => ['nullable', 'string', 'max:30'],
+            'emergency_phone' => ['nullable', 'string', 'max:30'],
+            'address'         => ['nullable', 'string', 'max:255'],
+            'postal_code'     => ['nullable', 'string', 'max:10'],
+            'city'            => ['nullable', 'string', 'max:100'],
+            'province'        => ['nullable', 'string', 'max:100'],
+            'country'         => ['nullable', 'string', 'max:100'],
+            'password'        => ['nullable', 'confirmed', Password::min(8)],
+        ]);
+
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $casteller->update($data);
+
+        return response()->json(['message' => 'Perfil actualitzat correctament']);
     }
 
     public function profile(Request $request): JsonResponse

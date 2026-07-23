@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MobileGdprController;
 use App\Http\Controllers\Api\MobileDisplayController;
 use App\Http\Controllers\Api\MobileEventsController;
 use App\Http\Controllers\Api\MobileHomeController;
@@ -20,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/mobile_noticies',       [MobileNoticiesController::class, '__invoke']);
         Route::get('/mobile_user_context',   [MobileUserController::class, 'context']);
         Route::get('/mobile_user_profile',  [MobileUserController::class, 'profile']);
+        Route::put('/mobile_user_profile',  [MobileUserController::class, 'updateProfile']);
 
         Route::get('/mobile_events',              [MobileEventsController::class, 'index']);
         Route::get('/mobile_events/{id}',         [MobileEventsController::class, 'show']);
@@ -30,5 +32,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/mobile_rondas/{id}',    [MobileRondesController::class, 'show']);
 
         Route::get('/public_display_url',    [MobileDisplayController::class, 'url']);
+
+        Route::get('/mobile_gdpr',           [MobileGdprController::class, 'status']);
+        Route::post('/mobile_gdpr/accept',   [MobileGdprController::class, 'accept']);
     });
 });
