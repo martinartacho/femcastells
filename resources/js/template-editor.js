@@ -20,6 +20,8 @@ let guideLayer = null;
 let layer = null;
 let transformer = null;
 let posCounter = 0;
+let rulerXNodes = []; // etiquetes columnes (top)
+let rulerYNodes = []; // etiquetes files (left)
 
 // ── Init (idempotent) ────────────────────────────────────────────────────────
 function initEditor(initialPositions = []) {
@@ -28,7 +30,7 @@ function initEditor(initialPositions = []) {
     const wrapper = container.parentElement;
 
     // Destruïm l'escena anterior si n'hi havia
-    if (stage) { stage.destroy(); stage = null; guideLayer = null; layer = null; transformer = null; }
+    if (stage) { stage.destroy(); stage = null; guideLayer = null; layer = null; transformer = null; rulerXNodes = []; rulerYNodes = []; }
 
     const W = Math.max(500, wrapper.clientWidth);
     const H = Math.max(400, wrapper.clientHeight);
@@ -86,7 +88,10 @@ function initEditor(initialPositions = []) {
         const s = Math.max(0.05, Math.min(20, e.evt.deltaY < 0 ? old * 1.12 : old / 1.12));
         stage.scale({ x: s, y: s });
         stage.position({ x: ptr.x - o.x * s, y: ptr.y - o.y * s });
+        refreshGuideLabels();
     });
+
+    stage.on('dragmove', refreshGuideLabels);
 
     stage.draggable(true);
 
@@ -101,64 +106,122 @@ function initEditor(initialPositions = []) {
         }, 80); }).observe(wrapper);
     }
 
+    initGuideLabels();
     layer.draw();
     refreshCounts();
 }
 
 // ── Capa de guies (grid, centre, radials) ────────────────────────────────────
+const GUIDE_EXTENT = 2000;
+const GUIDE_MAJOR  = 100; // etiqueta cada 100px
+const GUIDE_MINOR  = 50;  // línia cada 50px
+
 function initGuides() {
     if (!guideLayer) return;
     guideLayer.destroyChildren();
 
-    const EXTENT = 2000;
-    const GRID   = 50;
-
     // Grid lleuger
     const GRID_COLOR = '#e5e7eb';
-    for (let x = -EXTENT; x <= EXTENT; x += GRID) {
+    for (let x = -GUIDE_EXTENT; x <= GUIDE_EXTENT; x += GUIDE_MINOR) {
         guideLayer.add(new Konva.Line({
-            points: [x, -EXTENT, x, EXTENT],
-            stroke: GRID_COLOR, strokeWidth: 0.4, listening: false,
+            points: [x, -GUIDE_EXTENT, x, GUIDE_EXTENT],
+            stroke: GRID_COLOR, strokeWidth: 0.5, listening: false,
+            name: 'grid-static',
         }));
     }
-    for (let y = -EXTENT; y <= EXTENT; y += GRID) {
+    for (let y = -GUIDE_EXTENT; y <= GUIDE_EXTENT; y += GUIDE_MINOR) {
         guideLayer.add(new Konva.Line({
-            points: [-EXTENT, y, EXTENT, y],
-            stroke: GRID_COLOR, strokeWidth: 0.4, listening: false,
+            points: [-GUIDE_EXTENT, y, GUIDE_EXTENT, y],
+            stroke: GRID_COLOR, strokeWidth: 0.5, listening: false,
+            name: 'grid-static',
         }));
     }
 
-    // Eixos del centre (x=0, y=0) — una mica més visibles
+    // Eixos del centre
     const AXIS_COLOR = '#9ca3af';
     guideLayer.add(new Konva.Line({
-        points: [-EXTENT, 0, EXTENT, 0],
-        stroke: AXIS_COLOR, strokeWidth: 0.8, listening: false,
+        points: [-GUIDE_EXTENT, 0, GUIDE_EXTENT, 0],
+        stroke: AXIS_COLOR, strokeWidth: 1, listening: false, name: 'grid-static',
     }));
     guideLayer.add(new Konva.Line({
-        points: [0, -EXTENT, 0, EXTENT],
-        stroke: AXIS_COLOR, strokeWidth: 0.8, listening: false,
+        points: [0, -GUIDE_EXTENT, 0, GUIDE_EXTENT],
+        stroke: AXIS_COLOR, strokeWidth: 1, listening: false, name: 'grid-static',
     }));
     guideLayer.add(new Konva.Circle({
-        x: 0, y: 0, radius: 4,
-        fill: AXIS_COLOR, listening: false,
+        x: 0, y: 0, radius: 4, fill: AXIS_COLOR, listening: false, name: 'grid-static',
     }));
     guideLayer.add(new Konva.Text({
-        x: 6, y: -15, text: '0,0',
-        fontSize: 10, fill: AXIS_COLOR, listening: false,
+        x: 6, y: -15, text: '0,0', fontSize: 10,
+        fill: AXIS_COLOR, listening: false, name: 'grid-static',
     }));
 
-    // Línies radials (12 hores del rellotge) — línia discontínua suau
-    const RADIAL_COLOR = '#bbf7d0';
+    // Radials (12 hores del rellotge analògic)
+    const RADIAL_COLOR = '#6ee7b7';
     const RADIAL_R = 700;
     for (let i = 0; i < 12; i++) {
-        const ang = (i / 12) * Math.PI * 2 - Math.PI / 2; // 12 en punt = amunt
+        const ang = (i / 12) * Math.PI * 2 - Math.PI / 2;
         guideLayer.add(new Konva.Line({
             points: [0, 0, Math.cos(ang) * RADIAL_R, Math.sin(ang) * RADIAL_R],
-            stroke: RADIAL_COLOR, strokeWidth: 0.7, dash: [8, 5], listening: false,
+            stroke: RADIAL_COLOR, strokeWidth: 0.8, dash: [8, 5],
+            listening: false, name: 'grid-static',
         }));
     }
 
-    guideLayer.draw();
+    guideLayer.batchDraw();
+}
+
+// Etiquetes de les regles — es reposicionen en zoom/pan per quedar als marges
+function initGuideLabels() {
+    if (!guideLayer) return;
+
+    rulerXNodes = [];
+    rulerYNodes = [];
+
+    for (let x = -GUIDE_EXTENT; x <= GUIDE_EXTENT; x += GUIDE_MAJOR) {
+        if (x === 0) continue;
+        const t = new Konva.Text({
+            text: String(x), fontSize: 10, fill: '#9ca3af',
+            listening: false, name: 'ruler-label',
+        });
+        guideLayer.add(t);
+        rulerXNodes.push({ val: x, node: t });
+    }
+
+    for (let y = -GUIDE_EXTENT; y <= GUIDE_EXTENT; y += GUIDE_MAJOR) {
+        if (y === 0) continue;
+        const t = new Konva.Text({
+            text: String(y), fontSize: 10, fill: '#9ca3af',
+            listening: false, name: 'ruler-label',
+        });
+        guideLayer.add(t);
+        rulerYNodes.push({ val: y, node: t });
+    }
+
+    refreshGuideLabels();
+}
+
+function refreshGuideLabels() {
+    if (!stage || !guideLayer) return;
+    const sc  = stage.scaleX();
+    const pos = stage.position();
+    const sz  = Math.max(7, Math.min(14, 10 / sc)); // font size en world coords
+
+    // Vora superior i esquerra en world coords
+    const topWorld  = (-pos.y / sc) + 4 / sc;
+    const leftWorld = (-pos.x / sc) + 4 / sc;
+
+    rulerXNodes.forEach(({ val, node }) => {
+        node.x(val + 2);
+        node.y(topWorld);
+        node.fontSize(sz);
+    });
+    rulerYNodes.forEach(({ val, node }) => {
+        node.x(leftWorld);
+        node.y(val - sz - 2);
+        node.fontSize(sz);
+    });
+
+    guideLayer.batchDraw();
 }
 
 function kbHandler(e) {
