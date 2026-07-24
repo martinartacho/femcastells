@@ -11,8 +11,6 @@ use Livewire\Attributes\On;
 
 class TemplateWizardPage extends Page
 {
-    protected static string $view = 'filament.pages.template-wizard';
-
     protected static ?string $navigationLabel = 'Nova plantilla';
 
     protected static ?string $slug = 'wizard-plantilla';
@@ -24,6 +22,11 @@ class TemplateWizardPage extends Page
     public static function canAccess(): bool
     {
         return auth()->user()?->canDo('generador') ?? false;
+    }
+
+    public function getView(): string
+    {
+        return 'filament.pages.template-wizard';
     }
 
     // ── Wizard state ──
