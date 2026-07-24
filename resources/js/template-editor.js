@@ -16,6 +16,7 @@ const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
 // ── Estat ────────────────────────────────────────────────────────────────────
 let stage = null;
+let guideLayer = null;
 let layer = null;
 let transformer = null;
 let posCounter = 0;
@@ -27,14 +28,20 @@ function initEditor(initialPositions = []) {
     const wrapper = container.parentElement;
 
     // Destruïm l'escena anterior si n'hi havia
-    if (stage) { stage.destroy(); stage = null; layer = null; transformer = null; }
+    if (stage) { stage.destroy(); stage = null; guideLayer = null; layer = null; transformer = null; }
 
     const W = Math.max(500, wrapper.clientWidth);
     const H = Math.max(400, wrapper.clientHeight);
 
     stage = new Konva.Stage({ container: 'template-canvas', width: W, height: H });
+
+    guideLayer = new Konva.Layer({ listening: false });
+    stage.add(guideLayer);
+
     layer = new Konva.Layer();
     stage.add(layer);
+
+    initGuides();
 
     transformer = new Konva.Transformer({
         rotateEnabled: true,
@@ -96,6 +103,62 @@ function initEditor(initialPositions = []) {
 
     layer.draw();
     refreshCounts();
+}
+
+// ── Capa de guies (grid, centre, radials) ────────────────────────────────────
+function initGuides() {
+    if (!guideLayer) return;
+    guideLayer.destroyChildren();
+
+    const EXTENT = 2000;
+    const GRID   = 50;
+
+    // Grid lleuger
+    const GRID_COLOR = '#e5e7eb';
+    for (let x = -EXTENT; x <= EXTENT; x += GRID) {
+        guideLayer.add(new Konva.Line({
+            points: [x, -EXTENT, x, EXTENT],
+            stroke: GRID_COLOR, strokeWidth: 0.4, listening: false,
+        }));
+    }
+    for (let y = -EXTENT; y <= EXTENT; y += GRID) {
+        guideLayer.add(new Konva.Line({
+            points: [-EXTENT, y, EXTENT, y],
+            stroke: GRID_COLOR, strokeWidth: 0.4, listening: false,
+        }));
+    }
+
+    // Eixos del centre (x=0, y=0) — una mica més visibles
+    const AXIS_COLOR = '#9ca3af';
+    guideLayer.add(new Konva.Line({
+        points: [-EXTENT, 0, EXTENT, 0],
+        stroke: AXIS_COLOR, strokeWidth: 0.8, listening: false,
+    }));
+    guideLayer.add(new Konva.Line({
+        points: [0, -EXTENT, 0, EXTENT],
+        stroke: AXIS_COLOR, strokeWidth: 0.8, listening: false,
+    }));
+    guideLayer.add(new Konva.Circle({
+        x: 0, y: 0, radius: 4,
+        fill: AXIS_COLOR, listening: false,
+    }));
+    guideLayer.add(new Konva.Text({
+        x: 6, y: -15, text: '0,0',
+        fontSize: 10, fill: AXIS_COLOR, listening: false,
+    }));
+
+    // Línies radials (12 hores del rellotge) — línia discontínua suau
+    const RADIAL_COLOR = '#bbf7d0';
+    const RADIAL_R = 700;
+    for (let i = 0; i < 12; i++) {
+        const ang = (i / 12) * Math.PI * 2 - Math.PI / 2; // 12 en punt = amunt
+        guideLayer.add(new Konva.Line({
+            points: [0, 0, Math.cos(ang) * RADIAL_R, Math.sin(ang) * RADIAL_R],
+            stroke: RADIAL_COLOR, strokeWidth: 0.7, dash: [8, 5], listening: false,
+        }));
+    }
+
+    guideLayer.draw();
 }
 
 function kbHandler(e) {
