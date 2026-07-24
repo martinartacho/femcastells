@@ -378,8 +378,10 @@ function assignCasteller(posId, alias) {
     }
     assignments[posId] = alias;
     const { rect, label, textW, textH } = positionGroups[posId];
-    rect.stroke(attendanceStrokeForAlias(alias));
-    rect.strokeWidth(2);
+    if (!READ_ONLY) {
+        rect.stroke(attendanceStrokeForAlias(alias));
+        rect.strokeWidth(2);
+    }
     label.text(alias);
     label.fontSize(fitFontSize(alias, textW, textH));
     layer.draw();
@@ -393,8 +395,10 @@ function unassignPosition(posId) {
     const alias = assignments[posId];
     delete assignments[posId];
     const { rect, label, emptyFill } = positionGroups[posId];
-    rect.stroke(STROKE);
-    rect.strokeWidth(0.8);
+    if (!READ_ONLY) {
+        rect.stroke(STROKE);
+        rect.strokeWidth(0.8);
+    }
     label.text('');
     label.fontSize(BASE_FONT);
     layer.draw();
