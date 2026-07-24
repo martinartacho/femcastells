@@ -209,10 +209,16 @@
         <div wire:ignore style="flex:1; min-width:0; background:#f9fafb; border:1px solid #e5e7eb;
                                 border-radius:10px; overflow:hidden; position:relative;"
              x-init="
-                 $nextTick(() => {
-                     const pos = window.__templatePositions ?? [];
-                     window.templateEditor.init(pos);
-                 });
+                 (() => {
+                     const tryInit = () => {
+                         if (window.templateEditor) {
+                             window.templateEditor.init(window.__templatePositions ?? []);
+                         } else {
+                             setTimeout(tryInit, 50);
+                         }
+                     };
+                     $nextTick(tryInit);
+                 })();
              ">
             <div id="template-canvas" style="width:100%; height:100%;"></div>
 
