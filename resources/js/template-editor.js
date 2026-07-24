@@ -335,10 +335,17 @@ function addPosition(grupId) {
     const num   = nodes.length + 1;
     const nom   = ['agulla','rengle'].includes(grupId) ? cat.label : cat.label + ' ' + num;
 
-    const scale  = stage.scaleX();
-    const stgPos = stage.position();
-    const cx = (stage.width()  / 2 - stgPos.x) / scale + (Math.random() - .5) * 30;
-    const cy = (stage.height() / 2 - stgPos.y) / scale + (Math.random() - .5) * 30;
+    // Posicionar apilat sota l'última del grup, o al centre si és el primer
+    let cx, cy;
+    if (nodes.length > 0) {
+        const maxY = Math.max(...nodes.map(n => n.y()));
+        const ref  = nodes.find(n => n.y() === maxY);
+        cx = ref.x();
+        cy = maxY + (cat.h + 3);
+    } else {
+        cx = 0;
+        cy = -(cat.h + 3);
+    }
 
     const node = addNode({ id: `pos_${++posCounter}`, cx, cy, w: cat.w, h: cat.h,
                            angle: 0, grup: grupId, nom, shape: cat.shape });
@@ -406,6 +413,18 @@ function updateGrup(grupId) {
     layer.draw();
 }
 
+function updateCatLabel(id, label) {
+    const cat = CAT[id];
+    if (!cat || !label) return;
+    cat.label = label;
+    // Actualitza el text del selector de la dreta
+    const sel = document.getElementById('te-grup');
+    if (sel) {
+        const opt = Array.from(sel.options).find(o => o.value === id);
+        if (opt) opt.textContent = label;
+    }
+}
+
 function exportPositions() {
     if (!layer) return [];
     return layer.getChildren(n => n.getAttr?.('posId')).map(node => ({
@@ -430,6 +449,7 @@ window.templateEditor = {
     deleteSelected,
     radialAlign,
     updateNom,
+    updateCatLabel,
     updateGrup,
     exportPositions,
     refreshCounts,

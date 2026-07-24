@@ -25,6 +25,9 @@
     .te-btn-add { padding:1px 7px; border-radius:5px; border:1px solid #d1d5db; background:#f9fafb;
                   color:#374151; font-size:13px; cursor:pointer; line-height:1.4; }
     .te-btn-add:hover { background:#eff6ff; border-color:#bfdbfe; color:#2563eb; }
+    .te-cat-lbl[contenteditable]:hover { background:#f3f4f6; border-radius:3px; }
+    .te-cat-lbl[contenteditable]:focus { outline:1px solid #8b5cf6; background:#faf5ff;
+                                         border-radius:3px; padding:0 2px; }
     .te-input { width:100%; border:1px solid #d1d5db; border-radius:6px; padding:4px 8px;
                 font-size:12px; color:#374151; outline:none; }
     .te-input:focus { border-color:#8b5cf6; box-shadow:0 0 0 2px #ede9fe; }
@@ -186,7 +189,14 @@
                 <div class="te-cat-row"
                      onclick="window.templateEditor.selectByGrup('{{ $cat['id'] }}')">
                     <span class="te-cat-dot" style="background:{{ $cat['color'] }};"></span>
-                    <span class="te-cat-lbl">{{ $cat['label'] }}</span>
+                    <span class="te-cat-lbl"
+                          contenteditable="true"
+                          spellcheck="false"
+                          title="Clica per editar el nom"
+                          onclick="event.stopPropagation()"
+                          onblur="window.templateEditor.updateCatLabel('{{ $cat['id'] }}', this.textContent.trim())"
+                          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+                    >{{ $cat['label'] }}</span>
                     <span class="te-cat-num" id="te-n-{{ $cat['id'] }}">0</span>
                     <button type="button" class="te-btn-add" title="Afegir"
                             onclick="event.stopPropagation(); window.templateEditor.addPosition('{{ $cat['id'] }}')">
