@@ -26,12 +26,13 @@ class MobileRondesController extends Controller
 
         $colla = $casteller->colla;
 
+        $alias  = $casteller->alias;
         $result = $snapshots->map(fn (BoardSnapshot $s) => [
             'id'          => $s->id,
             'ronda'       => $s->name,
             'rondaNumber' => $s->ronda_number,
             'eventName'   => $s->event?->name ?? '',
-            'publicUrl'   => route('display.pinya', [$colla->shortname, $s->public_token]),
+            'publicUrl'   => route('display.pinya', [$colla->shortname, $s->public_token]) . '?alias=' . urlencode($alias),
         ]);
 
         return response()->json($result);
@@ -55,7 +56,7 @@ class MobileRondesController extends Controller
             'ronda'       => $snapshot->name,
             'rondaNumber' => $snapshot->ronda_number,
             'eventName'   => $snapshot->event?->name ?? '',
-            'publicUrl'   => route('display.pinya', [$colla->shortname, $snapshot->public_token]),
+            'publicUrl'   => route('display.pinya', [$colla->shortname, $snapshot->public_token]) . '?alias=' . urlencode($casteller->alias),
         ]);
     }
 }

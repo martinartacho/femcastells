@@ -1,11 +1,13 @@
 import Konva from 'konva';
 
 const CASTLE_POSITIONS = window.__boardPositions ?? {};
-const READ_ONLY = window.__readOnly ?? false;
+const READ_ONLY        = window.__readOnly ?? false;
+const HIGHLIGHT_ALIAS  = (window.__highlightAlias ?? '').trim();
 
 const SCALE = 0.9;
-const HOVER_FILL = '#fde68a';
-const STROKE     = '#374151';
+const HOVER_FILL      = '#fde68a';
+const STROKE          = '#374151';
+const HIGHLIGHT_STROKE = '#f97316';
 const BASE_FONT  = 7;
 const CHAR_RATIO = 0.68;
 const ATTENDANCE_STROKE = { ok: '#16a34a', nok: '#dc2626', pendent: '#d97706' };
@@ -381,6 +383,12 @@ function assignCasteller(posId, alias) {
     if (!READ_ONLY) {
         rect.stroke(attendanceStrokeForAlias(alias));
         rect.strokeWidth(2);
+    } else if (HIGHLIGHT_ALIAS && alias === HIGHLIGHT_ALIAS) {
+        rect.stroke(HIGHLIGHT_STROKE);
+        rect.strokeWidth(3);
+    } else {
+        rect.stroke(STROKE);
+        rect.strokeWidth(0.8);
     }
     label.text(alias);
     label.fontSize(fitFontSize(alias, textW, textH));
