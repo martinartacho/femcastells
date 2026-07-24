@@ -390,6 +390,22 @@ function radialAlign() {
     layer.draw();
 }
 
+function alignToAngle(deg) {
+    if (!layer) return;
+    const targets = transformer.nodes().length > 0
+        ? transformer.nodes()
+        : layer.getChildren(n => n.getAttr?.('posId'));
+    if (!targets.length) return;
+    targets.forEach(node => node.rotation(deg));
+    layer.draw();
+    if (transformer.nodes().length === 1) showProps(transformer.nodes()[0]);
+}
+
+function alignToHour(h) {
+    // h=12 → -90° (amunt), h=3 → 0° (dreta), h=6 → 90° (avall), h=9 → 180° (esquerra)
+    alignToAngle(h * 30 - 90);
+}
+
 function updateNom(nom) {
     const nodes = transformer.nodes();
     if (nodes.length !== 1) return;
@@ -448,6 +464,8 @@ window.templateEditor = {
     selectByGrup,
     deleteSelected,
     radialAlign,
+    alignToAngle,
+    alignToHour,
     updateNom,
     updateCatLabel,
     updateGrup,

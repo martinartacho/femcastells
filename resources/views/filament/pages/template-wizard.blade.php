@@ -165,11 +165,55 @@
             </div>
 
             <div style="flex:1; overflow-y:auto; padding:8px 6px;">
-                {{-- Botó ràpid: alinea radial --}}
-                <button type="button" onclick="window.templateEditor.radialAlign()"
-                        class="te-action" style="margin-bottom:10px;">
-                    🔄 Alinea radial
-                </button>
+
+                {{-- ── Alineació ── --}}
+                <div style="margin-bottom:10px; padding:7px 8px; background:#f9fafb;
+                            border:1px solid #f3f4f6; border-radius:8px;">
+
+                    <div style="font-size:9px; font-weight:700; text-transform:uppercase;
+                                letter-spacing:.07em; color:#9ca3af; margin-bottom:6px;">Alinea selecció</div>
+
+                    {{-- Hores del rellotge --}}
+                    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:2px; margin-bottom:6px;">
+                        @foreach(range(1,12) as $h)
+                        @php $deg = $h * 30 - 90; @endphp
+                        <button type="button"
+                                onclick="window.templateEditor.alignToHour({{ $h }})"
+                                title="{{ $h }}h ({{ $deg }}°)"
+                                style="padding:2px 0; font-size:9px; font-weight:600;
+                                       border:1px solid #e5e7eb; border-radius:3px;
+                                       background:#fff; cursor:pointer; color:#6b7280;
+                                       line-height:1.5; transition:.1s;"
+                                onmouseover="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe'"
+                                onmouseout="this.style.background='#fff';this.style.borderColor='#e5e7eb'">
+                            {{ $h }}
+                        </button>
+                        @endforeach
+                    </div>
+
+                    {{-- Graus lliures --}}
+                    <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
+                        <input type="number" id="te-align-deg" min="-360" max="360" value="0"
+                               style="width:52px; border:1px solid #d1d5db; border-radius:5px;
+                                      padding:3px 5px; font-size:11px; color:#374151; outline:none;"
+                               onkeydown="if(event.key==='Enter') window.templateEditor.alignToAngle(+this.value)">
+                        <span style="font-size:10px; color:#9ca3af;">°</span>
+                        <button type="button"
+                                onclick="window.templateEditor.alignToAngle(+document.getElementById('te-align-deg').value)"
+                                style="flex:1; padding:3px 6px; border:1px solid #d1d5db; border-radius:5px;
+                                       background:#fff; font-size:11px; cursor:pointer; color:#374151;">
+                            Aplica
+                        </button>
+                    </div>
+
+                    {{-- Radial (atan2 des del centre) --}}
+                    <button type="button" onclick="window.templateEditor.radialAlign()"
+                            style="width:100%; padding:3px 6px; border:1px solid #d1d5db; border-radius:5px;
+                                   background:#fff; font-size:10px; cursor:pointer; color:#6b7280;
+                                   text-align:left;">
+                        🔄 Radial (des del centre)
+                    </button>
+                </div>
 
                 @php
                     $cats = [
