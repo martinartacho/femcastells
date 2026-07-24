@@ -1,4 +1,5 @@
 <x-filament-panels::page>
+@vite('resources/js/template-editor.js')
 <style>
     .fi-main-ctn { max-width:none !important; padding:0 0.75rem 0.75rem !important; }
     [x-cloak] { display:none !important; }
@@ -116,8 +117,6 @@
 {{-- ──────────────────────────────────────────────── PAS 2 ──────────────────── --}}
 @elseif($step === 2)
 
-{{-- Inicialitzem el JS quan Livewire renderitza el pas 2 --}}
-@vite('resources/js/template-editor.js')
 <script>
     window.__templatePositions = @json($this->getInitialPositions());
 </script>
