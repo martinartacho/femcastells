@@ -20,8 +20,10 @@ let guideLayer = null;
 let layer = null;
 let transformer = null;
 let posCounter = 0;
-let rulerXNodes = []; // etiquetes columnes (top)
-let rulerYNodes = []; // etiquetes files (left)
+let rulerXNodes = [];
+let rulerYNodes = [];
+let history = [];
+let historyIdx = -1;
 
 // ── Init (idempotent) ────────────────────────────────────────────────────────
 function initEditor(initialPositions = []) {
@@ -30,7 +32,7 @@ function initEditor(initialPositions = []) {
     const wrapper = container.parentElement;
 
     // Destruïm l'escena anterior si n'hi havia
-    if (stage) { stage.destroy(); stage = null; guideLayer = null; layer = null; transformer = null; rulerXNodes = []; rulerYNodes = []; }
+    if (stage) { stage.destroy(); stage = null; guideLayer = null; layer = null; transformer = null; rulerXNodes = []; rulerYNodes = []; history = []; historyIdx = -1; }
 
     const W = Math.max(500, wrapper.clientWidth);
     const H = Math.max(400, wrapper.clientHeight);
@@ -107,8 +109,191 @@ function initEditor(initialPositions = []) {
     }
 
     initGuideLabels();
+    saveHistory(); // estat inicial per poder desfés
     layer.draw();
     refreshCounts();
+}
+
+// ── Historial (Ctrl+Z / Ctrl+Y) ──────────────────────────────────────────────
+function saveHistory() {
+    history.splice(historyIdx + 1);
+    history.push(JSON.stringify(exportPositions()));
+    if (history.length > 60) history.shift(); else historyIdx++;
+}
+
+function restoreSnapshot(positions) {
+    layer.getChildren(n => n.getAttr?.('posId')).forEach(n => n.destroy());
+    transformer.nodes([]);
+    posCounter = 0;
+    positions.forEach(pos => {
+        posCounter = Math.max(posCounter, parseInt(String(pos.id ?? '0').replace(/\D/g, '') || '0'));
+        addNode(pos);
+    });
+    showProps(null);
+    refreshCounts();
+    layer.draw();
+}
+
+function undoHistory() {
+    if (historyIdx <= 0) return;
+    historyIdx--;
+    restoreSnapshot(JSON.parse(history[historyIdx]));
+}
+
+function redoHistory() {
+    if (historyIdx >= history.length - 1) return;
+    historyIdx++;
+    restoreSnapshot(JSON.parse(history[historyIdx]));
+}
+
+// ── Distribució amb separació ─────────────────────────────────────────────────
+function distributeH(gap = 5) {
+    const nodes = transformer.nodes().slice().sort((a, b) => a.x() - b.x());
+    if (nodes.length < 2) return;
+    saveHistory();
+    let x = nodes[0].x();
+    nodes.forEach(n => { n.x(x); x += (n.getAttr('posW') ?? 34) + gap; });
+    layer.draw();
+}
+
+function distributeV(gap = 5) {
+    const nodes = transformer.nodes().slice().sort((a, b) => a.y() - b.y());
+    if (nodes.length < 2) return;
+    saveHistory();
+    let y = nodes[0].y();
+    nodes.forEach(n => { n.y(y); y += (n.getAttr('posH') ?? 15) + gap; });
+    layer.draw();
+}
+
+// ── Menú contextual ───────────────────────────────────────────────────────────
+let _ctxMenu = null;
+
+function getCtxMenu() {
+    if (_ctxMenu) return _ctxMenu;
+    _ctxMenu = document.createElement('div');
+    _ctxMenu.id = 'te-ctx';
+    _ctxMenu.style.cssText = [
+        'display:none', 'position:fixed', 'z-index:99999',
+        'background:#fff', 'border:1px solid #e5e7eb', 'border-radius:10px',
+        'box-shadow:0 6px 20px rgba(0,0,0,.14)', 'padding:6px 0',
+        'min-width:230px', 'font-family:sans-serif', 'user-select:none',
+    ].join(';');
+    document.body.appendChild(_ctxMenu);
+    document.addEventListener('mousedown', e => {
+        if (!_ctxMenu.contains(e.target)) hideCtxMenu();
+    });
+    return _ctxMenu;
+}
+
+function hideCtxMenu() { if (_ctxMenu) _ctxMenu.style.display = 'none'; }
+
+function showContextMenu(clientX, clientY) {
+    const menu = getCtxMenu();
+    const sel  = transformer.nodes();
+    const n    = sel.length;
+
+    const row = (html) => `<div style="padding:3px 12px;">${html}</div>`;
+    const sep = () => `<div style="height:1px;background:#f3f4f6;margin:4px 0;"></div>`;
+    const btn = (label, fn, danger = false) => {
+        const id = `ctx-btn-${Math.random().toString(36).slice(2)}`;
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', () => { fn(); hideCtxMenu(); });
+        }, 0);
+        const col = danger ? 'color:#b91c1c;background:#fef2f2;border-color:#fecaca;'
+                           : 'color:#374151;background:#fff;border-color:#e5e7eb;';
+        return `<div style="padding:2px 8px;">
+            <button id="${id}" style="width:100%;padding:4px 8px;border:1px solid;border-radius:6px;
+                cursor:pointer;font-size:11px;text-align:left;${col}">${label}</button></div>`;
+    };
+
+    const hoursHtml = Array.from({length:12},(_,i)=>{
+        const h = i + 1;
+        const id = `ctx-h${h}`;
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', () => { alignToHour(h); hideCtxMenu(); });
+        }, 0);
+        return `<button id="${id}" title="${h}h"
+            style="padding:2px 0;font-size:9px;font-weight:600;border:1px solid #e5e7eb;
+                   border-radius:3px;background:#fff;cursor:pointer;color:#6b7280;">${h}</button>`;
+    }).join('');
+
+    const degId  = `ctx-deg-${Date.now()}`;
+    const applyId = `ctx-apply-${Date.now()}`;
+    setTimeout(() => {
+        const el = document.getElementById(applyId);
+        if (el) el.addEventListener('click', () => {
+            const v = +(document.getElementById(degId)?.value ?? 0);
+            alignToAngle(v); hideCtxMenu();
+        });
+        const di = document.getElementById(degId);
+        if (di) di.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { alignToAngle(+di.value); hideCtxMenu(); }
+        });
+    }, 0);
+
+    let spacing = '';
+    if (n >= 2) {
+        const sepId = `ctx-sep-${Date.now()}`;
+        const hId   = `ctx-dh-${Date.now()}`;
+        const vId   = `ctx-dv-${Date.now()}`;
+        setTimeout(() => {
+            const sh = document.getElementById(hId);
+            const sv = document.getElementById(vId);
+            if (sh) sh.addEventListener('click', () => { distributeH(+(document.getElementById(sepId)?.value??5)); hideCtxMenu(); });
+            if (sv) sv.addEventListener('click', () => { distributeV(+(document.getElementById(sepId)?.value??5)); hideCtxMenu(); });
+        }, 0);
+        spacing = sep() + row(`
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;">
+                Separació entre figures
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
+                <input id="${sepId}" type="number" value="5" min="0" max="500"
+                       style="width:52px;border:1px solid #d1d5db;border-radius:5px;padding:3px 5px;font-size:11px;">
+                <span style="font-size:10px;color:#9ca3af;">px</span>
+            </div>
+            <div style="display:flex;gap:4px;">
+                <button id="${hId}" style="flex:1;padding:3px 4px;border:1px solid #d1d5db;border-radius:5px;
+                    background:#fff;font-size:10px;cursor:pointer;color:#374151;">↔ Horitzontal</button>
+                <button id="${vId}" style="flex:1;padding:3px 4px;border:1px solid #d1d5db;border-radius:5px;
+                    background:#fff;font-size:10px;cursor:pointer;color:#374151;">↕ Vertical</button>
+            </div>
+        `);
+    }
+
+    menu.innerHTML = `
+        ${row(`<div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;">
+            ${n} posició${n!==1?'ns':''} seleccionad${n!==1?'es':'a'}
+        </div>`)}
+        ${sep()}
+        ${row(`
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;">
+                Alinea — hora del rellotge
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px;">
+                ${hoursHtml}
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;">
+                <input id="${degId}" type="number" value="0" min="-360" max="360"
+                       style="width:52px;border:1px solid #d1d5db;border-radius:5px;padding:3px 5px;font-size:11px;">
+                <span style="font-size:10px;color:#9ca3af;">°</span>
+                <button id="${applyId}" style="flex:1;padding:3px 6px;border:1px solid #d1d5db;border-radius:5px;
+                    background:#fff;font-size:11px;cursor:pointer;color:#374151;">Aplica</button>
+            </div>
+        `)}
+        ${btn('🔄 Radial (des del centre)', radialAlign)}
+        ${spacing}
+        ${sep()}
+        ${btn('🗑 Elimina selecció', deleteSelected, true)}
+    `;
+
+    const W = window.innerWidth, H = window.innerHeight;
+    menu.style.display = 'block';
+    const mw = menu.offsetWidth  || 240;
+    const mh = menu.offsetHeight || 300;
+    menu.style.left = Math.min(clientX, W - mw - 8) + 'px';
+    menu.style.top  = Math.min(clientY, H - mh - 8) + 'px';
 }
 
 // ── Capa de guies (grid, centre, radials) ────────────────────────────────────
@@ -225,10 +410,11 @@ function refreshGuideLabels() {
 }
 
 function kbHandler(e) {
-    if ((e.key === 'Delete' || e.key === 'Backspace') &&
-        !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName ?? '')) {
-        deleteSelected();
-    }
+    const active = document.activeElement?.tagName ?? '';
+    if (['INPUT','TEXTAREA','SELECT'].includes(active)) return;
+    if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undoHistory(); return; }
+    if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redoHistory(); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
 }
 
 // ── Crear node Konva per a una posició ───────────────────────────────────────
@@ -291,8 +477,15 @@ function addNode(pos) {
         layer.draw();
     });
 
-    group.on('dragstart', () => group.moveToTop());
+    group.on('dragstart', () => { saveHistory(); group.moveToTop(); });
     group.on('dragend',   () => showProps(group));
+    group.on('contextmenu', e => {
+        e.evt.preventDefault();
+        if (!transformer.nodes().includes(group)) {
+            transformer.nodes([group]); showProps(group); layer.draw();
+        }
+        showContextMenu(e.evt.clientX, e.evt.clientY);
+    });
 
     return group;
 }
@@ -335,7 +528,7 @@ function addPosition(grupId) {
     const num   = nodes.length + 1;
     const nom   = ['agulla','rengle'].includes(grupId) ? cat.label : cat.label + ' ' + num;
 
-    // Posicionar apilat sota l'última del grup, o al centre si és el primer
+    // Posicionar: apilat sota l'última del grup, o al marge superior esquerra si és el primer
     let cx, cy;
     if (nodes.length > 0) {
         const maxY = Math.max(...nodes.map(n => n.y()));
@@ -343,12 +536,15 @@ function addPosition(grupId) {
         cx = ref.x();
         cy = maxY + (cat.h + 3);
     } else {
-        cx = 0;
-        cy = -(cat.h + 3);
+        const sc = stage.scaleX();
+        const sp = stage.position();
+        cx = (-sp.x + 40) / sc;
+        cy = (-sp.y + 40) / sc;
     }
 
     const node = addNode({ id: `pos_${++posCounter}`, cx, cy, w: cat.w, h: cat.h,
                            angle: 0, grup: grupId, nom, shape: cat.shape });
+    saveHistory();
     transformer.nodes([node]);
     showProps(node);
     refreshCounts();
@@ -367,6 +563,7 @@ function deleteSelected() {
     if (!transformer) return;
     const nodes = transformer.nodes();
     if (nodes.length === 0) return;
+    saveHistory();
     transformer.nodes([]);
     nodes.forEach(n => n.destroy());
     showProps(null);
@@ -380,6 +577,7 @@ function radialAlign() {
         ? transformer.nodes()
         : layer.getChildren(n => n.getAttr?.('posId'));
     if (targets.length === 0) return;
+    saveHistory();
 
     // Centre de referència = 0,0 (o centroide si no hi ha 0,0 accessible)
     const cx = 0, cy = 0;
@@ -396,6 +594,7 @@ function alignToAngle(deg) {
         ? transformer.nodes()
         : layer.getChildren(n => n.getAttr?.('posId'));
     if (!targets.length) return;
+    saveHistory();
     targets.forEach(node => node.rotation(deg));
     layer.draw();
     if (transformer.nodes().length === 1) showProps(transformer.nodes()[0]);
@@ -466,6 +665,10 @@ window.templateEditor = {
     radialAlign,
     alignToAngle,
     alignToHour,
+    distributeH,
+    distributeV,
+    undo: undoHistory,
+    redo: redoHistory,
     updateNom,
     updateCatLabel,
     updateGrup,

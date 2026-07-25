@@ -93,7 +93,7 @@
     {{-- Nivell --}}
     <div>
         <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
-                    color:#9ca3af; text-align:center; margin-bottom:12px;">3. Nivell de pinya</div>
+                    color:#9ca3af; text-align:center; margin-bottom:12px;">3. Vista</div>
         <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
             @foreach(['tronc' => 'Tronc', 'base' => 'Base', 'folre' => 'Amb folre', 'manilles' => 'Amb manilles'] as $k => $lbl)
             <button type="button"
@@ -134,7 +134,29 @@
                        font-size:12px; cursor:pointer; color:#6b7280; display:flex; align-items:center; gap:5px;">
             ← Enrere
         </button>
-        <div style="font-size:15px; font-weight:700; color:#111827;">{{ $templateName }}</div>
+        <div style="display:flex; flex-direction:column; gap:1px;">
+            <div style="font-size:15px; font-weight:700; color:#111827;">{{ $templateName }}</div>
+            <div style="font-size:10px; color:#9ca3af;">
+                {{ $this->getFamilyLabel() }}
+                · {{ $pisos }} pisos
+                · {{ ['tronc'=>'Tronc','base'=>'Base','folre'=>'Folre','manilles'=>'Manilles'][$nivell] ?? $nivell }}
+            </div>
+        </div>
+
+        {{-- Desfés / Refés --}}
+        <div style="display:flex; gap:4px;">
+            <button type="button" onclick="window.templateEditor.undo()" title="Desfés (Ctrl+Z)"
+                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                           background:#fff; font-size:13px; cursor:pointer; color:#6b7280;">
+                ↩
+            </button>
+            <button type="button" onclick="window.templateEditor.redo()" title="Refés (Ctrl+Y)"
+                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                           background:#fff; font-size:13px; cursor:pointer; color:#6b7280;">
+                ↪
+            </button>
+        </div>
+
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
             <input id="te-final-name" type="text" value="{{ $templateName }}"
                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
@@ -167,53 +189,8 @@
 
             <div style="flex:1; overflow-y:auto; padding:8px 6px;">
 
-                {{-- ── Alineació ── --}}
-                <div style="margin-bottom:10px; padding:7px 8px; background:#f9fafb;
-                            border:1px solid #f3f4f6; border-radius:8px;">
-
-                    <div style="font-size:9px; font-weight:700; text-transform:uppercase;
-                                letter-spacing:.07em; color:#9ca3af; margin-bottom:6px;">Alinea selecció</div>
-
-                    {{-- Hores del rellotge --}}
-                    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:2px; margin-bottom:6px;">
-                        @foreach(range(1,12) as $h)
-                        @php $deg = $h * 30 - 90; @endphp
-                        <button type="button"
-                                onclick="window.templateEditor.alignToHour({{ $h }})"
-                                title="{{ $h }}h ({{ $deg }}°)"
-                                style="padding:2px 0; font-size:9px; font-weight:600;
-                                       border:1px solid #e5e7eb; border-radius:3px;
-                                       background:#fff; cursor:pointer; color:#6b7280;
-                                       line-height:1.5; transition:.1s;"
-                                onmouseover="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe'"
-                                onmouseout="this.style.background='#fff';this.style.borderColor='#e5e7eb'">
-                            {{ $h }}
-                        </button>
-                        @endforeach
-                    </div>
-
-                    {{-- Graus lliures --}}
-                    <div style="display:flex; gap:4px; align-items:center; margin-bottom:6px;">
-                        <input type="number" id="te-align-deg" min="-360" max="360" value="0"
-                               style="width:52px; border:1px solid #d1d5db; border-radius:5px;
-                                      padding:3px 5px; font-size:11px; color:#374151; outline:none;"
-                               onkeydown="if(event.key==='Enter') window.templateEditor.alignToAngle(+this.value)">
-                        <span style="font-size:10px; color:#9ca3af;">°</span>
-                        <button type="button"
-                                onclick="window.templateEditor.alignToAngle(+document.getElementById('te-align-deg').value)"
-                                style="flex:1; padding:3px 6px; border:1px solid #d1d5db; border-radius:5px;
-                                       background:#fff; font-size:11px; cursor:pointer; color:#374151;">
-                            Aplica
-                        </button>
-                    </div>
-
-                    {{-- Radial (atan2 des del centre) --}}
-                    <button type="button" onclick="window.templateEditor.radialAlign()"
-                            style="width:100%; padding:3px 6px; border:1px solid #d1d5db; border-radius:5px;
-                                   background:#fff; font-size:10px; cursor:pointer; color:#6b7280;
-                                   text-align:left;">
-                        🔄 Radial (des del centre)
-                    </button>
+                <div style="font-size:9px; color:#9ca3af; text-align:center; margin-bottom:8px; line-height:1.4;">
+                    Clic dret sobre una posició per alinear, separar o eliminar
                 </div>
 
                 @php
