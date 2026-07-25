@@ -253,9 +253,61 @@
                 @endforeach
             </div>
 
-            <div style="padding:8px 8px 10px; border-top:1px solid #f3f4f6;">
+            {{-- Mides per defecte de les figures --}}
+            <div style="border-top:1px solid #f3f4f6; padding:8px 8px 6px;">
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase;
+                            letter-spacing:.08em; color:#9ca3af; margin-bottom:5px;">
+                    Figures (px)
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">A (amplada)</label>
+                        <input type="number" wire:model.live="defaultW" class="te-input"
+                               style="font-size:11px; padding:3px 6px;" min="5" max="300">
+                    </div>
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">H (alçada)</label>
+                        <input type="number" wire:model.live="defaultH" class="te-input"
+                               style="font-size:11px; padding:3px 6px;" min="5" max="300">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Construeix pas a pas --}}
+            <div style="border-top:1px solid #f3f4f6; padding:8px 8px 4px;">
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase;
+                            letter-spacing:.08em; color:#9ca3af; margin-bottom:6px;">
+                    Construeix
+                </div>
+                @php
+                $steps = [
+                    1 => 'Baixos',
+                    2 => 'Agulles',
+                    3 => 'Contraforts',
+                    4 => 'Croses',
+                    5 => 'Porta croses',
+                    6 => 'Mans',
+                    7 => 'Vents',
+                    8  => 'Cordons 1',
+                    9  => 'Cordons 2',
+                    10 => 'Cordons 3',
+                ];
+                @endphp
+                @foreach($steps as $s => $label)
+                <button type="button" wire:click="addStep({{ $s }})"
+                        class="te-action" style="font-size:11px; padding:3px 8px; margin-bottom:2px;">
+                    {{ $s }}. {{ $label }}
+                </button>
+                @endforeach
+            </div>
+
+            <div style="padding:6px 8px 10px; border-top:1px solid #f3f4f6; display:flex; flex-direction:column; gap:4px;">
+                <button type="button" onclick="window.templateEditor.clearCanvas()"
+                        class="te-action" style="font-size:11px;">
+                    🧹 Neteja canvas
+                </button>
                 <button type="button" onclick="window.templateEditor.deleteSelected()"
-                        class="te-action te-del">
+                        class="te-action te-del" style="font-size:11px;">
                     🗑 Elimina selecció
                 </button>
             </div>
@@ -295,16 +347,16 @@
                             letter-spacing:.08em; color:#9ca3af;">Posició seleccionada</div>
             </div>
 
-            <div id="te-props" style="display:none; flex-direction:column; gap:10px; padding:12px;">
+            <div id="te-props" style="display:none; flex-direction:column; gap:8px; padding:10px;">
 
                 <div>
-                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:3px;">Nom</label>
+                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Nom</label>
                     <input type="text" id="te-nom" class="te-input"
                            oninput="window.templateEditor.updateNom(this.value)">
                 </div>
 
                 <div>
-                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:3px;">Categoria</label>
+                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Categoria</label>
                     <select id="te-grup" class="te-select"
                             onchange="window.templateEditor.updateGrup(this.value)">
                         @foreach($cats as $cat)
@@ -313,9 +365,36 @@
                     </select>
                 </div>
 
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">X</label>
+                        <input type="number" id="te-x" class="te-input" step="0.5"
+                               onchange="window.templateEditor.updateX(+this.value)">
+                    </div>
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Y</label>
+                        <input type="number" id="te-y" class="te-input" step="0.5"
+                               onchange="window.templateEditor.updateY(+this.value)">
+                    </div>
+                </div>
+
                 <div>
-                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:3px;">Angle</label>
-                    <div id="te-angle" style="font-size:13px; font-weight:600; color:#374151;">—</div>
+                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Angle °</label>
+                    <input type="number" id="te-angle" class="te-input" step="1"
+                           onchange="window.templateEditor.updateAngle(+this.value)">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">A (px)</label>
+                        <input type="number" id="te-w" class="te-input" step="1"
+                               onchange="window.templateEditor.updateW(+this.value)">
+                    </div>
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">H (px)</label>
+                        <input type="number" id="te-h" class="te-input" step="1"
+                               onchange="window.templateEditor.updateH(+this.value)">
+                    </div>
                 </div>
 
             </div>

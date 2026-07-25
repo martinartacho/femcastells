@@ -452,7 +452,7 @@ function addNode(pos) {
     const label = new Konva.Text({
         x: -w / 2, y: -h / 2, width: w, height: h,
         text: pos.nom ?? cat.label,
-        fontSize: Math.max(4, Math.min(7, w * 0.20)),
+        fontSize: Math.max(6, Math.min(12, h * 0.55)),
         fontFamily: 'sans-serif', fill: tc,
         align: 'center', verticalAlign: 'middle',
         listening: false, wrap: 'none', ellipsis: true,
@@ -479,6 +479,7 @@ function addNode(pos) {
 
     group.on('dragstart', () => { saveHistory(); group.moveToTop(); });
     group.on('dragend',   () => showProps(group));
+    group.on('transform transformend', () => showProps(group));
     group.on('contextmenu', e => {
         e.evt.preventDefault();
         if (!transformer.nodes().includes(group)) {
@@ -502,7 +503,61 @@ function showProps(group) {
     const angleEl = document.getElementById('te-angle');
     if (nomEl)   nomEl.value    = group.getAttr('posNom') ?? '';
     if (grupEl)  grupEl.value   = group.getAttr('posGrup') ?? '';
-    if (angleEl) angleEl.textContent = Math.round(group.rotation()) + '°';
+    if (angleEl) angleEl.value = Math.round(group.rotation() * 10) / 10;
+    const xEl = document.getElementById('te-x');
+    const yEl = document.getElementById('te-y');
+    if (xEl) xEl.value = Math.round(group.x() * 10) / 10;
+    if (yEl) yEl.value = Math.round(group.y() * 10) / 10;
+    const wEl = document.getElementById('te-w');
+    const hEl = document.getElementById('te-h');
+    if (wEl) wEl.value = Math.round(group.getAttr('posW') * (group.scaleX?.() ?? 1) * 10) / 10;
+    if (hEl) hEl.value = Math.round(group.getAttr('posH') * (group.scaleY?.() ?? 1) * 10) / 10;
+}
+
+function updateX(x) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    nodes[0].x(x); layer.draw();
+}
+
+function updateY(y) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    nodes[0].y(y); layer.draw();
+}
+
+function updateAngle(deg) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    nodes[0].rotation(+deg); layer.draw();
+}
+
+function updateW(w) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    const n = nodes[0];
+    const shape = n.findOne('Rect') ?? n.findOne('Ellipse');
+    if (!shape) return;
+    const curH = n.getAttr('posH') ?? 15;
+    shape.x(-w / 2); shape.width(w);
+    const text = n.findOne('Text');
+    if (text) { text.x(-w / 2); text.width(w); text.fontSize(Math.max(6, Math.min(12, curH * 0.55))); }
+    n.setAttr('posW', w);
+    layer.draw();
+}
+
+function updateH(h) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    const n = nodes[0];
+    const shape = n.findOne('Rect') ?? n.findOne('Ellipse');
+    if (!shape) return;
+    const curW = n.getAttr('posW') ?? 34;
+    shape.y(-h / 2); shape.height(h);
+    const text = n.findOne('Text');
+    if (text) { text.y(-h / 2); text.height(h); text.fontSize(Math.max(6, Math.min(12, h * 0.55))); }
+    n.setAttr('posH', h);
+    layer.draw();
 }
 
 // ── Actualitzar comptadors de categories ─────────────────────────────────────
@@ -655,10 +710,39 @@ function exportPositions() {
     }));
 }
 
+// AFEGEIX posicions al canvas sense netejar l'escena
+function addPositions(newPositions) {
+    if (!stage || !layer) return;
+    newPositions.forEach(pos => {
+        posCounter = Math.max(posCounter, parseInt(String(pos.id ?? '0').replace(/\D/g, '') || '0'));
+        addNode(pos);
+    });
+    saveHistory();
+    refreshCounts();
+    layer.draw();
+}
+
+function clearCanvas() {
+    if (!layer) return;
+    layer.getChildren(n => n.getAttr?.('posId')).forEach(n => n.destroy());
+    transformer.nodes([]);
+    posCounter = 0;
+    showProps(null);
+    saveHistory();
+    refreshCounts();
+    layer.draw();
+}
+
 // Livewire dispatch → re-inicialitza el canvas amb noves posicions
 window.addEventListener('template-regenerate', e => {
     const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
     if (window.templateEditor) window.templateEditor.init(pos);
+});
+
+// Livewire dispatch → afegeix posicions sense netejar
+window.addEventListener('template-add-positions', e => {
+    const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
+    if (window.templateEditor) window.templateEditor.addPositions(pos);
 });
 
 // ── Exposem l'API global ──────────────────────────────────────────────────────
@@ -680,4 +764,11 @@ window.templateEditor = {
     updateGrup,
     exportPositions,
     refreshCounts,
+    addPositions,
+    clearCanvas,
+    updateX,
+    updateY,
+    updateAngle,
+    updateW,
+    updateH,
 };
