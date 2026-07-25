@@ -288,9 +288,6 @@
                     5 => 'Porta croses',
                     6 => 'Mans',
                     7 => 'Vents',
-                    8  => 'Cordons 1',
-                    9  => 'Cordons 2',
-                    10 => 'Cordons 3',
                 ];
                 @endphp
                 @foreach($steps as $s => $label)
@@ -299,6 +296,20 @@
                     {{ $s }}. {{ $label }}
                 </button>
                 @endforeach
+                {{-- Cordons: botó + select Livewire --}}
+                <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+                    <button type="button" wire:click="addCordonsWired()"
+                            class="te-action" style="font-size:11px; padding:3px 8px; width:auto; flex-shrink:0;">
+                        8. Cordons
+                    </button>
+                    <select wire:model.live="cordonsN"
+                            style="font-size:11px; padding:2px 4px; border:1px solid #e5e7eb;
+                                   border-radius:4px; background:#fff; color:#374151; flex:1; min-width:0;">
+                        @for($i = 1; $i <= 9; $i++)
+                            <option value="{{ $i }}">{{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
             </div>
 
             <div style="padding:6px 8px 10px; border-top:1px solid #f3f4f6; display:flex; flex-direction:column; gap:4px;">

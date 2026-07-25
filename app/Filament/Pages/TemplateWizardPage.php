@@ -37,6 +37,7 @@ class TemplateWizardPage extends Page
     public string $templateName = '';
     public int    $defaultW    = 100;
     public int    $defaultH    = 30;
+    public int    $cordonsN    = 1;
 
     // ── Step navigation ──
     public function generate(): void
@@ -62,6 +63,22 @@ class TemplateWizardPage extends Page
         if (!empty($positions)) {
             $this->dispatch('template-add-positions', positions: $positions);
         }
+    }
+
+    public function addCordons(int $count): void
+    {
+        $positions = [];
+        for ($n = 1; $n <= min($count, 9); $n++) {
+            $positions = array_merge($positions, $this->getStepPositions(7 + $n));
+        }
+        if (!empty($positions)) {
+            $this->dispatch('template-add-positions', positions: $positions);
+        }
+    }
+
+    public function addCordonsWired(): void
+    {
+        $this->addCordons($this->cordonsN);
     }
 
     // ── Helpers ──
@@ -416,9 +433,15 @@ class TemplateWizardPage extends Page
                 }
                 break;
 
-            case 8:  // Cordons 1 —  6 pos (1/costat/braç)
-            case 9:  // Cordons 2 — 12 pos (2/costat/braç)
-            case 10: // Cordons 3 — 18 pos (3/costat/braç)
+            case 8:  // Cordons 1 —  6 pos
+            case 9:  // Cordons 2 — 12 pos
+            case 10: // Cordons 3 — 18 pos
+            case 11: // Cordons 4 — 24 pos
+            case 12: // Cordons 5 — 30 pos
+            case 13: // Cordons 6 — 36 pos
+            case 14: // Cordons 7 — 42 pos
+            case 15: // Cordons 8 — 48 pos
+            case 16: // Cordons 9 — 54 pos
                 // Cordó N: N posicions/costat a k×interDeg/(2×(N+1)), k=1..N
                 $cordNum     = $step - 7;
                 $n           = count($arms);
@@ -442,7 +465,7 @@ class TemplateWizardPage extends Page
                             $pos[] = $this->makePos("s{$step}_{$ai}_{$s['key']}{$k}_{$uid}",
                                 round($startR * cos($cordRad), 1),
                                 round($startR * sin($cordRad), 1),
-                                $posW, $posH, $cordAngle, 'cordo',
+                                (int) round($posW * 0.8), $posH, $cordAngle, 'cordo',
                                 'cordo ' . $arms[$ai]['label'] . ' ' . $s['adj'] . ' ' . $cordNum);
                         }
                     }
