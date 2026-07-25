@@ -51,24 +51,25 @@
         <div style="font-size:.9rem; color:#6b7280; margin-top:4px;">Tria el tipus de castell</div>
     </div>
 
-    {{-- Família --}}
+    {{-- Família / Tipus --}}
     <div>
         <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
-                    color:#9ca3af; text-align:center; margin-bottom:12px;">1. Família</div>
-        <div style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center;">
-            @foreach($this->getFamilies() as $key => $label)
+                    color:#9ca3af; text-align:center; margin-bottom:12px;">1. Tipus</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+            @foreach($this->getFamilies() as $key => $info)
             <button type="button"
                     wire:click="$set('familia', '{{ $key }}')"
-                    class="wz-card {{ $familia === $key ? 'active' : '' }}">
-                <div class="ico">
-                    @if($key === 'pilar') 🗼
-                    @elseif($key === 'torre') 🏰
-                    @elseif($key === 'tres') ⚜️
-                    @else 🏛️
-                    @endif
+                    class="wz-card {{ $familia === $key ? 'active' : '' }}"
+                    style="min-width:80px;">
+                <div style="font-size:1.6rem; font-weight:800; color:#6d28d9; line-height:1.1; margin-bottom:2px;">
+                    {{ $info['baixos'] }}
                 </div>
-                <div class="lbl">{{ $label }}</div>
-                <div style="font-size:10px; color:#9ca3af; margin-top:2px;">{{ ['pilar'=>'1 baix','torre'=>'2 baixos','tres'=>'3 baixos','quatre'=>'4 baixos'][$key] }}</div>
+                <div class="lbl">{{ $info['nom'] }}</div>
+                @if($info['nota'])
+                <div style="font-size:9px; color:#9ca3af; margin-top:2px;">{{ $info['nota'] }}</div>
+                @else
+                <div style="font-size:9px; color:#9ca3af; margin-top:2px;">{{ $info['baixos'] === 1 ? '1 baix' : $info['baixos'].' baixos' }}</div>
+                @endif
             </button>
             @endforeach
         </div>
@@ -93,8 +94,8 @@
     <div>
         <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
                     color:#9ca3af; text-align:center; margin-bottom:12px;">3. Nivell de pinya</div>
-        <div style="display:flex; gap:10px; justify-content:center;">
-            @foreach(['base' => 'Base', 'folre' => 'Amb folre', 'manilles' => 'Amb manilles'] as $k => $lbl)
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            @foreach(['tronc' => 'Tronc', 'base' => 'Base', 'folre' => 'Amb folre', 'manilles' => 'Amb manilles'] as $k => $lbl)
             <button type="button"
                     wire:click="$set('nivell', '{{ $k }}')"
                     class="wz-niv {{ $nivell === $k ? 'active' : '' }}">

@@ -61,13 +61,25 @@ class TemplateWizardPage extends Page
 
     public function getFamilyLabel(): string
     {
-        return ['pilar' => 'Pilar', 'torre' => 'Torre',
-                'tres'  => 'Tres',  'quatre' => 'Quatre'][$this->familia] ?? ucfirst($this->familia);
+        return [
+            'pilar'  => 'Pilar',  'torre'  => 'Torre',
+            'tres'   => 'Tres',   'quatre' => 'Quatre',
+            'cinc'   => 'Cinc',   'set'    => 'Set',
+            'nou'    => 'Nou',
+        ][$this->familia] ?? ucfirst($this->familia);
     }
 
     public function getFamilies(): array
     {
-        return ['pilar' => 'Pilar', 'torre' => 'Torre', 'tres' => 'Tres', 'quatre' => 'Quatre'];
+        return [
+            'pilar'  => ['nom' => 'Pilar',  'baixos' => 1, 'nota' => 'espadat'],
+            'torre'  => ['nom' => 'Torre',  'baixos' => 2, 'nota' => 'o Dos'],
+            'tres'   => ['nom' => 'Tres',   'baixos' => 3, 'nota' => ''],
+            'quatre' => ['nom' => 'Quatre', 'baixos' => 4, 'nota' => ''],
+            'cinc'   => ['nom' => 'Cinc',   'baixos' => 5, 'nota' => 'tres+torre'],
+            'set'    => ['nom' => 'Set',    'baixos' => 7, 'nota' => 'quatre+tres'],
+            'nou'    => ['nom' => 'Nou',    'baixos' => 9, 'nota' => '3×3'],
+        ];
     }
 
     // ── Genera posicions inicials amb noms reals ──────────────────────────────
@@ -94,6 +106,10 @@ class TemplateWizardPage extends Page
         }
 
         $troncBottom = ($p - 1) * $gap;
+
+        if ($this->nivell === 'tronc') {
+            return $pos;
+        }
 
         // ─ Mans per braç ─
         $mansPerBrac = max(2, (int) ceil($p * 0.8));
@@ -163,7 +179,11 @@ class TemplateWizardPage extends Page
         return match ($this->familia) {
             'pilar'  => 1,
             'torre'  => 2,
+            'tres'   => 3,
             'quatre' => 4,
+            'cinc'   => 5,
+            'set'    => 7,
+            'nou'    => 9,
             default  => 3,
         };
     }
