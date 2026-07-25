@@ -655,6 +655,12 @@ function exportPositions() {
     }));
 }
 
+// Livewire dispatch → re-inicialitza el canvas amb noves posicions
+window.addEventListener('template-regenerate', e => {
+    const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
+    if (window.templateEditor) window.templateEditor.init(pos);
+});
+
 // ── Exposem l'API global ──────────────────────────────────────────────────────
 window.templateEditor = {
     init: initEditor,

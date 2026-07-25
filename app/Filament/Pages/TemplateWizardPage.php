@@ -48,6 +48,12 @@ class TemplateWizardPage extends Page
         $this->step = 1;
     }
 
+    public function regenerate(): void
+    {
+        $this->templateName = $this->getCastellName();
+        $this->dispatch('template-regenerate', positions: $this->getInitialPositions());
+    }
+
     // ── Helpers ──
     public function getCastellName(): string
     {

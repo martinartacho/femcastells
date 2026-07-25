@@ -134,14 +134,39 @@
                        font-size:12px; cursor:pointer; color:#6b7280; display:flex; align-items:center; gap:5px;">
             ← Enrere
         </button>
-        <div style="display:flex; flex-direction:column; gap:1px;">
-            <div style="font-size:15px; font-weight:700; color:#111827;">{{ $templateName }}</div>
-            <div style="font-size:10px; color:#9ca3af;">
-                {{ $this->getFamilyLabel() }}
-                · {{ $pisos }} pisos
-                · {{ ['tronc'=>'Tronc','base'=>'Base','folre'=>'Folre','manilles'=>'Manilles'][$nivell] ?? $nivell }}
-            </div>
+        {{-- Nom de la plantilla --}}
+        <div style="font-size:15px; font-weight:700; color:#111827; white-space:nowrap;">
+            {{ $templateName }}
         </div>
+
+        {{-- Selectors interactius --}}
+        @php $selStyle = "padding:4px 8px; border:1px solid #d1d5db; border-radius:7px;
+                          font-size:12px; color:#374151; background:#fff; outline:none; cursor:pointer;"; @endphp
+
+        <select wire:model="familia" style="{{ $selStyle }}">
+            @foreach($this->getFamilies() as $key => $info)
+            <option value="{{ $key }}">{{ $info['nom'] }} ({{ $info['baixos'] }} b)</option>
+            @endforeach
+        </select>
+
+        <select wire:model="pisos" style="{{ $selStyle }}">
+            @foreach(range(4, 10) as $p)
+            <option value="{{ $p }}">{{ $p }} pisos</option>
+            @endforeach
+        </select>
+
+        <select wire:model="nivell" style="{{ $selStyle }}">
+            @foreach(['tronc'=>'Tronc','base'=>'Base','folre'=>'Amb folre','manilles'=>'Amb manilles'] as $k=>$lbl)
+            <option value="{{ $k }}">{{ $lbl }}</option>
+            @endforeach
+        </select>
+
+        <button type="button" wire:click="regenerate"
+                style="padding:5px 12px; border:1px solid #6d28d9; border-radius:7px;
+                       background:#f5f3ff; color:#6d28d9; font-size:12px; font-weight:600;
+                       cursor:pointer; white-space:nowrap;">
+            ↺ Regenera
+        </button>
 
         {{-- Desfés / Refés --}}
         <div style="display:flex; gap:4px;">
