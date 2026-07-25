@@ -145,7 +145,7 @@
 
         <select wire:model="familia" style="{{ $selStyle }}">
             @foreach($this->getFamilies() as $key => $info)
-            <option value="{{ $key }}">{{ $info['nom'] }} ({{ $info['baixos'] }} b)</option>
+            <option value="{{ $key }}">{{ $info['nom'] }}</option>
             @endforeach
         </select>
 
