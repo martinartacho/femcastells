@@ -123,6 +123,8 @@
 
 <script>
     window.__templatePositions = @json($this->getInitialPositions());
+    window.__catSettings = @json($this->getCatSettings());
+    window.__catCustom   = @json(auth()->user()?->colla?->board_settings['cat_custom'] ?? []);
 </script>
 
 <div style="display:flex; flex-direction:column; height:calc(100svh - 8rem); overflow:hidden; gap:8px;">
@@ -182,6 +184,43 @@
             </button>
         </div>
 
+        {{-- Obre plantilla existent --}}
+        <div x-data="{ open: false }" style="position:relative;">
+            <button type="button" @click="open = !open" title="Obre plantilla"
+                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                           background:#fff; font-size:14px; cursor:pointer; color:#6b7280;">
+                📁
+            </button>
+            <div x-show="open" x-cloak @click.outside="open = false"
+                 style="position:absolute; top:calc(100% + 6px); left:0; z-index:9999;
+                        background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+                        box-shadow:0 6px 20px rgba(0,0,0,.12); min-width:240px; max-height:320px;
+                        overflow-y:auto; padding:6px 0;">
+                <div style="padding:6px 12px 4px; font-size:10px; font-weight:700;
+                            text-transform:uppercase; letter-spacing:.08em; color:#9ca3af;">
+                    Plantilles desades
+                </div>
+                @forelse($this->getTemplatesList() as $tpl)
+                <button type="button"
+                        wire:click="loadTemplate({{ $tpl['id'] }})"
+                        @click="open = false"
+                        style="width:100%; text-align:left; padding:6px 12px; border:none;
+                               background:none; cursor:pointer; font-size:12px; color:#374151;
+                               display:flex; justify-content:space-between; align-items:center;
+                               transition:background .1s;"
+                        onmouseover="this.style.background='#f5f3ff'"
+                        onmouseout="this.style.background='none'">
+                    <span>{{ $tpl['name'] }}</span>
+                    <span style="font-size:10px; color:#9ca3af; margin-left:8px;">{{ $tpl['count'] }} pos.</span>
+                </button>
+                @empty
+                <div style="padding:10px 12px; font-size:11px; color:#9ca3af;">
+                    Cap plantilla desada
+                </div>
+                @endforelse
+            </div>
+        </div>
+
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
             <input id="te-final-name" type="text" value="{{ $templateName }}"
                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
@@ -220,37 +259,99 @@
 
                 @php
                     $cats = [
-                        ['id'=>'agulla',    'label'=>'Agulla',     'color'=>'#c7d2fe'],
-                        ['id'=>'rengle',    'label'=>'Rengle',     'color'=>'#fef9c3'],
-                        ['id'=>'buida',     'label'=>'Buida',      'color'=>'#dcfce7'],
-                        ['id'=>'plena',     'label'=>'Plena',      'color'=>'#fce7f3'],
-                        ['id'=>'mans',      'label'=>'Mans',       'color'=>'#bfdbfe'],
-                        ['id'=>'cordo',     'label'=>'Cordo',      'color'=>'#f1f5f9'],
-                        ['id'=>'vent',      'label'=>'Vent',       'color'=>'#bbf7d0'],
-                        ['id'=>'porta',     'label'=>'Porta',      'color'=>'#ffedd5'],
-                        ['id'=>'contrafort','label'=>'Contrafort', 'color'=>'#fef3c7'],
+                        ['section'=>'Pinya',      'id'=>'rengle',     'label'=>'Baix',       'color'=>'#e0e7ff', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'agulla',     'label'=>'Agulla',     'color'=>'#c7d2fe', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'contrafort', 'label'=>'Contrafort', 'color'=>'#fef3c7', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'cordo',      'label'=>'Cordó',      'color'=>'#f1f5f9', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'mans',       'label'=>'Mans',       'color'=>'#bfdbfe', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'porta',      'label'=>'Crossa',     'color'=>'#ffedd5', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'vent',       'label'=>'Vent',       'color'=>'#bbf7d0', 'shape'=>'ellipse'],
+                        ['section'=>'Tronc',       'id'=>'segon',      'label'=>'Segon',      'color'=>'#fce7f3', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'terc',       'label'=>'Terç',       'color'=>'#fbcfe8', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'quart',      'label'=>'Quart+',     'color'=>'#f9a8d4', 'shape'=>'rect'],
+                        ['section'=>'Pom de dalt', 'id'=>'dos',        'label'=>'Dos',        'color'=>'#fef9c3', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'acotxador',  'label'=>'Acotxador',  'color'=>'#fef08a', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'enxaneta',   'label'=>'Enxaneta',   'color'=>'#fde047', 'shape'=>'circle'],
+                        ['section'=>'Auxiliar',    'id'=>'etiqueta',   'label'=>'Etiqueta',   'color'=>'transparent', 'shape'=>'label'],
                     ];
                 @endphp
 
+                @php
+                    $catSettings = $this->getCatSettings();
+                    $shapes = ['rect'=>'Rect','rect-rounded'=>'Round','ellipse'=>'Oval','circle'=>'Circ','label'=>'Text'];
+                @endphp
+                <div id="te-cat-list">
                 @foreach($cats as $cat)
-                <div class="te-cat-row"
+                @if($cat['section'])
+                <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                            color:#9ca3af;padding:6px 8px 2px;margin-top:2px;">
+                    {{ $cat['section'] }}
+                </div>
+                @endif
+                @php
+                    $cfg   = $catSettings[$cat['id']] ?? [];
+                    $lbl   = is_array($cfg) ? ($cfg['label'] ?? $cat['label']) : ($cfg ?: $cat['label']);
+                    $col   = is_array($cfg) ? ($cfg['color'] ?? $cat['color']) : $cat['color'];
+                    $shp   = is_array($cfg) ? ($cfg['shape'] ?? 'rect') : 'rect';
+                @endphp
+                <div class="te-cat-row" data-cat-id="{{ $cat['id'] }}"
                      onclick="window.templateEditor.selectByGrup('{{ $cat['id'] }}')">
-                    <span class="te-cat-dot" style="background:{{ $cat['color'] }};"></span>
-                    <span class="te-cat-lbl"
-                          contenteditable="true"
-                          spellcheck="false"
+                    <input type="color" value="{{ $col === 'transparent' ? '#ffffff' : $col }}"
+                           style="width:16px;height:16px;border:none;padding:0;cursor:pointer;border-radius:3px;"
+                           onclick="event.stopPropagation()"
+                           oninput="event.stopPropagation(); window.templateEditor.updateCatColor('{{ $cat['id'] }}', this.value)">
+                    <span class="te-cat-lbl" contenteditable="true" spellcheck="false"
                           title="Clica per editar el nom"
                           onclick="event.stopPropagation()"
                           onblur="window.templateEditor.updateCatLabel('{{ $cat['id'] }}', this.textContent.trim())"
-                          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-                    >{{ $cat['label'] }}</span>
+                          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">{{ $lbl }}</span>
+                    <select onclick="event.stopPropagation()"
+                            onchange="event.stopPropagation(); window.templateEditor.updateCatShape('{{ $cat['id'] }}', this.value)"
+                            style="font-size:9px;border:1px solid #e5e7eb;border-radius:3px;padding:1px 2px;
+                                   background:#fff;color:#374151;max-width:44px;">
+                        @foreach($shapes as $sv => $sl)
+                        <option value="{{ $sv }}" {{ $shp === $sv ? 'selected' : '' }}>{{ $sl }}</option>
+                        @endforeach
+                    </select>
                     <span class="te-cat-num" id="te-n-{{ $cat['id'] }}">0</span>
                     <button type="button" class="te-btn-add" title="Afegir"
-                            onclick="event.stopPropagation(); window.templateEditor.addPosition('{{ $cat['id'] }}')">
-                        +
-                    </button>
+                            onclick="event.stopPropagation(); window.templateEditor.addPosition('{{ $cat['id'] }}')">+</button>
                 </div>
                 @endforeach
+                <div id="te-cat-add-btn">
+                    <button type="button"
+                            onclick="window.templateEditor.addCustomCategory('Nova categoria','#e5e7eb','rect')"
+                            style="margin:4px 8px 2px; padding:3px 8px; border:1px dashed #d1d5db;
+                                   border-radius:5px; background:transparent; font-size:11px;
+                                   cursor:pointer; color:#6b7280; width:calc(100% - 16px);">
+                        + Categoria
+                    </button>
+                </div>
+                </div>
+            </div>
+
+            {{-- Desa categories --}}
+            <div style="border-top:1px solid #f3f4f6; padding:6px 8px; flex-shrink:0;">
+                <button type="button"
+                        onclick="
+                            const settings = {};
+                            const custom   = [];
+                            document.querySelectorAll('#te-cat-list .te-cat-row').forEach(row => {
+                                const id  = row.dataset.catId;
+                                if (!id) return;
+                                const lbl = row.querySelector('.te-cat-lbl')?.textContent?.trim() ?? '';
+                                const col = row.querySelector('input[type=color]')?.value ?? '';
+                                const shp = row.querySelector('select')?.value ?? 'rect';
+                                if (id.startsWith('custom_')) custom.push({id, label:lbl, color:col, shape:shp});
+                                else settings[id] = {label:lbl, color:col, shape:shp};
+                            });
+                            @this.saveCatSettings(settings, custom);
+                        "
+                        style="padding:4px 10px; border:1px solid #6d28d9; border-radius:6px;
+                               background:#f5f3ff; font-size:11px; cursor:pointer;
+                               color:#6d28d9; width:100%;">
+                    💾 Desa categories
+                </button>
             </div>
 
             {{-- Mides per defecte de les figures --}}
@@ -274,7 +375,7 @@
             </div>
 
             {{-- Construeix pas a pas --}}
-            <div style="border-top:1px solid #f3f4f6; padding:8px 8px 4px;">
+            <div style="display:none; border-top:1px solid #f3f4f6; padding:8px 8px 4px;">
                 <div style="font-size:9px; font-weight:700; text-transform:uppercase;
                             letter-spacing:.08em; color:#9ca3af; margin-bottom:6px;">
                     Construeix

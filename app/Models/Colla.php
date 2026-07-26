@@ -35,6 +35,11 @@ class Colla extends Model implements HasAvatar
         'display_token',
         'projected_snapshot_id',
         'rondes_display',
+        'board_settings',
+    ];
+
+    protected $casts = [
+        'board_settings' => 'array',
     ];
 
     public function users(): HasMany

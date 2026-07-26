@@ -199,7 +199,7 @@ class TemplateWizardPage extends Page
                     'cy' => round($ventR * sin($ang) + $ventCY, 1),
                     'w'  => 30, 'h' => 19,
                     'angle' => round(rad2deg($ang), 1),
-                    'grup' => 'vent', 'nom' => 'vent ' . ($vi + 1), 'shape' => 'ellipse',
+                    'grup' => 'vent', 'nom' => 'vent ' . ($vi + 1), 'shape' => 'rect',
                 ];
             }
         }
@@ -258,9 +258,9 @@ class TemplateWizardPage extends Page
     {
         return match ($n) {
             1 => [270],
-            2 => [30, 150],
+            2 => [0, 180],
             3 => [30, 150, 270],
-            4 => [20, 90, 160, 270],
+            4 => [0, 90, 180, 270],
             default => array_map(fn ($i) => (int) round(360 / $n * $i + 270) % 360, range(0, $n - 1)),
         };
     }
@@ -272,7 +272,9 @@ class TemplateWizardPage extends Page
         $gap         = 20;
         $bracAngles  = $this->getBaixBracAngles($n);
         $mansPerBrac = max(2, (int) ceil($p * 0.8));
-        $baixR       = max($gap * 3.0, $mansPerBrac * $gap * 1.3 - $gap * 1.6);
+        $baixR       = ($n === 1)
+            ? $gap * 0.75  // Pilar: rengla molt propera al centre (calibrat versió 15)
+            : max($gap * 3.0, $mansPerBrac * $gap * 1.3 - $gap * 1.6);
 
         // Ordre: primer els que van cap avall (D, E), després el que va cap amunt (C/rengla)
         $baixNames = match ($n) {
@@ -285,9 +287,10 @@ class TemplateWizardPage extends Page
 
         // Labels per als mans: D, E, C (centre/rengla)
         $bracLabels = match ($n) {
+            2 => ['D', 'E'],
             3 => ['D', 'E', 'C'],
             4 => ['D', 'C', 'E', 'E2'],
-            default => null, // usa bracLabel genèric
+            default => null,
         };
 
         $arms = [];
@@ -316,7 +319,7 @@ class TemplateWizardPage extends Page
             'id' => $id, 'cx' => $cx, 'cy' => $cy,
             'w' => $w, 'h' => $h, 'angle' => $angle,
             'grup' => $grup, 'nom' => $nom,
-            'shape' => $grup === 'vent' ? 'ellipse' : 'rect',
+            'shape' => 'rect',
         ];
     }
 
@@ -376,18 +379,18 @@ class TemplateWizardPage extends Page
                 }
                 break;
 
-            case 5: // Portacroses — referència del braç C (270°), rotada per a cada braç
-                // Referència calibrada (versió 10): porta D C = (-108.8,-121.1), porta E C = (112.8,-133.3)
-                $refDx = -108.8; $refDy = -121.1;
-                $refEx =  112.8; $refEy = -133.3;
+            case 5: // Portacroses — offset relatiu al baix de cada braç, rotat per l'angle del braç
+                // Calibrat: Tres de 6 (v10) + Pilar de 6 (v15) → offset consistent respecte al baix
+                $refDx = -108.8; $refDy = -23.1;  // offset D: ±perp, -along_arm
+                $refEx =  112.8; $refEy = -35.3;  // offset E: +12.2 along arm vs D
                 foreach ($arms as $ai => $arm) {
                     $rotRad = deg2rad($arm['deg'] - 270);
                     $cosR   = cos($rotRad);
                     $sinR   = sin($rotRad);
-                    $pdx = round($refDx * $cosR - $refDy * $sinR, 1);
-                    $pdy = round($refDx * $sinR + $refDy * $cosR, 1);
-                    $pex = round($refEx * $cosR - $refEy * $sinR, 1);
-                    $pey = round($refEx * $sinR + $refEy * $cosR, 1);
+                    $pdx = round($arm['bx'] + $refDx * $cosR - $refDy * $sinR, 1);
+                    $pdy = round($arm['by'] + $refDx * $sinR + $refDy * $cosR, 1);
+                    $pex = round($arm['bx'] + $refEx * $cosR - $refEy * $sinR, 1);
+                    $pey = round($arm['by'] + $refEx * $sinR + $refEy * $cosR, 1);
                     $pos[] = $this->makePos("s5d_{$ai}_{$uid}", $pdx, $pdy,
                         $posW, $posH, $arm['deg'], 'porta', 'porta D ' . $arm['label']);
                     $pos[] = $this->makePos("s5e_{$ai}_{$uid}", $pex, $pey,
@@ -411,10 +414,11 @@ class TemplateWizardPage extends Page
             case 7: // Vents — a la bisectriu entre braços adjacents
                 $n           = count($arms);
                 $mansPerBrac = max(2, (int) ceil($this->pisos * 0.8));
-                // Radi dels vents basat en arm_r original (sense la correcció interna):
-                // els vents mantenen la distància independent de l'ajust del nucli
-                $ventArmR = $mansPerBrac * $gap * 1.3 + $gap * 2.0;  // arm_r sense correcció
-                $startR   = $ventArmR + $gap * sqrt(2.0);             // ≈198 per pisos=6
+                $ventArmR    = $mansPerBrac * $gap * 1.3 + $gap * 2.0;
+                // Pilar (n=1): vents al costat oposat al braç, just passat l'agulla
+                $startR = ($n === 1)
+                    ? $gap * 4.0 - $arms[0]['r']       // 4*gap - arm_r ≈ 65 (calibrat v15)
+                    : $ventArmR + $gap * sqrt(2.0);    // ≈198 per Tres de 6
                 $ventPer  = $this->pisos;
                 for ($ai = 0; $ai < $n; $ai++) {
                     $d1 = $arms[$ai]['deg'];
@@ -447,7 +451,10 @@ class TemplateWizardPage extends Page
                 $n           = count($arms);
                 $mansPerBrac = max(2, (int) ceil($this->pisos * 0.8));
                 $ventArmR    = $mansPerBrac * $gap * 1.3 + $gap * 2.0;
-                $startR      = $ventArmR + $gap * (sqrt(2.0) + 2.0 * $cordNum);
+                $ventBase    = ($n === 1)
+                    ? $gap * 4.0 - $arms[0]['r'] - $gap * sqrt(2.0)  // base equivalent a n=1
+                    : $ventArmR;
+                $startR      = $ventBase + $gap * (sqrt(2.0) + 2.0 * $cordNum);
                 $interDeg    = 360.0 / $n;
                 for ($ai = 0; $ai < $n; $ai++) {
                     $armDeg = $arms[$ai]['deg'];
@@ -517,6 +524,80 @@ class TemplateWizardPage extends Page
     {
         if ($total === 1) return '';
         return ['D', 'C', 'E', 'D2'][$idx] ?? (string) ($idx + 1);
+    }
+
+    // ── Configuració de categories per colla ─────────────────────────────────
+    public function getCatSettings(): array
+    {
+        $colla    = auth()->user()?->colla;
+        $saved    = $colla?->board_settings['cat_settings'] ?? [];
+        $defaults = [
+            // La Pinya
+            'rengle'     => ['label' => 'Baix',       'color' => '#e0e7ff', 'shape' => 'rect'],
+            'agulla'     => ['label' => 'Agulla',     'color' => '#c7d2fe', 'shape' => 'rect'],
+            'contrafort' => ['label' => 'Contrafort', 'color' => '#fef3c7', 'shape' => 'rect'],
+            'cordo'      => ['label' => 'Cordó',      'color' => '#f1f5f9', 'shape' => 'rect'],
+            'mans'       => ['label' => 'Mans',       'color' => '#bfdbfe', 'shape' => 'rect'],
+            'porta'      => ['label' => 'Crossa',     'color' => '#ffedd5', 'shape' => 'rect'],
+            'vent'       => ['label' => 'Vent',       'color' => '#bbf7d0', 'shape' => 'ellipse'],
+            // El Tronc
+            'segon'      => ['label' => 'Segon',      'color' => '#fce7f3', 'shape' => 'rect'],
+            'terc'       => ['label' => 'Terç',       'color' => '#fbcfe8', 'shape' => 'rect'],
+            'quart'      => ['label' => 'Quart+',     'color' => '#f9a8d4', 'shape' => 'rect'],
+            // El Pom de Dalt
+            'dos'        => ['label' => 'Dos',        'color' => '#fef9c3', 'shape' => 'rect'],
+            'acotxador'  => ['label' => 'Acotxador',  'color' => '#fef08a', 'shape' => 'rect'],
+            'enxaneta'   => ['label' => 'Enxaneta',   'color' => '#fde047', 'shape' => 'circle'],
+            // Auxiliar
+            'etiqueta'   => ['label' => 'Etiqueta',   'color' => 'transparent', 'shape' => 'label'],
+            // Backward compat
+            'buida'      => ['label' => 'Buida',      'color' => '#c7d2fe', 'shape' => 'rect'],
+            'plena'      => ['label' => 'Plena',      'color' => '#a5b4fc', 'shape' => 'rect'],
+        ];
+        return array_merge($defaults, $saved);
+    }
+
+    public function saveCatSettings(array $settings, array $custom = []): void
+    {
+        $colla = auth()->user()?->colla;
+        if (!$colla) return;
+        $bs = $colla->board_settings ?? [];
+        $bs['cat_settings'] = $settings;
+        if (!empty($custom)) $bs['cat_custom'] = $custom;
+        $colla->update(['board_settings' => $bs]);
+
+        Notification::make()->title('Categories desades')->success()->send();
+    }
+
+    /** @deprecated Use getCatSettings() */
+    public function getCatLabels(): array
+    {
+        return array_map(fn($cfg) => $cfg['label'], $this->getCatSettings());
+    }
+
+    // ── Llista i càrrega de plantilles existents ─────────────────────────────
+    public function getTemplatesList(): array
+    {
+        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('ready', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'positions'])
+            ->map(fn ($t) => [
+                'id'    => $t->id,
+                'name'  => $t->name,
+                'count' => count($t->positions ?? []),
+            ])
+            ->toArray();
+    }
+
+    public function loadTemplate(int $id): void
+    {
+        $template = CastleTemplate::where('id', $id)
+            ->where('colla_id', auth()->user()?->colla_id)
+            ->firstOrFail();
+
+        $this->templateName = $template->name;
+        $this->dispatch('template-regenerate', positions: $template->positions ?? []);
     }
 
     // ── Desa la plantilla (cridat des de JS via Livewire dispatch) ────────────
