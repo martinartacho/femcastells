@@ -19,6 +19,11 @@ class TemplateWizardPage extends Page
 
     protected static ?int $navigationSort = 3;
 
+    public static function getNavigationIcon(): string|\BackedEnum|null
+    {
+        return 'heroicon-o-building-library';
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()?->canDo('generador') ?? false;
@@ -30,7 +35,6 @@ class TemplateWizardPage extends Page
     }
 
     // ── Wizard state ──
-    public int    $step   = 1;
     public string $familia = 'tres';
     public int    $pisos   = 6;
     public string $nivell  = 'base';
@@ -39,29 +43,36 @@ class TemplateWizardPage extends Page
     public int    $defaultH    = 30;
     public int    $cordonsN    = 1;
 
-    // ── Step navigation ──
-    public function generate(): void
+    public function mount(): void
     {
         $this->templateName = $this->getCastellName();
-        $this->step = 2;
     }
 
-    public function back(): void
-    {
-        $this->step = 1;
-    }
-
-    public function regenerate(): void
-    {
-        $this->templateName = $this->getCastellName();
-        $this->dispatch('template-regenerate', positions: $this->getInitialPositions());
-    }
+    public function updatedFamilia(): void { $this->templateName = $this->getCastellName(); }
+    public function updatedPisos(): void   { $this->templateName = $this->getCastellName(); }
+    public function updatedNivell(): void  { $this->templateName = $this->getCastellName(); }
 
     public function addStep(int $step): void
     {
         $positions = $this->getStepPositions($step);
         if (!empty($positions)) {
             $this->dispatch('template-add-positions', positions: $positions);
+        }
+    }
+
+    public function addAllSteps(): void
+    {
+        if (in_array($this->familia, ['cinc', 'set', 'nou'])) {
+            Notification::make()->title('Funcionalitat en construcció')->warning()->send();
+            return;
+        }
+
+        $positions = [];
+        for ($step = 1; $step <= 7; $step++) {
+            $positions = array_merge($positions, $this->getStepPositions($step));
+        }
+        if (!empty($positions)) {
+            $this->dispatch('template-clear-and-add', positions: $positions);
         }
     }
 

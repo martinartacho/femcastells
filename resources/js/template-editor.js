@@ -739,6 +739,7 @@ function addPosition(grupId) {
     showProps(node);
     refreshCounts();
     layer.draw();
+    syncCanvasHint();
 }
 
 function selectByGrup(grupId) {
@@ -980,6 +981,13 @@ function exportPositions() {
     }));
 }
 
+function syncCanvasHint() {
+    const hint = document.getElementById('te-canvas-hint');
+    if (!hint || !layer) return;
+    const hasNodes = layer.getChildren(n => n.getAttr?.('posId')).length > 0;
+    hint.style.display = hasNodes ? 'none' : 'flex';
+}
+
 // AFEGEIX posicions al canvas sense netejar l'escena
 function addPositions(newPositions) {
     if (!stage || !layer) return;
@@ -990,6 +998,7 @@ function addPositions(newPositions) {
     saveHistory();
     refreshCounts();
     layer.draw();
+    syncCanvasHint();
 }
 
 function clearCanvas() {
@@ -1001,6 +1010,7 @@ function clearCanvas() {
     saveHistory();
     refreshCounts();
     layer.draw();
+    syncCanvasHint();
 }
 
 // Livewire dispatch → re-inicialitza el canvas amb noves posicions
@@ -1013,6 +1023,15 @@ window.addEventListener('template-regenerate', e => {
 window.addEventListener('template-add-positions', e => {
     const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
     if (window.templateEditor) window.templateEditor.addPositions(pos);
+});
+
+// Livewire dispatch → neteja canvas i afegeix posicions
+window.addEventListener('template-clear-and-add', e => {
+    const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
+    if (window.templateEditor) {
+        window.templateEditor.clearCanvas();
+        window.templateEditor.addPositions(pos);
+    }
 });
 
 // Aplica la configuració de categories desada a la BD
