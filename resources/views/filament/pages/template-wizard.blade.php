@@ -136,16 +136,37 @@
             </div>
         </div>
 
+        {{-- Importa SVG --}}
+        <label title="Importa SVG"
+               style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                      background:#fff; font-size:14px; cursor:pointer; color:#6b7280;
+                      display:flex; align-items:center; line-height:1;">
+            📥
+            <input type="file" accept=".svg" style="display:none"
+                   onchange="window.templateEditor.importSVGFile(this)">
+        </label>
+
+        {{-- Afegeix imatge (logo, patrocinador...) --}}
+        <label title="Afegeix imatge (PNG, JPG, SVG, GIF)"
+               style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                      background:#fff; font-size:14px; cursor:pointer; color:#6b7280;
+                      display:flex; align-items:center; line-height:1;">
+            🖼️
+            <input type="file" accept="image/*" style="display:none"
+                   onchange="window.templateEditor.importImageFile(this)">
+        </label>
+
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
             <input id="te-final-name" type="text" value="{{ $templateName }}"
                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
                           font-size:13px; width:200px; color:#374151; outline:none;">
             <button type="button"
                     onclick="
-                        const name = document.getElementById('te-final-name').value;
-                        const pos  = window.templateEditor.exportPositions();
-                        if (!pos.length) { alert('El canvas és buit'); return; }
-                        @this.dispatch('template-save', { name, positionsJson: JSON.stringify(pos) });
+                        const name  = document.getElementById('te-final-name').value;
+                        const views = window.templateEditor.exportAllViews();
+                        const total = Object.values(views).reduce((s, v) => s + v.length, 0);
+                        if (!total) { alert('El canvas és buit'); return; }
+                        @this.dispatch('template-save', { name, positionsJson: JSON.stringify(views) });
                     "
                     style="padding:6px 18px; background:#059669; color:#fff; border:none; border-radius:8px;
                            font-size:13px; font-weight:600; cursor:pointer;">
@@ -271,18 +292,57 @@
                             letter-spacing:.08em; color:#9ca3af; margin-bottom:5px;">
                     Figures (px)
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px;">
                     <div>
-                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">A (amplada)</label>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">A (px)</label>
                         <input type="number" wire:model.live="defaultW" class="te-input"
                                style="font-size:11px; padding:3px 6px;" min="5" max="300">
                     </div>
                     <div>
-                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">H (alçada)</label>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">H (px)</label>
                         <input type="number" wire:model.live="defaultH" class="te-input"
                                style="font-size:11px; padding:3px 6px;" min="5" max="300">
                     </div>
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">Angle °</label>
+                        <input type="number" wire:model.live="defaultAngle" class="te-input"
+                               style="font-size:11px; padding:3px 6px;" min="-180" max="180">
+                    </div>
                 </div>
+            </div>
+
+            {{-- Modifica totes les figures --}}
+            <div style="border-top:1px solid #f3f4f6; padding:8px 8px 6px;">
+                <div style="font-size:9px; font-weight:700; text-transform:uppercase;
+                            letter-spacing:.08em; color:#9ca3af; margin-bottom:5px;">
+                    Modifica totes
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-bottom:5px;">
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">Angle °</label>
+                        <input type="number" id="all-angle" value="-90" step="1"
+                               class="te-input" style="font-size:11px; padding:3px 6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">A (px)</label>
+                        <input type="number" id="all-w" value="100" step="1" min="5"
+                               class="te-input" style="font-size:11px; padding:3px 6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:9px; color:#6b7280; display:block; margin-bottom:1px;">H (px)</label>
+                        <input type="number" id="all-h" value="20" step="1" min="5"
+                               class="te-input" style="font-size:11px; padding:3px 6px;">
+                    </div>
+                </div>
+                <button onclick="window.templateEditor.applyToAll(
+                            +document.getElementById('all-angle').value,
+                            +document.getElementById('all-w').value,
+                            +document.getElementById('all-h').value)"
+                        style="padding:3px 8px; background:#e0f2fe; border:1px solid #38bdf8;
+                               border-radius:5px; font-size:10px; cursor:pointer;
+                               color:#0369a1; width:100%;">
+                    ✏ Aplica a totes
+                </button>
             </div>
 
             {{-- Construeix pas a pas --}}

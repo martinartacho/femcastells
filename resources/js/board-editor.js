@@ -19,39 +19,55 @@ const ZONE_COLORS = {
     pinya:  '#e5e7eb',
 };
 
-// Role-based colors: generador categories + motor PHP + FemPinya imports
+// Colors per grup — sincronitzats amb POSICIONS de template-editor.js
 const GRUP_COLORS = {
-    agulla:     '#1a237e',
-    tronc:      '#e65100',
-    contrafort: '#f9a825',
-    laterals:   '#2e7d32',
-    mitjans:    '#1565c0',
-    folre:      '#6a1b9a',
-    manilles:   '#c62828',
-    baixos:     '#90a4ae',
-    baix:      '#37474f',
-    nucli:     '#ffcdd2',
-    nucli_D:   '#f8bbd0',
-    nucli_E:   '#f8bbd0',
-    lateral_D: '#c8e6c9',
-    lateral_E: '#bbdefb',
-    rengle:    '#fff9c4',
-    falca_D:   '#d1c4e9',
-    falca_E:   '#d1c4e9',
-    angle_D:   '#ffe0b2',
-    angle_E:   '#ffe0b2',
-    Plena:        '#f8bbd0',
-    Carregada:    '#bbdefb',
-    Buida:        '#c8e6c9',
-    Rengle:       '#fff9c4',
-    Descarregada: '#d1c4e9',
-    Una:    '#f8bbd0',
-    Dues:   '#bbdefb',
-    Tres:   '#c8e6c9',
-    Quatre: '#fff9c4',
-    Cinc:   '#d1c4e9',
-    Sis:    '#ffe0b2',
-    Set:    '#b2dfdb',
+    // Categories wizard
+    rengle:     '#e0e7ff',
+    agulla:     '#c7d2fe',
+    contrafort: '#fef3c7',
+    cordo:      '#f1f5f9',
+    mans:       '#bfdbfe',
+    porta:      '#ffedd5',
+    vent:       '#bbf7d0',
+    segon:      '#fce7f3',
+    terc:       '#fbcfe8',
+    quart:      '#f9a8d4',
+    dos:        '#fef9c3',
+    acotxador:  '#fef08a',
+    enxaneta:   '#fde047',
+    buida:      '#c7d2fe',
+    plena:      '#a5b4fc',
+    // Categories generador (backward compat)
+    tronc:      '#fed7aa',
+    baixos:     '#cbd5e1',
+    laterals:   '#dbeafe',
+    mitjans:    '#fef3c7',
+    folre:      '#d1fae5',
+    manilles:   '#fce7f3',
+    // Motor PHP antic
+    baix:       '#e0e7ff',
+    nucli:      '#fce7f3',
+    nucli_D:    '#fbcfe8',
+    nucli_E:    '#fbcfe8',
+    lateral_D:  '#bbf7d0',
+    lateral_E:  '#bfdbfe',
+    falca_D:    '#ede9fe',
+    falca_E:    '#ede9fe',
+    angle_D:    '#ffedd5',
+    angle_E:    '#ffedd5',
+    // SVG import (noms capitalitzats)
+    Rengle:       '#e0e7ff',
+    Plena:        '#a5b4fc',
+    Buida:        '#c7d2fe',
+    Carregada:    '#bfdbfe',
+    Descarregada: '#ede9fe',
+    Una:    '#fce7f3',
+    Dues:   '#bfdbfe',
+    Tres:   '#bbf7d0',
+    Quatre: '#fef9c3',
+    Cinc:   '#ede9fe',
+    Sis:    '#ffedd5',
+    Set:    '#ccfbf1',
 };
 
 // --- Historial (undo) ---
@@ -108,7 +124,7 @@ function fitFontSize(alias, textW, textH) {
     if (!alias) return BASE_FONT;
     const byWidth  = (textW * 0.88) / (alias.length * CHAR_RATIO);
     const byHeight = textH * 0.72;
-    return Math.max(4.5, Math.min(9, byWidth, byHeight));
+    return Math.max(4.5, Math.min(byWidth, byHeight));
 }
 
 // --- Helpers --
@@ -215,6 +231,45 @@ function initBoard(type = '3d6') {
     updateZoomDisplay();
 
     positions.forEach(pos => {
+        // Imatge informativa — no assignable, renderitzar a sota de tot
+        if (pos.shape === 'image') {
+            if (!pos.imageData) return;
+            const imgEl = new window.Image();
+            imgEl.onload = () => {
+                const g = new Konva.Group({
+                    x: pos.cx - minX + 40, y: pos.cy - minY + 40,
+                    rotation: pos.angle, listening: false,
+                });
+                g.add(new Konva.Image({
+                    image: imgEl, x: -pos.w / 2, y: -pos.h / 2,
+                    width: pos.w, height: pos.h, opacity: 0.85,
+                }));
+                layer.add(g);
+                g.moveToBottom();
+                layer.batchDraw();
+            };
+            imgEl.src = pos.imageData;
+            return;
+        }
+
+        // Etiqueta — text estàtic, no assignable
+        if (pos.shape === 'label') {
+            const g = new Konva.Group({
+                x: pos.cx - minX + 40, y: pos.cy - minY + 40,
+                rotation: pos.angle, listening: false,
+            });
+            g.add(new Konva.Text({
+                x: -pos.w / 2, y: -pos.h / 2,
+                width: pos.w, height: pos.h,
+                text: pos.nom ?? '',
+                fontSize: Math.max(8, Math.min(14, pos.h * 0.7)),
+                fontFamily: 'sans-serif', fontStyle: 'bold',
+                fill: '#374151', align: 'center', verticalAlign: 'middle',
+            }));
+            layer.add(g);
+            return;
+        }
+
         const group = new Konva.Group({
             x: pos.cx - minX + 40,
             y: pos.cy - minY + 40,
@@ -224,13 +279,16 @@ function initBoard(type = '3d6') {
 
         const emptyFill = zoneColor(pos, centroid);
 
-        const rect = new Konva.Ellipse({
-            radiusX: pos.w / 2,
-            radiusY: pos.h / 2,
-            fill: emptyFill,
-            stroke: STROKE,
-            strokeWidth: 0.8,
-        });
+        const rect = pos.shape === 'rect'
+            ? new Konva.Rect({
+                x: -pos.w / 2, y: -pos.h / 2,
+                width: pos.w, height: pos.h,
+                fill: emptyFill, stroke: STROKE, strokeWidth: 0.8, cornerRadius: 2,
+            })
+            : new Konva.Ellipse({
+                radiusX: pos.w / 2, radiusY: pos.h / 2,
+                fill: emptyFill, stroke: STROKE, strokeWidth: 0.8,
+            });
 
         const isTall = pos.h > pos.w;
         const textW = isTall ? pos.h * 0.75 : pos.w * 0.82;
@@ -290,6 +348,31 @@ function initBoard(type = '3d6') {
     updateCounter();
     updateUI();
     setupDragDrop();
+
+    // Logo de la colla (si activat a Configuració)
+    if (window.__showLogo && window.__logoUrl) {
+        const logoEl = new window.Image();
+        logoEl.onload = () => {
+            const maxSize = 80;
+            const scale = Math.min(1, maxSize / logoEl.naturalWidth, maxSize / logoEl.naturalHeight);
+            const lw = logoEl.naturalWidth  * scale;
+            const lh = logoEl.naturalHeight * scale;
+            const margin = 12;
+            const logoImg = new Konva.Image({
+                image:    logoEl,
+                x:        stage.width()  - lw  - margin,
+                y:        stage.height() - lh  - margin,
+                width:    lw,
+                height:   lh,
+                opacity:  0.75,
+                listening: false,
+            });
+            layer.add(logoImg);
+            logoImg.moveToBottom();
+            layer.batchDraw();
+        };
+        logoEl.src = window.__logoUrl;
+    }
 }
 
 function getPosIdAtPoint(clientX, clientY) {

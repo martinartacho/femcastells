@@ -8,6 +8,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -59,6 +60,10 @@ class CollaSettings extends Page
                         ->getUploadedFileNameForStorageUsing(
                             fn (TemporaryUploadedFile $file) => 'colla-' . filament()->getTenant()?->shortname . '.' . $file->getClientOriginalExtension()
                         ),
+                    Toggle::make('show_logo_in_pinya')
+                        ->label('Mostrar logo a les pinyes')
+                        ->helperText('Si activat, el logo apareix a totes les plantilles i a la pissarra.')
+                        ->default(false),
                 ])->columns(1),
 
                 Section::make('Configuració de membres')->schema([

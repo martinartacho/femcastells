@@ -2,6 +2,11 @@
     @vite('resources/js/board-editor.js')
     <script>window.__boardPositions = @json($this->getCastlePositions());</script>
     <script>window.__autoLoadAssignments = @json($this->getAutoLoadAssignments() ?? []);</script>
+    @php $colla = filament()->getTenant(); @endphp
+    <script>
+        window.__showLogo  = @json((bool) ($colla?->show_logo_in_pinya));
+        window.__logoUrl   = @json($colla?->logo ? asset('storage/' . $colla->logo) : null);
+    </script>
 
     <style>
         body.board-fullscreen aside,

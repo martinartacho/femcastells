@@ -39,9 +39,10 @@ class TemplateWizardPage extends Page
     public int    $pisos   = 6;
     public string $nivell  = 'base';
     public string $templateName = '';
-    public int    $defaultW    = 100;
-    public int    $defaultH    = 30;
-    public int    $cordonsN    = 1;
+    public int    $defaultW     = 100;
+    public int    $defaultH     = 30;
+    public int    $defaultAngle = -90;
+    public int    $cordonsN     = 1;
 
     public function mount(): void
     {
@@ -50,7 +51,11 @@ class TemplateWizardPage extends Page
 
     public function updatedFamilia(): void { $this->templateName = $this->getCastellName(); }
     public function updatedPisos(): void   { $this->templateName = $this->getCastellName(); }
-    public function updatedNivell(): void  { $this->templateName = $this->getCastellName(); }
+    public function updatedNivell(): void
+    {
+        $this->templateName = $this->getCastellName();
+        $this->dispatch('template-view-change', nivell: $this->nivell);
+    }
 
     public function addStep(int $step): void
     {
@@ -67,10 +72,16 @@ class TemplateWizardPage extends Page
             return;
         }
 
-        $positions = [];
-        for ($step = 1; $step <= 7; $step++) {
-            $positions = array_merge($positions, $this->getStepPositions($step));
-        }
+        $positions = match ($this->nivell) {
+            'tronc'    => $this->getTroncPositions(),
+            'folre', 'manilles' => array_merge(
+                ...array_map(fn($s) => $this->getStepPositions($s), range(1, 7))
+            ),
+            default    => array_merge(
+                ...array_map(fn($s) => $this->getStepPositions($s), range(1, 7))
+            ),
+        };
+
         if (!empty($positions)) {
             $this->dispatch('template-clear-and-add', positions: $positions);
         }
@@ -232,18 +243,120 @@ class TemplateWizardPage extends Page
         };
     }
 
-    private function buildTroncLabels(int $p): array
+    private function getTroncPositions(): array
     {
-        $rows = [
-            ['grup' => 'agulla', 'nom' => 'agulla'],
-            ['grup' => 'mans',   'nom' => 'acotxador'],
+        $n    = $this->familiaToBaixos();
+        $p    = $this->pisos;
+        $uid  = (string) now()->getTimestampMs();
+        $ang  = (float) $this->defaultAngle;
+
+        $posW = $this->defaultW;   // w=100 → dimensió visual vertical (angle=-90°)
+        $posH = $this->defaultH;   // h=30  → dimensió visual horitzontal (angle=-90°)
+
+        // Quan angle=-90°, la figura és h d'ample × w d'alt visualment.
+        // colSpacing basat en posH (amplada visual); levelGap basat en posW (alçada visual).
+        $colSpacing = (int) round($posH * 1.93);  // per h=30 → ~58px
+        $levelGap   = (int) round($posW * 1.10);  // per w=100 → ~110px
+
+        $colCx = [];
+        for ($g = 0; $g < $n; $g++) {
+            $colCx[$g] = ($g - ($n - 1) / 2.0) * $colSpacing;
+        }
+
+        $levels    = $this->buildTroncLevels($p);
+        $numLevels = count($levels);
+        $pos       = [];
+        $id        = 0;
+
+        // Nivell inferior (segs.) just per sobre y=0; la resta puja de $levelGap en $levelGap
+        $cyBase = -(int) round($posH * 1.7);   // per h=30 → -51 ≈ -50 (ref. id=26)
+
+        foreach ($levels as $li => $level) {
+            $cy = (float) ($cyBase - ($numLevels - 1 - $li) * $levelGap);
+
+            switch ($level['type']) {
+                case 'single':
+                    $pos[] = $this->makePos("t_{$id}_{$uid}", 0.0, $cy,
+                        $posW, $posH, $ang, $level['grup'], $level['nom']);
+                    $id++;
+                    break;
+
+                case 'dosos':
+                    if ($n === 1) {
+                        // Pilar: 1 sol dos, centrat
+                        $pos[] = $this->makePos("t_{$id}_{$uid}", 0.0, $cy,
+                            $posW, $posH, $ang, $level['grup'], 'dos');
+                        $id++;
+                    } else {
+                        // Torre/Tres/Quatre: 2 dosos simètrics
+                        $dx = $colSpacing / 2.0;
+                        $pos[] = $this->makePos("t_{$id}_{$uid}", -$dx, $cy,
+                            $posW, $posH, $ang, $level['grup'], 'dos D');
+                        $id++;
+                        $pos[] = $this->makePos("t_{$id}_{$uid}", +$dx, $cy,
+                            $posW, $posH, $ang, $level['grup'], 'dos E');
+                        $id++;
+                    }
+                    break;
+
+                case 'multi':
+                    for ($g = 0; $g < $n; $g++) {
+                        $label  = $this->bracLabel($g, $n);
+                        $suffix = $label !== '' ? ' ' . $label : '';
+                        $pos[]  = $this->makePos("t_{$id}_{$uid}", $colCx[$g], $cy,
+                            $posW, $posH, $ang, $level['grup'],
+                            $level['nom'] . $suffix);
+                        $id++;
+                    }
+                    break;
+            }
+        }
+
+        return $pos;
+    }
+
+    private function buildTroncLevels(int $p): array
+    {
+        $levels = [
+            ['type' => 'single', 'grup' => 'enxaneta',  'nom' => 'enxaneta'],
+            ['type' => 'single', 'grup' => 'acotxador', 'nom' => 'acotxador'],
+            ['type' => 'dosos',  'grup' => 'dosos',      'nom' => 'dosos'],
         ];
-        for ($pis = $p - 2; $pis >= 2; $pis--) {
-            $rows[] = ['grup' => 'mans', 'nom' => match ($pis) {
+        // Pom de dalt: p, p-1, p-2. Tronc: p-3 fins a 2. Baix: 1 (a la pinya).
+        for ($pis = $p - 3; $pis >= 2; $pis--) {
+            $grup = match (true) {
+                $pis === 2 => 'segon',
+                $pis === 3 => 'terc',
+                default    => 'quart',
+            };
+            $nom = match ($pis) {
                 2 => 'segs.', 3 => 'terços', 4 => 'quarts',
                 5 => 'quints', 6 => 'sisens', 7 => 'setens',
                 default => $pis . 'ns',
-            }];
+            };
+            $levels[] = ['type' => 'multi', 'grup' => $grup, 'nom' => $nom];
+        }
+        return $levels;
+    }
+
+    private function buildTroncLabels(int $p): array
+    {
+        $rows = [
+            ['grup' => 'enxaneta',  'nom' => 'enxaneta'],
+            ['grup' => 'acotxador', 'nom' => 'acotxador'],
+        ];
+        for ($pis = $p - 2; $pis >= 2; $pis--) {
+            $grup = match (true) {
+                $pis === 2 => 'segon',
+                $pis === 3 => 'terc',
+                default    => 'quart',
+            };
+            $nom = match ($pis) {
+                2 => 'segs.', 3 => 'terços', 4 => 'quarts',
+                5 => 'quints', 6 => 'sisens', 7 => 'setens',
+                default => $pis . 'ns',
+            };
+            $rows[] = ['grup' => $grup, 'nom' => $nom];
         }
         $rows[] = ['grup' => 'contrafort', 'nom' => 'contrafort'];
         $rows[] = ['grup' => 'rengle',     'nom' => 'rengle'];
@@ -618,9 +731,17 @@ class TemplateWizardPage extends Page
         $collaId   = auth()->user()?->colla_id;
         $name      = trim($name) ?: $this->getCastellName();
         $key       = \Illuminate\Support\Str::slug($name);
-        $positions = json_decode($positionsJson, true) ?? [];
+        $decoded = json_decode($positionsJson, true) ?? [];
 
-        if (empty($positions)) {
+        // Detecta si és format multi-vista { base:[...], tronc:[...] } o pla [...]
+        if (array_is_list($decoded)) {
+            $positions = ['base' => $decoded];
+        } else {
+            $positions = array_filter($decoded, fn($v) => is_array($v) && !empty($v));
+        }
+
+        $totalCount = array_sum(array_map('count', $positions));
+        if ($totalCount === 0) {
             Notification::make()->title('Cap posició al canvas')->warning()->send();
             return;
         }
@@ -633,7 +754,7 @@ class TemplateWizardPage extends Page
         $template->saveVersion('Wizard ' . now()->format('d/m/Y H:i'));
 
         Notification::make()
-            ->title('Plantilla desada: ' . $template->name . ' (' . count($positions) . ' posicions)')
+            ->title('Plantilla desada: ' . $template->name . ' (' . $totalCount . ' posicions)')
             ->success()
             ->send();
     }

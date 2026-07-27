@@ -26,6 +26,7 @@ class Colla extends Model implements HasAvatar
         'city',
         'country',
         'logo',
+        'show_logo_in_pinya',
         'color',
         'max_members',
         'assaigs_weeks_visible',

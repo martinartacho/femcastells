@@ -17,12 +17,21 @@ export const POSICIONS = [
     // El Pom de Dalt (La Cúpula)
     { id: 'dos',        label: 'Dos',        color: '#fef9c3', text: '#713f12', shape: 'rect',    w: 34, h: 15 },
     { id: 'acotxador',  label: 'Acotxador',  color: '#fef08a', text: '#713f12', shape: 'rect',    w: 30, h: 14 },
+    { id: 'dosos',      label: 'Dosos',      color: '#fef9c3', text: '#713f12', shape: 'rect',    w: 30, h: 14 },
     { id: 'enxaneta',   label: 'Enxaneta',   color: '#fde047', text: '#78350f', shape: 'circle',  w: 16, h: 16 },
     // Auxiliar
-    { id: 'etiqueta',   label: 'Etiqueta',   color: 'transparent', text: '#374151', shape: 'label', w: 60, h: 15 },
-    // Backward compat — generats pel motor (no apareixen a la barra lateral)
+    { id: 'etiqueta',   label: 'Etiqueta',   color: 'transparent', text: '#374151', shape: 'label', w: 160, h: 15 },
+    // Backward compat — generats pel motor antic (no apareixen a la barra lateral)
     { id: 'buida',      label: 'Buida',      color: '#c7d2fe', text: '#3730a3', shape: 'rect',    w: 34, h: 15 },
     { id: 'plena',      label: 'Plena',      color: '#a5b4fc', text: '#3730a3', shape: 'rect',    w: 34, h: 15 },
+    // Imatges informatives (logo colla, patrocinador...)
+    { id: 'imatge',     label: 'Imatge',     color: 'transparent', text: 'transparent', shape: 'image',  w: 100, h: 100 },
+    // Grups del Generador de pinyes (circular, w==h)
+    { id: 'tronc',      label: 'Tronc',      color: '#fed7aa', text: '#7c2d12', shape: 'circle',  w: 22, h: 22 },
+    { id: 'baixos',     label: 'Baixos',     color: '#cbd5e1', text: '#334155', shape: 'circle',  w: 22, h: 22 },
+    { id: 'laterals',   label: 'Laterals',   color: '#dbeafe', text: '#1e40af', shape: 'circle',  w: 22, h: 22 },
+    { id: 'mitjans',    label: 'Mitjans',    color: '#fef3c7', text: '#78350f', shape: 'circle',  w: 22, h: 22 },
+    { id: 'folre',      label: 'Folre',      color: '#d1fae5', text: '#064e3b', shape: 'circle',  w: 22, h: 22 },
 ];
 const CAT = Object.fromEntries(POSICIONS.map(c => [c.id, c]));
 
@@ -36,6 +45,10 @@ let rulerXNodes = [];
 let rulerYNodes = [];
 let history = [];
 let historyIdx = -1;
+
+// ── Múltiples vistes (base / tronc / folre / manilles) ───────────────────────
+const viewData   = { base: [], tronc: [], folre: [], manilles: [] };
+let   currentView = 'base';
 
 // ── Init (idempotent) ────────────────────────────────────────────────────────
 function initEditor(initialPositions = []) {
@@ -389,6 +402,9 @@ function showContextMenu(clientX, clientY) {
         ${btn('🔄 Fuga del centre (0,0)', fugiDeCenter)}
         ${multiSections}
         ${sep()}
+        ${btn('⬆ Porta al davant', bringToFront)}
+        ${btn('⬇ Envia al fons', sendToBack)}
+        ${sep()}
         ${btn('🗑 Elimina selecció', deleteSelected, true)}
     `;
 
@@ -539,7 +555,7 @@ function kbHandler(e) {
 
 // ── Crear node Konva per a una posició ───────────────────────────────────────
 function addNode(pos) {
-    const cat   = CAT[pos.grup] ?? CAT['cordo'];
+    const cat   = CAT[pos.grup] ?? CAT[pos.grup?.toLowerCase()] ?? CAT['cordo'];
     const w     = pos.w ?? cat.w;
     const h     = pos.h ?? cat.h;
     const shape = pos.shape ?? cat.shape;
@@ -561,8 +577,26 @@ function addNode(pos) {
     const tc   = cat.text;
     const stroke = '#374151';
 
+    // Desa imageData si n'hi ha (per export i clonació)
+    if (pos.imageData) group.setAttr('posImageData', pos.imageData);
+
     let body;
-    if (shape === 'ellipse') {
+    if (shape === 'image') {
+        // Placeholder fins que carregui la imatge
+        body = new Konva.Rect({ x: -w / 2, y: -h / 2, width: w, height: h,
+                                fill: '#f3f4f6', stroke: '#d1d5db', strokeWidth: 1,
+                                dash: [4, 3] });
+        if (pos.imageData) {
+            const imgEl = new window.Image();
+            imgEl.onload = () => {
+                body.fill('transparent');
+                body.stroke('transparent');
+                group.add(new Konva.Image({ image: imgEl, x: -w / 2, y: -h / 2, width: w, height: h }));
+                layer.batchDraw();
+            };
+            imgEl.src = pos.imageData;
+        }
+    } else if (shape === 'ellipse') {
         body = new Konva.Ellipse({ radiusX: w / 2, radiusY: h / 2, fill, stroke, strokeWidth: 0.8 });
     } else if (shape === 'circle') {
         const r = Math.min(w, h) / 2;
@@ -580,7 +614,7 @@ function addNode(pos) {
 
     const label = new Konva.Text({
         x: -w / 2, y: -h / 2, width: w, height: h,
-        text: pos.nom ?? cat.label,
+        text: shape === 'image' ? '' : (pos.nom ?? cat.label),
         fontSize: Math.max(6, Math.min(12, h * 0.55)),
         fontFamily: 'sans-serif', fill: tc,
         align: 'center', verticalAlign: 'middle',
@@ -789,13 +823,14 @@ function cloneSelected() {
         existingNames.add(newNom);
 
         const clone = addNode({
-            id:    `pos_${++posCounter}`,
-            cx:    orig.x() + 25,
-            cy:    orig.y() + 25,
+            id:       `pos_${++posCounter}`,
+            cx:       orig.x() + 25,
+            cy:       orig.y() + 25,
             w, h,
-            angle: orig.rotation(),
+            angle:    orig.rotation(),
             grup, shape,
-            nom:   newNom,
+            nom:      newNom,
+            imageData: orig.getAttr('posImageData') ?? undefined,
         });
         clones.push(clone);
     });
@@ -839,6 +874,18 @@ function fugiDeCenter() {
 
 // Backward compat alias
 const radialAlign = fugiDeCenter;
+
+function sendToBack() {
+    transformer.nodes().forEach(n => n.moveToBottom());
+    layer.draw();
+    saveHistory();
+}
+
+function bringToFront() {
+    transformer.nodes().forEach(n => n.moveToTop());
+    layer.draw();
+    saveHistory();
+}
 
 function alignToAngle(deg) {
     if (!layer) return;
@@ -968,17 +1015,22 @@ function buildCatRow(cat) {
 
 function exportPositions() {
     if (!layer) return [];
-    return layer.getChildren(n => n.getAttr?.('posId')).map(node => ({
-        id:    node.getAttr('posId'),
-        cx:    Math.round(node.x() * 10) / 10,
-        cy:    Math.round(node.y() * 10) / 10,
-        w:     Math.round(node.getAttr('posW') * (node.scaleX?.() ?? 1) * 10) / 10,
-        h:     Math.round(node.getAttr('posH') * (node.scaleY?.() ?? 1) * 10) / 10,
-        angle: Math.round(node.rotation() * 10) / 10,
-        grup:  node.getAttr('posGrup') ?? '',
-        nom:   node.getAttr('posNom')  ?? '',
-        shape: node.getAttr('posShape') ?? 'rect',
-    }));
+    return layer.getChildren(n => n.getAttr?.('posId')).map(node => {
+        const out = {
+            id:    node.getAttr('posId'),
+            cx:    Math.round(node.x() * 10) / 10,
+            cy:    Math.round(node.y() * 10) / 10,
+            w:     Math.round(node.getAttr('posW') * (node.scaleX?.() ?? 1) * 10) / 10,
+            h:     Math.round(node.getAttr('posH') * (node.scaleY?.() ?? 1) * 10) / 10,
+            angle: Math.round(node.rotation() * 10) / 10,
+            grup:  node.getAttr('posGrup') ?? '',
+            nom:   node.getAttr('posNom')  ?? '',
+            shape: node.getAttr('posShape') ?? 'rect',
+        };
+        const imgData = node.getAttr('posImageData');
+        if (imgData) out.imageData = imgData;
+        return out;
+    });
 }
 
 function syncCanvasHint() {
@@ -1013,9 +1065,123 @@ function clearCanvas() {
     syncCanvasHint();
 }
 
-// Livewire dispatch → re-inicialitza el canvas amb noves posicions
+// ── Importació d'imatge ──────────────────────────────────────────────────────
+function importImageFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const dataUrl = e.target.result;
+        const imgEl = new window.Image();
+        imgEl.onload = () => {
+            const maxSize = 200;
+            const scale = Math.min(1, maxSize / imgEl.naturalWidth, maxSize / imgEl.naturalHeight);
+            const w = Math.round(imgEl.naturalWidth  * scale);
+            const h = Math.round(imgEl.naturalHeight * scale);
+            addNode({
+                id:        `img_${Date.now()}`,
+                cx:        0, cy: 0, w, h, angle: 0,
+                grup:      'imatge',
+                nom:       file.name.replace(/\.[^.]+$/, ''),
+                shape:     'image',
+                imageData: dataUrl,
+            });
+            saveHistory();
+            refreshCounts();
+            layer.draw();
+            syncCanvasHint();
+        };
+        imgEl.src = dataUrl;
+        input.value = '';
+    };
+    reader.readAsDataURL(file);
+}
+
+// ── Importació SVG ───────────────────────────────────────────────────────────
+// Parseja un fitxer SVG (text) i retorna un array de posicions centrades a (0,0)
+function importSVG(svgText) {
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    const rects = [...doc.querySelectorAll('rect')].filter(r => !r.closest('defs'));
+
+    const raw = rects.map(rect => {
+        const x = parseFloat(rect.getAttribute('x') || 0);
+        const y = parseFloat(rect.getAttribute('y') || 0);
+        const w = parseFloat(rect.getAttribute('width') || 34);
+        const h = parseFloat(rect.getAttribute('height') || 15);
+        const transform = rect.getAttribute('transform') || '';
+
+        let cx = x + w / 2;
+        let cy = y + h / 2;
+        let angle = 0;
+
+        const rotM = transform.match(/rotate\(\s*([-\d.]+)/);
+        const scaleM = transform.match(/scale\(\s*([-\d.]+)/);
+
+        if (rotM) {
+            angle = parseFloat(rotM[1]);
+            const rad = angle * Math.PI / 180;
+            const nx = cx * Math.cos(rad) - cy * Math.sin(rad);
+            cy     = cx * Math.sin(rad) + cy * Math.cos(rad);
+            cx = nx;
+        } else if (scaleM) {
+            const s = parseFloat(scaleM[1]);
+            cx *= s; cy *= s;
+            if (s < 0) angle = 180;
+        }
+
+        return { cx, cy, w, h, angle };
+    });
+
+    if (raw.length === 0) return [];
+
+    const avgX = raw.reduce((s, p) => s + p.cx, 0) / raw.length;
+    const avgY = raw.reduce((s, p) => s + p.cy, 0) / raw.length;
+    const ts = Date.now();
+
+    return raw.map((p, i) => ({
+        id:    `svg_${ts}_${i}`,
+        cx:    Math.round((p.cx - avgX) * 10) / 10,
+        cy:    Math.round((p.cy - avgY) * 10) / 10,
+        w:     Math.round(p.w),
+        h:     Math.round(p.h),
+        angle: Math.round(p.angle * 10) / 10,
+        grup:  'rengle',
+        nom:   `pos ${i + 1}`,
+        shape: 'rect',
+    }));
+}
+
+// Llegeix el fitxer seleccionat per l'input, parseja i afegeix al canvas
+function importSVGFile(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const positions = importSVG(e.target.result);
+        if (positions.length === 0) {
+            alert('Cap rectangle trobat al SVG.');
+            input.value = '';
+            return;
+        }
+        clearCanvas();
+        addPositions(positions);
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// Livewire dispatch → re-inicialitza el canvas amb noves posicions (suporta multi-vista)
 window.addEventListener('template-regenerate', e => {
-    const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
+    const raw = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
+    if (Array.isArray(raw)) {
+        // Format antic: array pla → va tot a la vista 'base'
+        Object.keys(viewData).forEach(k => { viewData[k] = []; });
+        viewData['base'] = raw;
+    } else if (raw && typeof raw === 'object') {
+        // Format nou: { base: [...], tronc: [...], ... }
+        Object.keys(viewData).forEach(k => { viewData[k] = raw[k] ?? []; });
+    }
+    const pos = viewData[currentView] ?? [];
     if (window.templateEditor) window.templateEditor.init(pos);
 });
 
@@ -1025,12 +1191,28 @@ window.addEventListener('template-add-positions', e => {
     if (window.templateEditor) window.templateEditor.addPositions(pos);
 });
 
-// Livewire dispatch → neteja canvas i afegeix posicions
+// Livewire dispatch → neteja canvas i afegeix posicions (desa vista anterior)
 window.addEventListener('template-clear-and-add', e => {
     const pos = e.detail?.positions ?? e.detail?.[0]?.positions ?? [];
     if (window.templateEditor) {
+        viewData[currentView] = exportPositions();
         window.templateEditor.clearCanvas();
         window.templateEditor.addPositions(pos);
+        viewData[currentView] = exportPositions();
+    }
+});
+
+// Livewire dispatch → canvi de vista (base/tronc/folre/manilles)
+window.addEventListener('template-view-change', e => {
+    const newView = e.detail?.nivell ?? e.detail?.[0]?.nivell ?? 'base';
+    if (newView === currentView) return;
+    // Desa posicions actuals
+    viewData[currentView] = exportPositions();
+    currentView = newView;
+    // Carrega la nova vista
+    if (window.templateEditor) {
+        window.templateEditor.clearCanvas();
+        window.templateEditor.addPositions(viewData[currentView] ?? []);
     }
 });
 
@@ -1048,6 +1230,44 @@ function applyStoredLabels() {
 }
 
 // ── Exposem l'API global ──────────────────────────────────────────────────────
+function exportAllViews() {
+    viewData[currentView] = exportPositions();
+    return viewData;
+}
+
+function applyToAll(angle, w, h) {
+    saveHistory();
+    layer.getChildren(n => n.getAttr?.('posId')).forEach(node => {
+        const shape = node.getAttr('posShape');
+        if (shape === 'image' || shape === 'label') return;
+
+        node.rotation(angle);
+
+        const rect    = node.findOne('Rect');
+        const ellipse = node.findOne('Ellipse');
+        const circle  = node.findOne('Circle');
+
+        if (ellipse) {
+            ellipse.radiusX(w / 2); ellipse.radiusY(h / 2);
+        } else if (circle) {
+            circle.radius(Math.min(w, h) / 2);
+        } else if (rect) {
+            rect.x(-w / 2); rect.y(-h / 2); rect.width(w); rect.height(h);
+        }
+
+        const text = node.findOne('Text');
+        if (text) {
+            text.x(-w / 2); text.y(-h / 2); text.width(w); text.height(h);
+            text.fontSize(Math.max(6, Math.min(12, h * 0.55)));
+        }
+
+        node.setAttr('posW', w);
+        node.setAttr('posH', h);
+    });
+    layer.batchDraw();
+    refreshCounts();
+}
+
 window.templateEditor = {
     init: initEditor,
     POSICIONS,
@@ -1082,4 +1302,10 @@ window.templateEditor = {
     updateAngle,
     updateW,
     updateH,
+    importSVGFile,
+    importImageFile,
+    sendToBack,
+    bringToFront,
+    applyToAll,
+    exportAllViews,
 };
