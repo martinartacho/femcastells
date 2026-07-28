@@ -277,35 +277,37 @@ class TemplateWizardPage extends Page
             switch ($level['type']) {
                 case 'single':
                     $pos[] = $this->makePos("t_{$id}_{$uid}", 0.0, $cy,
-                        $posW, $posH, $ang, $level['grup'], $level['nom']);
+                        $posW, $posH, $ang, $level['grup'], $level['nom'], $level['ordre'] ?? null);
                     $id++;
                     break;
 
                 case 'dosos':
+                    $ordre = $level['ordre'] ?? null;
                     if ($n === 1) {
                         // Pilar: 1 sol dos, centrat
                         $pos[] = $this->makePos("t_{$id}_{$uid}", 0.0, $cy,
-                            $posW, $posH, $ang, $level['grup'], 'dos');
+                            $posW, $posH, $ang, $level['grup'], 'dos', $ordre);
                         $id++;
                     } else {
                         // Torre/Tres/Quatre: 2 dosos simètrics
                         $dx = $colSpacing / 2.0;
                         $pos[] = $this->makePos("t_{$id}_{$uid}", -$dx, $cy,
-                            $posW, $posH, $ang, $level['grup'], 'dos D');
+                            $posW, $posH, $ang, $level['grup'], 'dos D', $ordre);
                         $id++;
                         $pos[] = $this->makePos("t_{$id}_{$uid}", +$dx, $cy,
-                            $posW, $posH, $ang, $level['grup'], 'dos E');
+                            $posW, $posH, $ang, $level['grup'], 'dos E', $ordre);
                         $id++;
                     }
                     break;
 
                 case 'multi':
+                    $ordre = $level['ordre'] ?? null;
                     for ($g = 0; $g < $n; $g++) {
                         $label  = $this->bracLabel($g, $n);
                         $suffix = $label !== '' ? ' ' . $label : '';
                         $pos[]  = $this->makePos("t_{$id}_{$uid}", $colCx[$g], $cy,
                             $posW, $posH, $ang, $level['grup'],
-                            $level['nom'] . $suffix);
+                            $level['nom'] . $suffix, $ordre);
                         $id++;
                     }
                     break;
@@ -317,12 +319,13 @@ class TemplateWizardPage extends Page
 
     private function buildTroncLevels(int $p): array
     {
+        // Pom de dalt ocupa els 3 pisos superiors: p=enxaneta, p-1=acotxador, p-2=dos
         $levels = [
-            ['type' => 'single', 'grup' => 'enxaneta',  'nom' => 'enxaneta'],
-            ['type' => 'single', 'grup' => 'acotxador', 'nom' => 'acotxador'],
-            ['type' => 'dosos',  'grup' => 'dosos',      'nom' => 'dosos'],
+            ['type' => 'single', 'grup' => 'enxaneta',  'nom' => 'enxaneta',  'ordre' => $p],
+            ['type' => 'single', 'grup' => 'acotxador', 'nom' => 'acotxador', 'ordre' => $p - 1],
+            ['type' => 'dosos',  'grup' => 'dosos',      'nom' => 'dosos',     'ordre' => $p - 2],
         ];
-        // Pom de dalt: p, p-1, p-2. Tronc: p-3 fins a 2. Baix: 1 (a la pinya).
+        // Pisos intermedis: de p-3 fins a 2 (pis 1 = baix, és a la base)
         for ($pis = $p - 3; $pis >= 2; $pis--) {
             $grup = match (true) {
                 $pis === 2 => 'segon',
@@ -334,7 +337,7 @@ class TemplateWizardPage extends Page
                 5 => 'quints', 6 => 'sisens', 7 => 'setens',
                 default => $pis . 'ns',
             };
-            $levels[] = ['type' => 'multi', 'grup' => $grup, 'nom' => $nom];
+            $levels[] = ['type' => 'multi', 'grup' => $grup, 'nom' => $nom, 'ordre' => $pis];
         }
         return $levels;
     }
@@ -437,14 +440,18 @@ class TemplateWizardPage extends Page
         return $arms;
     }
 
-    private function makePos(string $id, float $cx, float $cy, int $w, int $h, float $angle, string $grup, string $nom): array
+    private function makePos(string $id, float $cx, float $cy, int $w, int $h, float $angle, string $grup, string $nom, ?int $ordre = null): array
     {
-        return [
+        $pos = [
             'id' => $id, 'cx' => $cx, 'cy' => $cy,
             'w' => $w, 'h' => $h, 'angle' => $angle,
             'grup' => $grup, 'nom' => $nom,
             'shape' => 'rect',
         ];
+        if ($ordre !== null) {
+            $pos['ordre'] = $ordre;
+        }
+        return $pos;
     }
 
     private function getStepPositions(int $step): array

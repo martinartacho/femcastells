@@ -81,6 +81,18 @@ class CollaSettings extends Page
                         ->required(),
                 ]),
 
+                Section::make('Pissarra')->schema([
+                    TextInput::make('board_settings.height_alert_cm')
+                        ->label('Llindar alçada espatlla (cm)')
+                        ->helperText('Si la diferència entre castellers supera aquest valor, apareix ⚠ al costat de la posició.')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(50)
+                        ->step(1)
+                        ->default(15)
+                        ->suffix('cm'),
+                ]),
+
                 Section::make('Protecció de dades (RGPD)')->schema([
                     TextInput::make('gdpr_version')
                         ->label('Versió del text RGPD')

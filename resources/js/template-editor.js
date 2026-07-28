@@ -362,6 +362,8 @@ function showContextMenu(clientX, clientY) {
             if (sh) sh.addEventListener('click', () => { distributeH(+(document.getElementById(sepId)?.value??5)); hideCtxMenu(); });
             if (sv) sv.addEventListener('click', () => { distributeV(+(document.getElementById(sepId)?.value??5)); hideCtxMenu(); });
         }, 0);
+        multiSections += sep() + btn('🔢 Ordena per proximitat (0,0)', ordenaSelected);
+
         multiSections += sep() + row(`
             <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;">
                 Separació entre figures
@@ -380,10 +382,16 @@ function showContextMenu(clientX, clientY) {
         `);
     }
 
+    const currentGrup = sel.length > 0 ? sel[0].getAttr('posGrup') : null;
+    const catLabel    = currentGrup ? (CAT[currentGrup]?.label ?? currentGrup) : null;
+
     menu.innerHTML = `
         ${row(`<div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;">
             ${n} posició${n!==1?'ns':''} seleccionad${n!==1?'es':'a'}
         </div>`)}
+        ${sep()}
+        ${btn('☑ Selecciona tot el canvas', selectAll)}
+        ${catLabel ? btn(`☑ Selecciona tots els: ${catLabel}`, () => selectByGrup(currentGrup)) : ''}
         ${sep()}
         ${row(`
             <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#9ca3af;margin-bottom:4px;">
@@ -536,6 +544,7 @@ function kbHandler(e) {
     if (['INPUT','TEXTAREA','SELECT'].includes(active)) return;
     if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undoHistory(); return; }
     if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redoHistory(); return; }
+    if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); selectAll(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); return; }
 
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
@@ -572,6 +581,15 @@ function addNode(pos) {
     group.setAttr('posShape', shape);
     group.setAttr('posW', w);
     group.setAttr('posH', h);
+    const autoOrdre = pos.ordre ?? (() => {
+        if (currentView === 'tronc') {
+            const to = getAutoOrdreTronc(pos.grup ?? '');
+            if (to !== null) return to;
+        }
+        const m = (pos.nom ?? cat.label).match(/(\d+)/);
+        return m ? parseInt(m[1]) : null;
+    })();
+    group.setAttr('posOrdre', autoOrdre);
 
     const fill = cat.color;
     const tc   = cat.text;
@@ -668,6 +686,8 @@ function showProps(group) {
     if (nomEl)   nomEl.value    = group.getAttr('posNom') ?? '';
     if (grupEl)  grupEl.value   = group.getAttr('posGrup') ?? '';
     if (angleEl) angleEl.value = Math.round(group.rotation() * 10) / 10;
+    const ordreEl = document.getElementById('te-ordre');
+    if (ordreEl) ordreEl.value = group.getAttr('posOrdre') ?? '';
     const xEl = document.getElementById('te-x');
     const yEl = document.getElementById('te-y');
     if (xEl) xEl.value = Math.round(group.x() * 10) / 10;
@@ -779,6 +799,14 @@ function addPosition(grupId) {
 function selectByGrup(grupId) {
     if (!layer) return;
     const nodes = layer.getChildren(n => n.getAttr?.('posGrup') === grupId);
+    transformer.nodes(nodes);
+    showProps(null);
+    layer.draw();
+}
+
+function selectAll() {
+    if (!layer) return;
+    const nodes = layer.getChildren(n => n.getAttr?.('posId'));
     transformer.nodes(nodes);
     showProps(null);
     layer.draw();
@@ -904,6 +932,28 @@ function alignToHour(h) {
     alignToAngle(h * 30 - 90);
 }
 
+// Calcula l'ordre per a posicions del tronc quan no ve donat
+function getAutoOrdreTronc(grupId) {
+    const FIXED = { rengle: 1, segon: 2, terc: 3 };
+    const POM   = { dos: 1, dosos: 1, acotxador: 2, enxaneta: 3 };
+    if (FIXED[grupId] !== undefined) return FIXED[grupId];
+    if (grupId === 'quart') {
+        const existing = new Set(
+            layer.getChildren(n => n.getAttr?.('posGrup') === 'quart')
+                 .map(n => n.getAttr('posOrdre')).filter(v => v != null)
+        );
+        return 4 + existing.size;
+    }
+    if (POM[grupId] !== undefined) {
+        const regularGrups = new Set(['rengle', 'segon', 'terc', 'quart']);
+        const orders = layer.getChildren(n => regularGrups.has(n.getAttr?.('posGrup')))
+            .map(n => n.getAttr('posOrdre')).filter(v => v != null && v > 0);
+        const maxFloor = orders.length ? Math.max(...orders) : 3;
+        return maxFloor + POM[grupId];
+    }
+    return null;
+}
+
 function updateNom(nom) {
     const nodes = transformer.nodes();
     if (nodes.length !== 1) return;
@@ -911,6 +961,27 @@ function updateNom(nom) {
     node.setAttr('posNom', nom);
     const lbl = node.findOne('Text');
     if (lbl) { lbl.text(nom); layer.draw(); }
+}
+
+function updateOrdre(val) {
+    const nodes = transformer.nodes();
+    if (nodes.length !== 1) return;
+    const node = nodes[0];
+    const newOrdre = val === '' ? null : parseInt(val);
+    if (newOrdre !== null) {
+        const grupId = node.getAttr('posGrup');
+        layer.getChildren(n => n.getAttr?.('posId') && n !== node && n.getAttr('posGrup') === grupId)
+             .forEach(n => { if (n.getAttr('posOrdre') === newOrdre) n.setAttr('posOrdre', null); });
+    }
+    node.setAttr('posOrdre', newOrdre);
+}
+
+function ordenaSelected() {
+    const sel = transformer.nodes();
+    if (sel.length < 2) return;
+    saveHistory();
+    const sorted = [...sel].sort((a, b) => Math.hypot(a.x(), a.y()) - Math.hypot(b.x(), b.y()));
+    sorted.forEach((node, i) => node.setAttr('posOrdre', i + 1));
 }
 
 function updateGrup(grupId) {
@@ -1027,6 +1098,8 @@ function exportPositions() {
             nom:   node.getAttr('posNom')  ?? '',
             shape: node.getAttr('posShape') ?? 'rect',
         };
+        const ordre = node.getAttr('posOrdre');
+        if (ordre !== null && ordre !== undefined && ordre !== '') out.ordre = parseInt(ordre);
         const imgData = node.getAttr('posImageData');
         if (imgData) out.imageData = imgData;
         return out;
@@ -1273,6 +1346,7 @@ window.templateEditor = {
     POSICIONS,
     addPosition,
     selectByGrup,
+    selectAll,
     deleteSelected,
     cloneSelected,
     alignLeft, alignCenterH, alignRight, justifyH,
@@ -1302,6 +1376,8 @@ window.templateEditor = {
     updateAngle,
     updateW,
     updateH,
+    updateOrdre,
+    ordenaSelected,
     importSVGFile,
     importImageFile,
     sendToBack,

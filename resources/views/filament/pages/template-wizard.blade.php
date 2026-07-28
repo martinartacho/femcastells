@@ -472,10 +472,18 @@
                     </div>
                 </div>
 
-                <div>
-                    <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Angle °</label>
-                    <input type="number" id="te-angle" class="te-input" step="1"
-                           onchange="window.templateEditor.updateAngle(+this.value)">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;">Angle °</label>
+                        <input type="number" id="te-angle" class="te-input" step="1"
+                               onchange="window.templateEditor.updateAngle(+this.value)">
+                    </div>
+                    <div>
+                        <label style="font-size:10px; color:#6b7280; display:block; margin-bottom:2px;"
+                               title="Tronc: pis (1=baixos, 2=segons...). Base: proximitat (1=més proper al castell)">Ordre</label>
+                        <input type="number" id="te-ordre" class="te-input" step="1" min="1" placeholder="—"
+                               onchange="window.templateEditor.updateOrdre(this.value)">
+                    </div>
                 </div>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">

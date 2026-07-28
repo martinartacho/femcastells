@@ -37,7 +37,7 @@ class BoardEditorPage extends Page
     public ?int $selectedEventId = null;
 
     #[Url]
-    public string $castleType = '3d6';
+    public string $castleType = '';
 
     #[Url]
     public bool $autoLoad = false;
@@ -64,7 +64,28 @@ class BoardEditorPage extends Page
                 $this->currentSnapshotName = $snap->name;
                 $this->castleType          = $snap->castle_type;
             }
+        } elseif ($this->castleType && $this->selectedEventId && !$this->currentSnapshotId) {
+            // URL amb castleType+event però sense autoLoad: auto-carrega el snapshot primari
+            $snap = $this->findPrimarySnapshot();
+            if ($snap) {
+                $this->currentSnapshotId   = $snap->id;
+                $this->currentSnapshotName = $snap->name;
+                $this->autoLoad            = true;
+            }
         }
+    }
+
+    private function findPrimarySnapshot(): ?BoardSnapshot
+    {
+        if (!$this->selectedEventId || !$this->castleType) {
+            return null;
+        }
+        return BoardSnapshot::where('colla_id', auth()->user()?->colla_id)
+            ->where('event_id', $this->selectedEventId)
+            ->where('castle_type', $this->castleType)
+            ->orderByDesc('is_primary')
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     public function getAutoLoadAssignments(): ?array
@@ -91,8 +112,39 @@ class BoardEditorPage extends Page
         return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
             ->where('ready', true)
             ->get(['key', 'positions'])
-            ->mapWithKeys(fn ($t) => [$t->key => $t->positions])
+            ->mapWithKeys(fn ($t) => [$t->key => $this->flatPositions($t->positions)])
             ->toArray();
+    }
+
+    private function flatPositions(?array $positions): array
+    {
+        if (empty($positions)) {
+            return [];
+        }
+        if (isset($positions['base']) && is_array($positions['base'])) {
+            return $positions['base'];
+        }
+        return $positions;
+    }
+
+    public function getCastleViews(): array
+    {
+        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('ready', true)
+            ->get(['key', 'positions'])
+            ->mapWithKeys(fn ($t) => [$t->key => $this->multiViewPositions($t->positions)])
+            ->toArray();
+    }
+
+    private function multiViewPositions(?array $positions): array
+    {
+        if (empty($positions)) {
+            return ['base' => []];
+        }
+        if (isset($positions['base'])) {
+            return array_filter($positions, fn ($v) => is_array($v) && !empty($v));
+        }
+        return ['base' => $positions];
     }
 
     public function getView(): string
@@ -119,6 +171,22 @@ class BoardEditorPage extends Page
         }
 
         return $query->get();
+    }
+
+    public function getCastellerPhysicalData(): array
+    {
+        return Casteller::where('colla_id', auth()->user()?->colla_id)
+            ->where('status', 1)
+            ->select('alias', 'weight', 'height', 'shoulder_height')
+            ->get()
+            ->mapWithKeys(fn ($c) => [
+                $c->alias => [
+                    'w'  => $c->weight,
+                    'h'  => $c->height,
+                    'sh' => $c->shoulder_height,
+                ],
+            ])
+            ->toArray();
     }
 
     public function getUpcomingEvents(): Collection
@@ -183,7 +251,34 @@ class BoardEditorPage extends Page
     {
         $this->currentSnapshotId   = null;
         $this->currentSnapshotName = null;
-        $this->dispatch('board-type-changed', type: $this->castleType);
+
+        $snap = $this->findPrimarySnapshot();
+        if ($snap) {
+            $this->currentSnapshotId   = $snap->id;
+            $this->currentSnapshotName = $snap->name;
+            $this->dispatch('board-type-changed', type: $this->castleType);
+            $this->dispatch('board-apply', assignments: json_encode($snap->assignments ?? []));
+        } else {
+            $this->dispatch('board-type-changed', type: $this->castleType);
+        }
+    }
+
+    public function updatedSelectedEventId(): void
+    {
+        $this->currentSnapshotId   = null;
+        $this->currentSnapshotName = null;
+
+        if (!$this->castleType) {
+            return;
+        }
+        $snap = $this->findPrimarySnapshot();
+        if ($snap) {
+            $this->currentSnapshotId   = $snap->id;
+            $this->currentSnapshotName = $snap->name;
+            $this->dispatch('board-apply', assignments: json_encode($snap->assignments ?? []));
+        } else {
+            $this->dispatch('board-apply', assignments: json_encode([]));
+        }
     }
 
     #[On('board-save')]
@@ -212,24 +307,112 @@ class BoardEditorPage extends Page
     }
 
     #[On('board-overwrite')]
-    public function overwriteSnapshot(string $assignmentsJson): void
+    public function overwriteSnapshot(string $assignmentsJson, string $dirtyViewsJson = '[]'): void
     {
         if (!$this->currentSnapshotId) {
             return;
         }
 
-        $collaId    = auth()->user()?->colla_id;
-        $assignments = json_decode($assignmentsJson, true) ?? [];
+        $collaId  = auth()->user()?->colla_id;
+        $incoming = json_decode($assignmentsJson, true) ?? [];
+        $dirty    = json_decode($dirtyViewsJson, true) ?? [];
 
-        if (empty($assignments)) {
+        if (empty($incoming) && empty($dirty)) {
             Notification::make()->title('La pissarra és buida')->warning()->send();
             return;
         }
 
-        $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($this->currentSnapshotId);
-        $snapshot->update(['assignments' => $assignments]);
+        $snapshot    = BoardSnapshot::where('colla_id', $collaId)->findOrFail($this->currentSnapshotId);
+        $dbState     = $snapshot->assignments ?? [];
+        $posToView   = $this->buildPosToViewMap();
+        $hasMultiView = !empty($posToView);
 
-        Notification::make()->title('Pissarra actualitzada: ' . $snapshot->name)->success()->send();
+        if (!$hasMultiView || empty($dirty)) {
+            // Format antic o sense canvis: sobreescriu complet
+            $snapshot->update(['assignments' => $incoming]);
+            Notification::make()->title('Pissarra actualitzada: ' . $snapshot->name)->success()->send();
+            return;
+        }
+
+        // Merge per vista: actualitza NOMÉS les vistes que l'usuari ha tocat
+        $merged = $dbState;
+
+        // Neteja les vistes dirty de l'estat del servidor
+        foreach ($dbState as $posId => $alias) {
+            $view = $posToView[$posId] ?? 'base';
+            if (in_array($view, $dirty, true)) {
+                unset($merged[$posId]);
+            }
+        }
+
+        // Afegeix les noves assignacions de les vistes dirty
+        foreach ($incoming as $posId => $alias) {
+            $view = $posToView[$posId] ?? 'base';
+            if (in_array($view, $dirty, true)) {
+                $merged[$posId] = $alias;
+            }
+        }
+
+        // Detecció de conflictes: casteller assignat per un altre cap en una vista diferent
+        $dbAliasByView = [];
+        foreach ($dbState as $posId => $alias) {
+            $dbAliasByView[$alias] = $posToView[$posId] ?? 'base';
+        }
+        $conflicts = [];
+        foreach ($incoming as $posId => $alias) {
+            $incomingView = $posToView[$posId] ?? 'base';
+            $dbView       = $dbAliasByView[$alias] ?? null;
+            if ($dbView && $dbView !== $incomingView && !in_array($dbView, $dirty, true)) {
+                $conflicts[] = $alias;
+                unset($merged[$posId]); // No sobreescrivim la posició de l'altre cap
+            }
+        }
+
+        $snapshot->update(['assignments' => $merged]);
+
+        if (!empty($conflicts)) {
+            Notification::make()
+                ->title('Desat amb conflictes')
+                ->body(implode(', ', $conflicts) . ' ja estan assignats per un altre cap. No s\'han mogut.')
+                ->warning()
+                ->persistent()
+                ->send();
+        } else {
+            Notification::make()->title('Pissarra actualitzada: ' . $snapshot->name)->success()->send();
+        }
+    }
+
+    private function buildPosToViewMap(): array
+    {
+        if (!$this->castleType) {
+            return [];
+        }
+        $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+            ->where('key', $this->castleType)
+            ->first();
+
+        if (!$template || empty($template->positions)) {
+            return [];
+        }
+        $positions = $template->positions;
+        $map       = [];
+
+        if (isset($positions['base'])) {
+            foreach ($positions as $viewName => $viewPositions) {
+                foreach ((array) $viewPositions as $pos) {
+                    if (isset($pos['id'])) {
+                        $map[$pos['id']] = $viewName;
+                    }
+                }
+            }
+        } else {
+            foreach ($positions as $pos) {
+                if (isset($pos['id'])) {
+                    $map[$pos['id']] = 'base';
+                }
+            }
+        }
+        return $map;
     }
 
     public function loadSnapshot(int $snapshotId): void
@@ -356,7 +539,7 @@ class BoardEditorPage extends Page
 
         // Construim un mapa positionId → {grup, nom}
         $posMap = [];
-        foreach ($template->positions as $pos) {
+        foreach ($this->flatPositions($template->positions) as $pos) {
             $posMap[$pos['id']] = ['grup' => $pos['grup'] ?? '—', 'nom' => $pos['nom'] ?? $pos['id']];
         }
 
