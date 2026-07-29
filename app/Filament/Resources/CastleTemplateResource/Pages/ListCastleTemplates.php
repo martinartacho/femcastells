@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\CastleTemplateResource\Pages;
 
 use App\Filament\Resources\CastleTemplateResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCastleTemplates extends ListRecords
@@ -15,7 +15,12 @@ class ListCastleTemplates extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Action::make('create')
+                ->label('Nova plantilla')
+                ->icon('heroicon-o-plus')
+                ->url(fn () => route('filament.admin.pages.wizard-plantilla', [
+                    'tenant' => filament()->getTenant()->shortname,
+                ])),
         ];
     }
 }
