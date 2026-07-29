@@ -14,6 +14,9 @@ export const POSICIONS = [
     { id: 'segon',      label: 'Segon',      color: '#fce7f3', text: '#831843', shape: 'rect',    w: 34, h: 15 },
     { id: 'terc',       label: 'Terç',       color: '#fbcfe8', text: '#9d174d', shape: 'rect',    w: 34, h: 15 },
     { id: 'quart',      label: 'Quart+',     color: '#f9a8d4', text: '#be185d', shape: 'rect',    w: 34, h: 15 },
+    // El Folre i Manilles
+    { id: 'lateral',    label: 'Lateral',    color: '#86efac', text: '#14532d', shape: 'rect',    w: 34, h: 15 },
+    { id: 'mans_altes', label: 'Mans altes', color: '#d9f99d', text: '#3f6212', shape: 'rect',    w: 34, h: 15 },
     // El Pom de Dalt (La Cúpula)
     { id: 'dos',        label: 'Dos',        color: '#fef9c3', text: '#713f12', shape: 'rect',    w: 34, h: 15 },
     { id: 'acotxador',  label: 'Acotxador',  color: '#fef08a', text: '#713f12', shape: 'rect',    w: 30, h: 14 },

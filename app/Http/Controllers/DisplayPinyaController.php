@@ -26,10 +26,13 @@ class DisplayPinyaController extends Controller
             ->where('key', $snapshot->castle_type)
             ->first(['key', 'name', 'positions']);
 
-        $boardPositions = $template
-            ? [$template->key => $template->positions]
-            : [];
+        $positions = $template?->positions ?? [];
+        $flat = isset($positions['base']) ? $positions['base'] : $positions;
+        $boardPositions = $template ? [$template->key => $flat] : [];
+        $castleViews = $template ? [$template->key => (isset($positions['base'])
+            ? array_filter($positions, fn ($v) => is_array($v) && !empty($v))
+            : ['base' => $positions])] : [];
 
-        return view('display.pinya', compact('colla', 'snapshot', 'template', 'boardPositions'));
+        return view('display.pinya', compact('colla', 'snapshot', 'template', 'boardPositions', 'castleViews'));
     }
 }

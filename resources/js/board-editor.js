@@ -814,26 +814,83 @@ window.boardEditor = {
     },
 };
 
+// Distribueix un dict pla {posId: alias} per vista, segons CASTLE_VIEWS
+function distributeAssignmentsByView(type, flat) {
+    const views = CASTLE_VIEWS[type] ?? {};
+    if (Object.keys(views).length === 0) return { base: flat };
+    const posToView = buildPosToViewMap(type);
+    const dist = {};
+    Object.entries(flat).forEach(([posId, alias]) => {
+        const v = posToView[posId] ?? 'base';
+        if (!dist[v]) dist[v] = {};
+        dist[v][posId] = alias;
+    });
+    return dist;
+}
+
+// En READ_ONLY: canvia a la vista on es troba la posició ressaltada
+function autoSwitchToHighlightView() {
+    const hlPos = window.__highlightPosition ?? null;
+    if (!hlPos && !HIGHLIGHT_ALIAS) return;
+    const posToView = buildPosToViewMap(currentCastleType);
+    let targetView = null;
+    if (hlPos) {
+        targetView = posToView[hlPos] ?? null;
+    } else {
+        const allAssign = { [currentViewName]: { ...assignments }, ...viewAssignments };
+        for (const [v, va] of Object.entries(allAssign)) {
+            if (Object.entries(va).some(([, alias]) => alias === HIGHLIGHT_ALIAS)) {
+                targetView = v; break;
+            }
+        }
+    }
+    if (targetView && targetView !== currentViewName) window.__loadView(targetView);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initBoard(window.__initialCastleType || '');
-    if (window.__autoLoadAssignments && Object.keys(window.__autoLoadAssignments).length > 0) {
-        window.boardEditor.applyAssignments(window.__autoLoadAssignments);
+
+    const allAssign = window.__autoLoadAssignments ?? {};
+    if (Object.keys(allAssign).length > 0) {
+        // applyAssignments ja distribueix internament per vista (multi-view)
+        window.boardEditor.applyAssignments(allAssign);
+        // En display readonly, mou a la vista del casteller ressaltat
+        if (READ_ONLY) autoSwitchToHighlightView();
     }
 
-    // Redimensiona el stage si canvia el contenidor (ex: pantalla completa)
+    // Redimensiona el stage si canvia el contenidor (ex: pantalla completa).
+    // En mode READ_ONLY (display/iframe) evitem ResizeObserver perquè pot crear
+    // un bucle de creixement quan el canvas és dins un iframe Flutter.
     const wrapper = document.getElementById('board-canvas')?.parentElement;
-    if (wrapper && typeof ResizeObserver !== 'undefined') {
-        let resizeTimer;
+    if (!READ_ONLY && wrapper && typeof ResizeObserver !== 'undefined') {
+        let resizeTimer, prevW = -1, prevH = -1;
         new ResizeObserver(() => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 if (!stage) return;
                 const w = Math.max(300, wrapper.clientWidth);
                 const h = Math.max(300, wrapper.clientHeight);
+                if (w === prevW && h === prevH) return;
+                prevW = w; prevH = h;
                 stage.width(w);
                 stage.height(h);
+                layer?.batchDraw();
             }, 100);
         }).observe(wrapper);
+    } else if (READ_ONLY) {
+        // En display: resize real de finestra (no loop)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (!stage || !wrapper) return;
+                const w = Math.max(300, wrapper.clientWidth);
+                const h = Math.max(300, wrapper.clientHeight);
+                stage.width(w);
+                stage.height(h);
+                layer?.batchDraw();
+            }, 100);
+        });
     }
 });
 

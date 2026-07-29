@@ -78,11 +78,23 @@
             @endforeach
         </select>
 
+        @if(in_array($this->nivell, ['folre', 'manilles']))
+        <select wire:model.live="anells" style="{{ $selStyle }}">
+            <option value="1">1 anell</option>
+            <option value="2">2 anells</option>
+            <option value="3">3 anells</option>
+        </select>
+        @endif
         <button type="button" wire:click="addAllSteps"
                 style="padding:5px 12px; border:1px solid #059669; border-radius:7px;
                        background:#ecfdf5; color:#065f46; font-size:12px; font-weight:600;
                        cursor:pointer; white-space:nowrap;">
-            🔨 Genera pinya
+            🔨 {{ match($this->nivell) {
+                'tronc'    => 'Genera tronc',
+                'folre'    => 'Genera folre',
+                'manilles' => 'Genera manilles',
+                default    => 'Genera pinya',
+            } }}
         </button>
 
         {{-- Desfés / Refés --}}
@@ -204,6 +216,8 @@
                         ['section'=>'Pom de dalt', 'id'=>'dos',        'label'=>'Dos',        'color'=>'#fef9c3', 'shape'=>'rect'],
                         ['section'=>null,          'id'=>'acotxador',  'label'=>'Acotxador',  'color'=>'#fef08a', 'shape'=>'rect'],
                         ['section'=>null,          'id'=>'enxaneta',   'label'=>'Enxaneta',   'color'=>'#fde047', 'shape'=>'circle'],
+                        ['section'=>'Folre/Manilles', 'id'=>'lateral',    'label'=>'Lateral',    'color'=>'#86efac', 'shape'=>'rect'],
+                        ['section'=>null,          'id'=>'mans_altes', 'label'=>'Mans altes', 'color'=>'#d9f99d', 'shape'=>'rect'],
                         ['section'=>'Auxiliar',    'id'=>'etiqueta',   'label'=>'Etiqueta',   'color'=>'transparent', 'shape'=>'label'],
                     ];
                 @endphp

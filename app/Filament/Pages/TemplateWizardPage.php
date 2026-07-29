@@ -43,6 +43,7 @@ class TemplateWizardPage extends Page
     public int    $defaultH     = 30;
     public int    $defaultAngle = -90;
     public int    $cordonsN     = 1;
+    public int    $anells       = 2;
 
     public function mount(): void
     {
@@ -74,9 +75,8 @@ class TemplateWizardPage extends Page
 
         $positions = match ($this->nivell) {
             'tronc'    => $this->getTroncPositions(),
-            'folre', 'manilles' => array_merge(
-                ...array_map(fn($s) => $this->getStepPositions($s), range(1, 7))
-            ),
+            'folre'    => $this->getFolrePositions(1.0),
+            'manilles' => $this->getFolrePositions(1.7),
             default    => array_merge(
                 ...array_map(fn($s) => $this->getStepPositions($s), range(1, 7))
             ),
@@ -438,6 +438,92 @@ class TemplateWizardPage extends Page
             ];
         }
         return $arms;
+    }
+
+    // ── Generador de Folre i Manilles ────────────────────────────────────────────
+
+    private function getFolrePositions(float $scale = 1.0): array
+    {
+        $n   = $this->familiaToBaixos();
+        $uid = (string) now()->getTimestampMs();
+        $ph  = max(15, $this->defaultH);
+        $pw  = max(34, $this->defaultW);
+        $pos = [];
+
+        $r1 = (int) round(55 * $scale);   // anell interior: baixos + crosses
+        $r2 = (int) round(100 * $scale);  // anell mig: laterals
+        $r3 = (int) round(145 * $scale);  // anell exterior: mans altes
+
+        $armAngles = $this->getBaixBracAngles($n);
+
+        // Centre: agulles (únicament en el folre, no en manilles)
+        if ($scale <= 1.0) {
+            $pos[] = $this->makePos("f_ag_{$uid}", 0.0, 0.0, $pw, $ph, 0.0, 'agulla', 'agulles', 1);
+        }
+
+        // Anell interior: baixos i crosses
+        if ($n === 1) {
+            // Pilar: 1 baix + 3 crosses formant creu
+            $armDeg = (float) $armAngles[0];
+            $cx = round($r1 * cos(deg2rad($armDeg)), 1);
+            $cy = round($r1 * sin(deg2rad($armDeg)), 1);
+            $pos[] = $this->makePos("f_baix_0_{$uid}", $cx, $cy, $pw, $ph, fmod($armDeg + 90, 360), 'rengle', 'baix', 1);
+            foreach ([0, 90, 180] as $j => $extraDeg) {
+                $cx = round($r1 * cos(deg2rad((float) $extraDeg)), 1);
+                $cy = round($r1 * sin(deg2rad((float) $extraDeg)), 1);
+                $pos[] = $this->makePos("f_cr_{$j}_{$uid}", $cx, $cy, $pw, $ph, fmod($extraDeg + 90, 360), 'porta', 'crossa ' . ($j + 1), 1);
+            }
+        } else {
+            // Torre/Tres/Quatre: baixos als eixos, crosses entre eixos
+            foreach ($armAngles as $i => $armDeg) {
+                $armDeg = (float) $armDeg;
+                $cx = round($r1 * cos(deg2rad($armDeg)), 1);
+                $cy = round($r1 * sin(deg2rad($armDeg)), 1);
+                $label = $this->bracLabel($i, $n) !== '' ? 'baix ' . $this->bracLabel($i, $n) : 'baixos';
+                $pos[] = $this->makePos("f_baix_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($armDeg + 90, 360), 'rengle', $label, 1);
+            }
+            for ($i = 0; $i < $n; $i++) {
+                $a1 = (float) $armAngles[$i];
+                $a2 = (float) $armAngles[($i + 1) % $n];
+                $midDeg = $this->midAngle($a1, $a2);
+                $cx = round($r1 * cos(deg2rad($midDeg)), 1);
+                $cy = round($r1 * sin(deg2rad($midDeg)), 1);
+                $label = match ($i) { 0 => 'crosses D', 1 => 'crosses E', default => 'crossa ' . ($i + 1) };
+                $pos[] = $this->makePos("f_cr_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($midDeg + 90, 360), 'porta', $label, 1);
+            }
+        }
+
+        // Anell mig: laterals
+        if ($this->anells >= 2) {
+            $totalLats = $n * 2;
+            for ($i = 0; $i < $totalLats; $i++) {
+                $deg    = fmod((360.0 / $totalLats) * $i + (180.0 / $totalLats), 360.0);
+                $cx     = round($r2 * cos(deg2rad($deg)), 1);
+                $cy     = round($r2 * sin(deg2rad($deg)), 1);
+                $suffix = $i % 2 === 0 ? 'D' : 'E';
+                $num    = (int) floor($i / 2) + 1;
+                $pos[] = $this->makePos("f_lat_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($deg + 90, 360), 'lateral', "lateral {$num} {$suffix}", 2);
+            }
+        }
+
+        // Anell exterior: mans altes
+        if ($this->anells >= 2) {
+            $mansN = max(6, $n * 3);
+            for ($i = 0; $i < $mansN; $i++) {
+                $deg = fmod((360.0 / $mansN) * $i, 360.0);
+                $cx  = round($r3 * cos(deg2rad($deg)), 1);
+                $cy  = round($r3 * sin(deg2rad($deg)), 1);
+                $pos[] = $this->makePos("f_mans_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($deg + 90, 360), 'mans_altes', 'mans-altes', 3);
+            }
+        }
+
+        return $pos;
+    }
+
+    private function midAngle(float $a1, float $a2): float
+    {
+        $diff = fmod($a2 - $a1 + 360.0, 360.0);
+        return fmod($a1 + $diff / 2.0, 360.0);
     }
 
     private function makePos(string $id, float $cx, float $cy, int $w, int $h, float $angle, string $grup, string $nom, ?int $ordre = null): array

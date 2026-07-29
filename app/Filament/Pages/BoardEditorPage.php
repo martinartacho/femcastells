@@ -292,11 +292,13 @@ class BoardEditorPage extends Page
             return;
         }
 
+        $castleType = substr($this->castleType, 0, 60);
+
         $snapshot = BoardSnapshot::create([
             'colla_id'    => $collaId,
             'event_id'    => $this->selectedEventId ?: null,
-            'castle_type' => $this->castleType,
-            'name'        => $name,
+            'castle_type' => $castleType,
+            'name'        => substr($name, 0, 100),
             'assignments' => $assignments,
         ]);
 
@@ -488,7 +490,7 @@ class BoardEditorPage extends Page
         }
 
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($id);
-        $snapshot->update(['name' => $name]);
+        $snapshot->update(['name' => substr($name, 0, 100)]);
 
         if ($this->currentSnapshotId === $id) {
             $this->currentSnapshotName = $name;
