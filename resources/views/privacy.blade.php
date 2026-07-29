@@ -19,7 +19,7 @@
 
     <h2>1. Responsable del tractament</h2>
     <p>Pepe Martín Artacho<br>
-    Correu de contacte: <a href="mailto:se.pepemartin@gmail.com">se.pepemartin@gmail.com</a></p>
+    Correu de contacte: <a href="mailto:hola@artacho.org">hola@artacho.org</a></p>
 
     <h2>2. Dades que recollim</h2>
     <ul>
@@ -42,13 +42,13 @@
     <p>Les dades es conserven mentre l'usuari formi part de la colla. En cas de baixa, les dades s'eliminen a petició de l'usuari o del responsable de la colla.</p>
 
     <h2>7. Drets de l'usuari</h2>
-    <p>L'usuari pot exercir els drets d'accés, rectificació, supressió i portabilitat de les dades contactant per correu electrònic a <a href="mailto:se.pepemartin@gmail.com">se.pepemartin@gmail.com</a>.</p>
+    <p>L'usuari pot exercir els drets d'accés, rectificació, supressió i portabilitat de les dades contactant per correu electrònic a <a href="mailto:hola@artacho.org">hola@artacho.org</a>.</p>
 
     <h2>8. Seguretat</h2>
     <p>Les dades es transmeten xifrades (HTTPS) i s'emmagatzemen en servidors protegits. Les contrasenyes es guarden amb hash irreversible.</p>
 
     <footer>
-        FemCastells · Gestió de colles castelleres · <a href="mailto:se.pepemartin@gmail.com">se.pepemartin@gmail.com</a>
+        FemCastells · Gestió de colles castelleres · <a href="mailto:hola@artacho.org">hola@artacho.org</a>
     </footer>
 </body>
 </html>
