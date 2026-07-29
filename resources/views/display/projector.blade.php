@@ -7,6 +7,8 @@
     @vite('resources/js/board-editor.js')
     <script>
         window.__boardPositions       = @json($boardPositions);
+        window.__castleViews          = @json($castleViews);
+        window.__initialCastleType    = @json($snapshot?->castle_type ?? '');
         window.__autoLoadAssignments  = @json($snapshot?->assignments ?? []);
         window.__readOnly             = true;
         window.__highlightPosition    = @json($highlightPosition);
@@ -47,6 +49,7 @@
 
     @if($snapshot)
         <div class="canvas-wrap">
+            <div id="board-view-switcher" style="display:none; gap:4px; align-items:center; justify-content:center; margin-bottom:12px;"></div>
             <div id="board-canvas"></div>
         </div>
 

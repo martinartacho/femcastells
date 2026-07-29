@@ -26,6 +26,7 @@ class Colla extends Model implements HasAvatar
         'city',
         'country',
         'logo',
+        'show_logo_in_pinya',
         'color',
         'max_members',
         'assaigs_weeks_visible',
@@ -35,6 +36,11 @@ class Colla extends Model implements HasAvatar
         'display_token',
         'projected_snapshot_id',
         'rondes_display',
+        'board_settings',
+    ];
+
+    protected $casts = [
+        'board_settings' => 'array',
     ];
 
     public function users(): HasMany

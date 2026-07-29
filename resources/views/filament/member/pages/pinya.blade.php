@@ -10,6 +10,8 @@
 
     <script>
         window.__boardPositions      = @json($this->getBoardPositions());
+        window.__castleViews         = @json($this->getCastleViews());
+        window.__initialCastleType   = @json($snapshot?->castle_type ?? '');
         window.__autoLoadAssignments = @json($snapshot?->assignments ?? []);
         window.__readOnly            = true;
         window.__highlightPosition   = @json($myPosId);
@@ -45,9 +47,12 @@
         @endif
 
         {{-- Canvas --}}
-        <div wire:ignore style="background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; display:inline-flex; flex-direction:column; align-items:center; padding:16px;">
-            <div id="board-canvas"></div>
-            <div id="board-info" style="min-height:16px; font-size:11px; color:#6b7280; margin-top:4px;"></div>
+        <div wire:ignore style="background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
+            <div id="board-view-switcher" style="display:none; gap:4px; align-items:center; padding:8px 12px; border-bottom:1px solid #e5e7eb; background:#fff;"></div>
+            <div style="display:flex; flex-direction:column; align-items:center; padding:16px;">
+                <div id="board-canvas"></div>
+                <div id="board-info" style="min-height:16px; font-size:11px; color:#6b7280; margin-top:4px;"></div>
+            </div>
         </div>
 
         <script>

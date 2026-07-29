@@ -38,9 +38,33 @@ class PinyaPage extends Page
         $colla    = filament()->getTenant();
         $template = CastleTemplate::where('colla_id', $colla->id)
             ->where('key', $snapshot->castle_type)
-            ->first(['key', 'name', 'positions']);
+            ->first(['key', 'positions']);
 
-        return $template ? [$template->key => $template->positions] : [];
+        if (!$template) return [];
+
+        $positions = $template->positions ?? [];
+        $flat = isset($positions['base']) ? $positions['base'] : $positions;
+        return [$template->key => $flat];
+    }
+
+    public function getCastleViews(): array
+    {
+        $snapshot = $this->getSnapshot();
+        if (!$snapshot) return [];
+
+        $colla    = filament()->getTenant();
+        $template = CastleTemplate::where('colla_id', $colla->id)
+            ->where('key', $snapshot->castle_type)
+            ->first(['key', 'positions']);
+
+        if (!$template) return [];
+
+        $positions = $template->positions ?? [];
+        $views = isset($positions['base'])
+            ? array_filter($positions, fn ($v) => is_array($v) && !empty($v))
+            : ['base' => $positions];
+
+        return [$template->key => $views];
     }
 
     public function getTemplateName(): ?string

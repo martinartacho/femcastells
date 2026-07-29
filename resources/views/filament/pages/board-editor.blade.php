@@ -1,7 +1,16 @@
 <x-filament-panels::page>
     @vite('resources/js/board-editor.js')
     <script>window.__boardPositions = @json($this->getCastlePositions());</script>
+    <script>window.__castellersData = @json($this->getCastellerPhysicalData());</script>
+    <script>window.__heightAlertCm = @json((int) ($colla->board_settings['height_alert_cm'] ?? 15));</script>
     <script>window.__autoLoadAssignments = @json($this->getAutoLoadAssignments() ?? []);</script>
+    <script>window.__initialCastleType = @json($this->castleType);</script>
+    <script>window.__castleViews = @json($this->getCastleViews());</script>
+    @php $colla = filament()->getTenant(); @endphp
+    <script>
+        window.__showLogo  = @json((bool) ($colla?->show_logo_in_pinya));
+        window.__logoUrl   = @json($colla?->logo ? asset('storage/' . $colla->logo) : null);
+    </script>
 
     <style>
         body.board-fullscreen aside,
@@ -65,7 +74,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:15px;height:15px"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776"/></svg>
             </button>
             <select wire:model.live="castleType"
-                style="font-size:11px; padding:4px 6px; border-radius:6px; border:1px solid #d1d5db; background:white; color:#374151; max-width:110px;">
+                style="font-size:11px; padding:4px 6px; border-radius:6px; border:1px solid {{ $this->castleType ? '#d1d5db' : '#f59e0b' }}; background:{{ $this->castleType ? 'white' : '#fffbeb' }}; color:#374151; max-width:120px;">
+                <option value="" disabled @selected(!$this->castleType)>— Tria plantilla —</option>
                 @foreach($this->getCastleTypes() as $template)
                     <option value="{{ $template->key }}">{{ $template->name }}</option>
                 @endforeach
@@ -87,7 +97,7 @@
 
             {{-- G4: Desa --}}
             @if($this->currentSnapshotId)
-                <button @click="$dispatch('board-overwrite', {assignmentsJson: JSON.stringify(boardEditor.getAssignments())})"
+                <button @click="$dispatch('board-overwrite', {assignmentsJson: JSON.stringify(boardEditor.getAssignments()), dirtyViewsJson: JSON.stringify(boardEditor.getDirtyViews())})"
                     title="Desa (sobreescriu): {{ $this->currentSnapshotName }}" style="{{ $btnGreen }}">💾</button>
                 <button @click="saveName = '{{ addslashes($currentTemplateName) }}'; showSave = true"
                     title="Desa com a nova pinya" style="{{ $btnGray }}">💾<sup style="font-size:9px; line-height:0;">+</sup></button>
@@ -553,6 +563,15 @@
                     @endforeach
                 </div>
 
+                {{-- Panell Assignats (JS-controlat, wire:ignore) --}}
+                <div wire:ignore id="board-assigned-panel"
+                     style="display:none; border-top:1px solid #e5e7eb; flex-shrink:0; background:#fafafa;">
+                    <div style="padding:4px 8px 2px; font-size:10px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; display:flex; justify-content:space-between; align-items:baseline;">
+                        <span id="board-assigned-title">Assignats</span>
+                        <span id="board-assigned-stats" style="font-weight:400; font-size:9px; color:#9ca3af; letter-spacing:0;"></span>
+                    </div>
+                </div>
+
                 {{-- Peu --}}
                 <div style="padding:5px 6px; border-top:1px solid #e5e7eb; background:#f3f4f6; font-size:10px; color:#9ca3af; flex-shrink:0; line-height:1.6;">
                     Clic → selecciona · Clic posició → assigna · Doble clic → desassigna
@@ -563,26 +582,56 @@
             <div style="flex:1; display:flex; flex-direction:column; min-height:0; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden;">
 
                 {{-- Capçalera: event + pinya activa (fora de wire:ignore, s'actualitza en cada re-render) --}}
-                <div style="padding:4px 12px; border-bottom:1px solid #e5e7eb; font-size:11px; color:#9ca3af; flex-shrink:0; min-height:24px; display:flex; align-items:center; gap:6px; overflow:hidden;">
-                    @if($selectedEventName)
-                        <span style="color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $selectedEventName }}</span>
-                    @endif
-                    @if($selectedEventName && $this->currentSnapshotName)
-                        <span style="color:#d1d5db; flex-shrink:0;">·</span>
-                    @endif
-                    @if($this->currentSnapshotName)
-                        <span style="font-weight:600; color:#2563eb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $this->currentSnapshotName }}</span>
-                    @endif
-                    @if(!$selectedEventName && !$this->currentSnapshotName)
-                        <span style="font-style:italic; white-space:nowrap;">Sense event seleccionat</span>
-                    @endif
-                    <span id="board-counter" style="margin-left:auto; flex-shrink:0; font-size:10px; font-family:monospace; color:#6b7280; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:4px; padding:1px 6px; white-space:nowrap;">0/0</span>
+                <div style="padding:4px 12px; border-bottom:1px solid #e5e7eb; font-size:11px; color:#9ca3af; flex-shrink:0; min-height:28px; display:flex; align-items:center; gap:6px; overflow:hidden;">
+                    {{-- Esquerra: event + nom pinya --}}
+                    <div style="display:flex; align-items:center; gap:6px; flex:1; overflow:hidden; min-width:0;">
+                        @if($selectedEventName)
+                            <span style="color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $selectedEventName }}</span>
+                        @endif
+                        @if($selectedEventName && $this->currentSnapshotName)
+                            <span style="color:#d1d5db; flex-shrink:0;">·</span>
+                        @endif
+                        @if($this->currentSnapshotName)
+                            <span style="font-weight:600; color:#2563eb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $this->currentSnapshotName }}</span>
+                        @endif
+                        @if(!$selectedEventName && !$this->currentSnapshotName)
+                            <span style="font-style:italic; white-space:nowrap;">Sense event seleccionat</span>
+                        @endif
+                    </div>
+                    {{-- Dreta: selector vistes (JS-controlat), ID registre, comptador --}}
+                    <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                        <div id="board-view-switcher" wire:ignore style="display:none; gap:2px; align-items:center;"></div>
+                        @if($this->currentSnapshotId)
+                            <span style="font-size:10px; font-family:monospace; color:#9ca3af; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:4px; padding:1px 5px; white-space:nowrap;">#{{ $this->currentSnapshotId }}</span>
+                        @endif
+                        <span id="board-counter" style="font-size:10px; font-family:monospace; color:#6b7280; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:4px; padding:1px 6px; white-space:nowrap;">0/0</span>
+                    </div>
                 </div>
 
                 {{-- Canvas Konva (wire:ignore evita que Livewire destrueixi el Konva en re-renders) --}}
                 <div wire:ignore style="flex:1; overflow:hidden; position:relative; min-height:0;">
                     <div id="board-canvas"></div>
                     <div id="board-info" style="position:absolute; bottom:38px; left:8px; font-size:11px; color:#6b7280; pointer-events:none;"></div>
+
+                    {{-- Avís de bloqueig cross-vista (controlat per JS) --}}
+                    <div id="board-warning"
+                         style="display:none; position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:30; background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; padding:10px 16px; font-size:12px; color:#991b1b; font-weight:500; box-shadow:0 4px 12px rgba(0,0,0,.12); white-space:nowrap; align-items:center; gap:8px;">
+                        🚫 <span></span>
+                    </div>
+
+                    {{-- Empty state: visible fins que es tria plantilla (controlat per JS) --}}
+                    <div id="board-empty-state"
+                         style="position:absolute; inset:0; background:#f9fafb; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:20; gap:20px; pointer-events:none;">
+                        <div style="font-size:52px; line-height:1;">🏰</div>
+                        <div style="text-align:center; max-width:300px;">
+                            <div style="font-size:15px; font-weight:600; color:#374151; margin-bottom:6px;">Cap plantilla seleccionada</div>
+                            <div style="font-size:12px; color:#6b7280; line-height:1.5;">Tria un tipus de castell del menú de dalt per preparar la pinya.</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#9ca3af; background:white; border:1px solid #e5e7eb; border-radius:8px; padding:8px 14px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"/></svg>
+                            <span>Menú «Tria plantilla» a la barra superior</span>
+                        </div>
+                    </div>
 
                     {{-- Zoom controls --}}
                     <div style="position:absolute; bottom:10px; right:10px; z-index:10; display:flex; gap:2px; background:rgba(255,255,255,.95); border:1px solid #e5e7eb; border-radius:8px; padding:3px; box-shadow:0 2px 8px rgba(0,0,0,.08);">

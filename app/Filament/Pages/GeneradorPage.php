@@ -23,9 +23,11 @@ class GeneradorPage extends Page
 
     protected static ?int $navigationSort = 0;
 
+    public static function shouldRegisterNavigation(): bool { return false; }
+
     public static function canAccess(): bool
     {
-        return auth()->user()?->canDo('generador') ?? false;
+        return false;
     }
 
     protected static ?string $slug = 'generador';

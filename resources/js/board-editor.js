@@ -1,8 +1,14 @@
 import Konva from 'konva';
 
-const CASTLE_POSITIONS = window.__boardPositions ?? {};
-const READ_ONLY        = window.__readOnly ?? false;
-const HIGHLIGHT_ALIAS  = (window.__highlightAlias ?? '').trim();
+const CASTLE_POSITIONS  = window.__boardPositions ?? {};
+const CASTLE_VIEWS      = window.__castleViews ?? {};
+const READ_ONLY         = window.__readOnly ?? false;
+const HIGHLIGHT_ALIAS   = (window.__highlightAlias ?? '').trim();
+const CASTELLERS_DATA   = window.__castellersData ?? {};
+
+// Posicions de "pom de dalt" (enxaneta + acotxadors): no mostrem pes/alçada
+const POM_GRUPS = new Set(['enxaneta', 'acotxador']);
+const HEIGHT_ALERT_CM = window.__heightAlertCm ?? 15;
 
 const SCALE = 0.9;
 const HOVER_FILL      = '#fde68a';
@@ -19,39 +25,55 @@ const ZONE_COLORS = {
     pinya:  '#e5e7eb',
 };
 
-// Role-based colors: generador categories + motor PHP + FemPinya imports
+// Colors per grup — sincronitzats amb POSICIONS de template-editor.js
 const GRUP_COLORS = {
-    agulla:     '#1a237e',
-    tronc:      '#e65100',
-    contrafort: '#f9a825',
-    laterals:   '#2e7d32',
-    mitjans:    '#1565c0',
-    folre:      '#6a1b9a',
-    manilles:   '#c62828',
-    baixos:     '#90a4ae',
-    baix:      '#37474f',
-    nucli:     '#ffcdd2',
-    nucli_D:   '#f8bbd0',
-    nucli_E:   '#f8bbd0',
-    lateral_D: '#c8e6c9',
-    lateral_E: '#bbdefb',
-    rengle:    '#fff9c4',
-    falca_D:   '#d1c4e9',
-    falca_E:   '#d1c4e9',
-    angle_D:   '#ffe0b2',
-    angle_E:   '#ffe0b2',
-    Plena:        '#f8bbd0',
-    Carregada:    '#bbdefb',
-    Buida:        '#c8e6c9',
-    Rengle:       '#fff9c4',
-    Descarregada: '#d1c4e9',
-    Una:    '#f8bbd0',
-    Dues:   '#bbdefb',
-    Tres:   '#c8e6c9',
-    Quatre: '#fff9c4',
-    Cinc:   '#d1c4e9',
-    Sis:    '#ffe0b2',
-    Set:    '#b2dfdb',
+    // Categories wizard
+    rengle:     '#e0e7ff',
+    agulla:     '#c7d2fe',
+    contrafort: '#fef3c7',
+    cordo:      '#f1f5f9',
+    mans:       '#bfdbfe',
+    porta:      '#ffedd5',
+    vent:       '#bbf7d0',
+    segon:      '#fce7f3',
+    terc:       '#fbcfe8',
+    quart:      '#f9a8d4',
+    dos:        '#fef9c3',
+    acotxador:  '#fef08a',
+    enxaneta:   '#fde047',
+    buida:      '#c7d2fe',
+    plena:      '#a5b4fc',
+    // Categories generador (backward compat)
+    tronc:      '#fed7aa',
+    baixos:     '#cbd5e1',
+    laterals:   '#dbeafe',
+    mitjans:    '#fef3c7',
+    folre:      '#d1fae5',
+    manilles:   '#fce7f3',
+    // Motor PHP antic
+    baix:       '#e0e7ff',
+    nucli:      '#fce7f3',
+    nucli_D:    '#fbcfe8',
+    nucli_E:    '#fbcfe8',
+    lateral_D:  '#bbf7d0',
+    lateral_E:  '#bfdbfe',
+    falca_D:    '#ede9fe',
+    falca_E:    '#ede9fe',
+    angle_D:    '#ffedd5',
+    angle_E:    '#ffedd5',
+    // SVG import (noms capitalitzats)
+    Rengle:       '#e0e7ff',
+    Plena:        '#a5b4fc',
+    Buida:        '#c7d2fe',
+    Carregada:    '#bfdbfe',
+    Descarregada: '#ede9fe',
+    Una:    '#fce7f3',
+    Dues:   '#bfdbfe',
+    Tres:   '#bbf7d0',
+    Quatre: '#fef9c3',
+    Cinc:   '#ede9fe',
+    Sis:    '#ffedd5',
+    Set:    '#ccfbf1',
 };
 
 // --- Historial (undo) ---
@@ -108,7 +130,7 @@ function fitFontSize(alias, textW, textH) {
     if (!alias) return BASE_FONT;
     const byWidth  = (textW * 0.88) / (alias.length * CHAR_RATIO);
     const byHeight = textH * 0.72;
-    return Math.max(4.5, Math.min(9, byWidth, byHeight));
+    return Math.max(4.5, Math.min(byWidth, byHeight));
 }
 
 // --- Helpers --
@@ -139,13 +161,159 @@ let dragOverPosId = null;
 let fitScale = SCALE;
 let fitCenterX = 0;
 let fitCenterY = 0;
+let currentCastleType = '';
+let currentViewName   = 'base';
+let viewAssignments   = {};   // { viewName: { posId: alias } } per a vistes no actives
+let dirtyViews        = new Set();  // vistes modificades des del darrer carregat
+
+const VIEW_LABELS = { base: 'Base', tronc: 'Tronc', folre: 'Folre', manilles: 'Manilles' };
+
+function buildPosToViewMap(type) {
+    const views = CASTLE_VIEWS[type] ?? {};
+    const map = {};
+    Object.entries(views).forEach(([viewName, positions]) => {
+        (positions ?? []).forEach(p => { map[p.id] = viewName; });
+    });
+    return map;
+}
+
+function updateViewSwitcher(type) {
+    const switcher = document.getElementById('board-view-switcher');
+    const globalCounter = document.getElementById('board-counter');
+    if (!switcher) return;
+    const views = CASTLE_VIEWS[type] ?? {};
+    const names = Object.keys(views).filter(v => Array.isArray(views[v]) && views[v].length > 0);
+    if (names.length <= 1) {
+        switcher.style.display = 'none';
+        if (globalCounter) globalCounter.style.display = '';
+        return;
+    }
+    switcher.style.display = 'flex';
+    if (globalCounter) globalCounter.style.display = 'none';
+    switcher.innerHTML = names.map(v => {
+        const active = v === currentViewName;
+        const assigned = v === currentViewName
+            ? Object.keys(assignments).length
+            : Object.keys(viewAssignments[v] ?? {}).length;
+        const total = (views[v] ?? []).filter(p => p.shape !== 'image' && p.shape !== 'label').length;
+        return `<button onclick="window.__loadView('${v}')" style="font-size:11px;padding:3px 10px;border-radius:5px;border:2px solid ${active ? '#2563eb' : '#d1d5db'};background:${active ? '#2563eb' : 'white'};color:${active ? 'white' : '#6b7280'};cursor:pointer;font-weight:${active ? '700' : '400'};display:inline-flex;align-items:center;gap:4px;transition:none;">${VIEW_LABELS[v] ?? v}<span style="font-size:9px;font-family:monospace;opacity:${active ? '0.85' : '0.65'};">${assigned}/${total}</span></button>`;
+    }).join('');
+}
+
+// Retorna "75kg 158cm" per a un alias, o '' si no hi ha dades
+function physText(alias) {
+    const d = CASTELLERS_DATA[alias];
+    if (!d) return '';
+    const parts = [];
+    if (d.w)  parts.push(d.w + 'kg');
+    if (d.sh) parts.push(d.sh + 'cm');
+    else if (d.h) parts.push(d.h + 'cm');
+    return parts.join(' ');
+}
+
+// Alçada mitjana de la vista actual (excloent pom de dalt)
+function getViewHeightAvg() {
+    const heights = Object.entries(assignments)
+        .filter(([posId]) => {
+            const pg = positionGroups[posId];
+            return pg && !POM_GRUPS.has(pg.pos.grup);
+        })
+        .map(([, alias]) => CASTELLERS_DATA[alias]?.sh ?? CASTELLERS_DATA[alias]?.h)
+        .filter(Boolean);
+    if (heights.length < 2) return null;
+    return heights.reduce((s, h) => s + h, 0) / heights.length;
+}
+
+
+// Calcula stats (pes total, rang alçada espatlla) d'un conjunt d'assignacions
+function calcStats(asns) {
+    const entries = Object.entries(asns)
+        .filter(([posId]) => {
+            const pg = positionGroups[posId];
+            return !pg || !POM_GRUPS.has(pg.pos.grup);
+        });
+    const physData = entries.map(([, alias]) => CASTELLERS_DATA[alias]).filter(Boolean);
+    if (!physData.length) return null;
+    const weights  = physData.map(d => d.w).filter(Boolean);
+    const heights  = physData.map(d => d.sh ?? d.h).filter(Boolean);
+    return {
+        count:       entries.length,
+        totalWeight: weights.length ? weights.reduce((s, w) => s + w, 0) : null,
+        minH:        heights.length ? Math.min(...heights) : null,
+        maxH:        heights.length ? Math.max(...heights) : null,
+    };
+}
+
+// Actualitza el panell de resum estadístic a la columna esquerra
+function updateAssignedList() {
+    const panel  = document.getElementById('board-assigned-panel');
+    const title  = document.getElementById('board-assigned-title');
+    const statEl = document.getElementById('board-assigned-stats');
+    if (!panel) return;
+
+    const total    = Object.keys(positionGroups).length;
+    const assigned = Object.keys(assignments).length;
+
+    if (!assigned) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+
+    if (title) title.textContent = `Assignats ${assigned}/${total}`;
+
+    // Stats de la vista actual (excloent pom de dalt)
+    const st = calcStats(assignments);
+    if (statEl && st) {
+        const parts = [];
+        if (st.totalWeight) parts.push('⚖ ' + st.totalWeight + 'kg');
+        if (st.minH && st.maxH) {
+            const rang = st.maxH - st.minH;
+            const warn = rang > 18 ? ' ⚠' : '';
+            parts.push('🧍 ' + (st.minH === st.maxH ? st.minH : st.minH + '–' + st.maxH) + 'cm' + warn);
+        }
+        statEl.textContent = parts.join(' · ');
+    } else if (statEl) {
+        statEl.textContent = '';
+    }
+
+}
+
+window.__loadView = function loadView(viewName) {
+    if (viewName === currentViewName || !stage) return;
+    // Desa les assignacions de la vista actual
+    viewAssignments[currentViewName] = { ...assignments };
+    // Extreu les de la nova vista ABANS de canviar currentViewName
+    // (si no, assignCasteller les trobaria a viewAssignments i es bloquejarien)
+    const toRestore = { ...(viewAssignments[viewName] ?? {}) };
+    delete viewAssignments[viewName];
+    currentViewName = viewName;
+    initBoard(currentCastleType, viewName);
+    suppressPush();
+    Object.entries(toRestore).forEach(([posId, alias]) => {
+        if (positionGroups[posId]) assignCasteller(posId, alias);
+    });
+    suppressPop();
+    assignmentHistory.length = 0;
+    markSaved();
+};
 
 function updateCounter() {
     const el = document.getElementById('board-counter');
     if (el) el.textContent = Object.keys(assignments).length + '/' + Object.keys(positionGroups).length;
+    updateViewSwitcher(currentCastleType);
+    updateAssignedList();
 }
 
-function initBoard(type = '3d6') {
+function initBoard(type = '', viewName = 'base') {
+    const emptyState = document.getElementById('board-empty-state');
+    if (!type) {
+        if (emptyState) emptyState.style.display = 'flex';
+        updateViewSwitcher('');
+        return;
+    }
+    if (emptyState) emptyState.style.display = 'none';
+
+    currentCastleType = type;
+    currentViewName   = viewName;
+
     const container = document.getElementById('board-canvas');
     if (!container) return;
     const wrapper = container.parentElement;
@@ -163,7 +331,11 @@ function initBoard(type = '3d6') {
     assignmentHistory.length = 0;
     lastSavedJson = '{}';
 
-    const positions = CASTLE_POSITIONS[type] ?? Object.values(CASTLE_POSITIONS)[0] ?? [];
+    // Preferim el format multi-vista si existeix; fallback al pla
+    const views = CASTLE_VIEWS[type] ?? {};
+    const positions = views[viewName] ?? CASTLE_POSITIONS[type] ?? [];
+
+    updateViewSwitcher(type);
     const centroid  = computeCentroid(positions);
     const xs = positions.map(p => p.cx);
     const ys = positions.map(p => p.cy);
@@ -215,6 +387,45 @@ function initBoard(type = '3d6') {
     updateZoomDisplay();
 
     positions.forEach(pos => {
+        // Imatge informativa — no assignable, renderitzar a sota de tot
+        if (pos.shape === 'image') {
+            if (!pos.imageData) return;
+            const imgEl = new window.Image();
+            imgEl.onload = () => {
+                const g = new Konva.Group({
+                    x: pos.cx - minX + 40, y: pos.cy - minY + 40,
+                    rotation: pos.angle, listening: false,
+                });
+                g.add(new Konva.Image({
+                    image: imgEl, x: -pos.w / 2, y: -pos.h / 2,
+                    width: pos.w, height: pos.h, opacity: 0.85,
+                }));
+                layer.add(g);
+                g.moveToBottom();
+                layer.batchDraw();
+            };
+            imgEl.src = pos.imageData;
+            return;
+        }
+
+        // Etiqueta — text estàtic, no assignable
+        if (pos.shape === 'label') {
+            const g = new Konva.Group({
+                x: pos.cx - minX + 40, y: pos.cy - minY + 40,
+                rotation: pos.angle, listening: false,
+            });
+            g.add(new Konva.Text({
+                x: -pos.w / 2, y: -pos.h / 2,
+                width: pos.w, height: pos.h,
+                text: pos.nom ?? '',
+                fontSize: Math.max(8, Math.min(14, pos.h * 0.7)),
+                fontFamily: 'sans-serif', fontStyle: 'bold',
+                fill: '#374151', align: 'center', verticalAlign: 'middle',
+            }));
+            layer.add(g);
+            return;
+        }
+
         const group = new Konva.Group({
             x: pos.cx - minX + 40,
             y: pos.cy - minY + 40,
@@ -224,13 +435,16 @@ function initBoard(type = '3d6') {
 
         const emptyFill = zoneColor(pos, centroid);
 
-        const rect = new Konva.Ellipse({
-            radiusX: pos.w / 2,
-            radiusY: pos.h / 2,
-            fill: emptyFill,
-            stroke: STROKE,
-            strokeWidth: 0.8,
-        });
+        const rect = pos.shape === 'rect'
+            ? new Konva.Rect({
+                x: -pos.w / 2, y: -pos.h / 2,
+                width: pos.w, height: pos.h,
+                fill: emptyFill, stroke: STROKE, strokeWidth: 0.8, cornerRadius: 2,
+            })
+            : new Konva.Ellipse({
+                radiusX: pos.w / 2, radiusY: pos.h / 2,
+                fill: emptyFill, stroke: STROKE, strokeWidth: 0.8,
+            });
 
         const isTall = pos.h > pos.w;
         const textW = isTall ? pos.h * 0.75 : pos.w * 0.82;
@@ -266,7 +480,17 @@ function initBoard(type = '3d6') {
 
         group.on('mouseenter', () => {
             const info = document.getElementById('board-info');
-            if (info && pos.nom) info.textContent = pos.nom;
+            if (info) {
+                const alias = assignments[pos.id];
+                const parts = [];
+                if (pos.nom) parts.push(pos.nom);
+                if (alias) {
+                    parts.push(alias);
+                    const pt = !POM_GRUPS.has(pos.grup) ? physText(alias) : '';
+                    if (pt) parts.push(pt);
+                }
+                info.textContent = parts.join(' · ');
+            }
         });
         group.on('mouseleave', () => {
             const info = document.getElementById('board-info');
@@ -290,6 +514,31 @@ function initBoard(type = '3d6') {
     updateCounter();
     updateUI();
     setupDragDrop();
+
+    // Logo de la colla (si activat a Configuració)
+    if (window.__showLogo && window.__logoUrl) {
+        const logoEl = new window.Image();
+        logoEl.onload = () => {
+            const maxSize = 80;
+            const scale = Math.min(1, maxSize / logoEl.naturalWidth, maxSize / logoEl.naturalHeight);
+            const lw = logoEl.naturalWidth  * scale;
+            const lh = logoEl.naturalHeight * scale;
+            const margin = 12;
+            const logoImg = new Konva.Image({
+                image:    logoEl,
+                x:        stage.width()  - lw  - margin,
+                y:        stage.height() - lh  - margin,
+                width:    lw,
+                height:   lh,
+                opacity:  0.75,
+                listening: false,
+            });
+            layer.add(logoImg);
+            logoImg.moveToBottom();
+            layer.batchDraw();
+        };
+        logoEl.src = window.__logoUrl;
+    }
 }
 
 function getPosIdAtPoint(clientX, clientY) {
@@ -369,9 +618,30 @@ function setListVisible(alias, visible) {
     });
 }
 
+function showBoardWarning(msg) {
+    const el = document.getElementById('board-warning');
+    if (!el) return;
+    const span = el.querySelector('span');
+    if (span) span.textContent = msg;
+    el.style.display = 'flex';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
 function assignCasteller(posId, alias) {
+    // Comprovació cross-vista: si el casteller és en una altra vista, bloquejar
+    const crossEntry = Object.entries(viewAssignments).find(([, asns]) =>
+        Object.values(asns).includes(alias)
+    );
+    if (crossEntry) {
+        const viewLabel = VIEW_LABELS[crossEntry[0]] ?? crossEntry[0];
+        showBoardWarning(`${alias} ja és al ${viewLabel}. Allibera'l primer des d'aquella vista.`);
+        return;
+    }
+    dirtyViews.add(currentViewName);
+
     snapshotToHistory();
-    // Si el casteller ja estava en una altra posició, el movem sense re-snapshot
+    // Si el casteller ja estava en una altra posició de la vista activa, el movem
     const prev = Object.entries(assignments).find(([, v]) => v === alias);
     if (prev) {
         suppressPush();
@@ -400,6 +670,7 @@ function assignCasteller(posId, alias) {
 
 function unassignPosition(posId) {
     snapshotToHistory();
+    dirtyViews.add(currentViewName);
     const alias = assignments[posId];
     delete assignments[posId];
     const { rect, label, emptyFill } = positionGroups[posId];
@@ -478,20 +749,57 @@ window.boardEditor = {
     },
     clearBoard,
     undo,
-    getAssignments: () => ({ ...assignments }),
+    getAssignments: () => {
+        // Fusiona totes les vistes: les altres des de viewAssignments, l'activa des del canvas
+        const all = {};
+        Object.entries(viewAssignments).forEach(([v, asn]) => {
+            if (v !== currentViewName) Object.assign(all, asn);
+        });
+        Object.assign(all, assignments);  // vista activa (canvas) sempre guanya
+        return all;
+    },
+    getDirtyViews: () => {
+        const dirty = new Set(dirtyViews);
+        if (Object.keys(assignments).length > 0) dirty.add(currentViewName);
+        return [...dirty];
+    },
     applyAssignments(json) {
         suppressPush();
         clearBoardInternal();
         const data = typeof json === 'string' ? JSON.parse(json) : json;
-        Object.entries(data).forEach(([posId, alias]) => {
-            if (positionGroups[posId]) assignCasteller(posId, alias);
-        });
+        viewAssignments = {};
+        dirtyViews      = new Set();
+
+        const posToView = buildPosToViewMap(currentCastleType);
+        if (Object.keys(posToView).length > 0) {
+            // Template multi-vista: distribueix les assignacions per vista
+            Object.entries(data).forEach(([posId, alias]) => {
+                const v = posToView[posId] ?? currentViewName;
+                viewAssignments[v] ??= {};
+                viewAssignments[v][posId] = alias;
+            });
+            // Aplica al canvas les de la vista activa (treient-les de viewAssignments per evitar autobloqueig)
+            const currentToRestore = { ...(viewAssignments[currentViewName] ?? {}) };
+            delete viewAssignments[currentViewName];
+            Object.entries(currentToRestore).forEach(([posId, alias]) => {
+                if (positionGroups[posId]) assignCasteller(posId, alias);
+            });
+        } else {
+            // Format antic (una sola vista)
+            Object.entries(data).forEach(([posId, alias]) => {
+                if (positionGroups[posId]) assignCasteller(posId, alias);
+            });
+        }
+
         suppressPop();
-        assignmentHistory.length = 0;  // Nova base — no té sentit fer undo aquí
+        assignmentHistory.length = 0;
         markSaved();
     },
     loadCastleType(type) {
-        initBoard(type);
+        currentViewName = 'base';
+        viewAssignments = {};
+        dirtyViews      = new Set();
+        initBoard(type, 'base');
     },
     zoomIn()  { if (!stage) return; const s = Math.min(5.0, stage.scaleX() * 1.25); stage.scale({ x: s, y: s }); updateZoomDisplay(); },
     zoomOut() { if (!stage) return; const s = Math.max(0.25, stage.scaleX() / 1.25); stage.scale({ x: s, y: s }); updateZoomDisplay(); },
@@ -506,26 +814,83 @@ window.boardEditor = {
     },
 };
 
+// Distribueix un dict pla {posId: alias} per vista, segons CASTLE_VIEWS
+function distributeAssignmentsByView(type, flat) {
+    const views = CASTLE_VIEWS[type] ?? {};
+    if (Object.keys(views).length === 0) return { base: flat };
+    const posToView = buildPosToViewMap(type);
+    const dist = {};
+    Object.entries(flat).forEach(([posId, alias]) => {
+        const v = posToView[posId] ?? 'base';
+        if (!dist[v]) dist[v] = {};
+        dist[v][posId] = alias;
+    });
+    return dist;
+}
+
+// En READ_ONLY: canvia a la vista on es troba la posició ressaltada
+function autoSwitchToHighlightView() {
+    const hlPos = window.__highlightPosition ?? null;
+    if (!hlPos && !HIGHLIGHT_ALIAS) return;
+    const posToView = buildPosToViewMap(currentCastleType);
+    let targetView = null;
+    if (hlPos) {
+        targetView = posToView[hlPos] ?? null;
+    } else {
+        const allAssign = { [currentViewName]: { ...assignments }, ...viewAssignments };
+        for (const [v, va] of Object.entries(allAssign)) {
+            if (Object.entries(va).some(([, alias]) => alias === HIGHLIGHT_ALIAS)) {
+                targetView = v; break;
+            }
+        }
+    }
+    if (targetView && targetView !== currentViewName) window.__loadView(targetView);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    initBoard();
-    if (window.__autoLoadAssignments && Object.keys(window.__autoLoadAssignments).length > 0) {
-        window.boardEditor.applyAssignments(window.__autoLoadAssignments);
+    initBoard(window.__initialCastleType || '');
+
+    const allAssign = window.__autoLoadAssignments ?? {};
+    if (Object.keys(allAssign).length > 0) {
+        // applyAssignments ja distribueix internament per vista (multi-view)
+        window.boardEditor.applyAssignments(allAssign);
+        // En display readonly, mou a la vista del casteller ressaltat
+        if (READ_ONLY) autoSwitchToHighlightView();
     }
 
-    // Redimensiona el stage si canvia el contenidor (ex: pantalla completa)
+    // Redimensiona el stage si canvia el contenidor (ex: pantalla completa).
+    // En mode READ_ONLY (display/iframe) evitem ResizeObserver perquè pot crear
+    // un bucle de creixement quan el canvas és dins un iframe Flutter.
     const wrapper = document.getElementById('board-canvas')?.parentElement;
-    if (wrapper && typeof ResizeObserver !== 'undefined') {
-        let resizeTimer;
+    if (!READ_ONLY && wrapper && typeof ResizeObserver !== 'undefined') {
+        let resizeTimer, prevW = -1, prevH = -1;
         new ResizeObserver(() => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 if (!stage) return;
                 const w = Math.max(300, wrapper.clientWidth);
                 const h = Math.max(300, wrapper.clientHeight);
+                if (w === prevW && h === prevH) return;
+                prevW = w; prevH = h;
                 stage.width(w);
                 stage.height(h);
+                layer?.batchDraw();
             }, 100);
         }).observe(wrapper);
+    } else if (READ_ONLY) {
+        // En display: resize real de finestra (no loop)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (!stage || !wrapper) return;
+                const w = Math.max(300, wrapper.clientWidth);
+                const h = Math.max(300, wrapper.clientHeight);
+                stage.width(w);
+                stage.height(h);
+                layer?.batchDraw();
+            }, 100);
+        });
     }
 });
 
