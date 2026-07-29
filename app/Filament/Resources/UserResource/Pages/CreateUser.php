@@ -13,7 +13,9 @@ class CreateUser extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['colla_id'] = filament()->getTenant()->id;
+        if (empty($data['colla_id'])) {
+            $data['colla_id'] = filament()->getTenant()->id;
+        }
         return $data;
     }
 

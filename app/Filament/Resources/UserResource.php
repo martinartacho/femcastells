@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Models\Colla;
 use App\Models\Profile;
 use App\Models\User;
 use BackedEnum;
@@ -44,7 +45,9 @@ class UserResource extends Resource
             return $query;
         }
 
-        return $query->where('colla_id', filament()->getTenant()?->id);
+        return $query
+            ->where('colla_id', filament()->getTenant()?->id)
+            ->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super-admin'));
     }
 
     public static function form(Schema $schema): Schema
@@ -82,6 +85,12 @@ class UserResource extends Resource
                     ->nullable()
                     ->native(false)
                     ->helperText('Sense perfil = sense accés a seccions restringides'),
+                Select::make('colla_id')
+                    ->label('Colla')
+                    ->options(fn () => Colla::pluck('name', 'id'))
+                    ->required()
+                    ->native(false)
+                    ->visible(fn () => auth()->user()?->hasRole('super-admin')),
             ])->columns(2),
         ]);
     }
