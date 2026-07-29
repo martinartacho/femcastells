@@ -62,6 +62,22 @@ class CastellerSeeder extends Seeder
         foreach (Colla::all() as $colla) {
             $this->seedForColla($colla->id, $faker, $password);
         }
+
+        // Casteller de demo per a proves (Play Store review / QA)
+        $demoColla = Colla::where('shortname', 'demo')->first();
+        if ($demoColla) {
+            \Illuminate\Support\Facades\DB::table('castellers')->insertOrIgnore([[
+                'colla_id'   => $demoColla->id,
+                'alias'      => 'DEMO',
+                'name'       => 'Usuari',
+                'last_name'  => 'Demo',
+                'email'      => 'demo@femcastells.artacho.org',
+                'password'   => Hash::make($password),
+                'status'     => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]]);
+        }
     }
 
     private function seedForColla(int $collaId, \Faker\Generator $faker, string $password): void
