@@ -16,6 +16,13 @@ class Attendance extends Model
         'casteller_id',
         'status',
         'companions',
+        'checked_in',
+        'checked_in_at',
+    ];
+
+    protected $casts = [
+        'checked_in'    => 'boolean',
+        'checked_in_at' => 'datetime',
     ];
 
     public function event(): BelongsTo

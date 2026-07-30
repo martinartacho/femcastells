@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('colla_id')->constrained('colles')->cascadeOnDelete();
             $table->string('name', 100);
-            $table->string('key', 30);
+            $table->string('key', 100);
             $table->string('svg_path')->nullable();
             $table->json('positions')->nullable();
             $table->boolean('ready')->default(false);

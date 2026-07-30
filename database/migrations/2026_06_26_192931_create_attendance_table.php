@@ -14,6 +14,8 @@ return new class extends Migration
             $table->foreignId('casteller_id')->constrained()->cascadeOnDelete();
             $table->enum('status', ['ok', 'nok', 'unknown'])->default('unknown');
             $table->unsignedTinyInteger('companions')->default(0);
+            $table->boolean('checked_in')->nullable()->default(null);
+            $table->timestamp('checked_in_at')->nullable();
             $table->timestamps();
 
             $table->unique(['event_id', 'casteller_id']);

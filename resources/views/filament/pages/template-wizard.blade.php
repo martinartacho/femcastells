@@ -47,7 +47,7 @@
     window.__catCustom   = @json(auth()->user()?->colla?->board_settings['cat_custom'] ?? []);
 </script>
 
-<div style="display:flex; flex-direction:column; height:calc(100svh - 8rem); overflow:hidden; gap:8px;">
+<div x-data="{ showHint: false }" style="display:flex; flex-direction:column; height:calc(100svh - 8rem); overflow:hidden; gap:8px;">
 
     {{-- Topbar --}}
     <div style="display:flex; align-items:center; gap:10px; padding:6px 0; flex-shrink:0;">
@@ -85,7 +85,7 @@
             <option value="3">3 anells</option>
         </select>
         @endif
-        <button type="button" wire:click="addAllSteps"
+        <button type="button" wire:click="addAllSteps" @click="showHint = true"
                 style="padding:5px 12px; border:1px solid #059669; border-radius:7px;
                        background:#ecfdf5; color:#065f46; font-size:12px; font-weight:600;
                        cursor:pointer; white-space:nowrap;">
@@ -185,6 +185,22 @@
                 💾 Desa plantilla
             </button>
         </div>
+    </div>
+
+    {{-- Banner proposta personalitzable --}}
+    <div x-show="showHint" x-transition x-cloak
+         style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
+                padding:7px 12px; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <span style="font-size:15px; flex-shrink:0;">💡</span>
+        <span style="font-size:12px; color:#1e40af; flex:1; line-height:1.5;">
+            <strong>Proposta generada automàticament.</strong>
+            La podeu personalitzar arrossegant les posicions, afegint-ne de noves o eliminant-ne,
+            per adaptar-la a les preferències de la vostra colla. Deseu el resultat quan estigueu satisfets.
+        </span>
+        <button type="button" @click="showHint = false"
+                style="font-size:18px; background:none; border:none; cursor:pointer;
+                       color:#93c5fd; padding:0 4px; line-height:1; flex-shrink:0;"
+                title="Tanca">×</button>
     </div>
 
     {{-- Cos: panell categories + canvas + propietats --}}

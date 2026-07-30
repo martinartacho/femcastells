@@ -378,13 +378,28 @@ class CreateColla extends Command
                     ? ($roll < 75 ? 'ok' : 'nok')
                     : ($roll < 70 ? 'ok' : ($roll < 90 ? 'nok' : 'unknown'));
 
+                // Events passats: ~80% dels 'ok' han fet check-in físic
+                $checkedIn   = null;
+                $checkedInAt = null;
+                if ($isPast && $status === 'ok') {
+                    $checkedIn = ($i * 11 + $event->id) % 10 < 8;
+                    if ($checkedIn) {
+                        $checkedInAt = $event->start_date->copy()
+                            ->subMinutes(30)
+                            ->addMinutes(($i * 7) % 45)
+                            ->toDateTimeString();
+                    }
+                }
+
                 $rows[] = [
-                    'event_id'     => $event->id,
-                    'casteller_id' => $castellerId,
-                    'status'       => $status,
-                    'companions'   => ($event->companions && $status === 'ok') ? ($i % 3) : 0,
-                    'created_at'   => $now,
-                    'updated_at'   => $now,
+                    'event_id'      => $event->id,
+                    'casteller_id'  => $castellerId,
+                    'status'        => $status,
+                    'companions'    => ($event->companions && $status === 'ok') ? ($i % 3) : 0,
+                    'checked_in'    => $checkedIn,
+                    'checked_in_at' => $checkedInAt,
+                    'created_at'    => $now,
+                    'updated_at'    => $now,
                 ];
             }
 

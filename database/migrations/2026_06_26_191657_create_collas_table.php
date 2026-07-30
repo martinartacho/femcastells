@@ -17,7 +17,10 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->string('country', 2)->default('ES');
             $table->string('logo')->nullable();
+            $table->boolean('show_logo_in_pinya')->default(false);
             $table->string('color', 7)->nullable();
+            $table->json('board_settings')->nullable();
+            $table->json('generator_config')->nullable();
             $table->unsignedInteger('max_members')->nullable();
             $table->unsignedTinyInteger('assaigs_weeks_visible')->default(2);
             $table->text('gdpr_text')->nullable();

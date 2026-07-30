@@ -8,6 +8,7 @@ use App\Models\BoardSnapshot;
 use App\Models\CastleTemplate;
 use App\Models\Casteller;
 use App\Models\Event;
+use App\Services\PinyaGeneratorService;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -511,6 +512,46 @@ class BoardEditorPage extends Page
         }
 
         Notification::make()->title('Pissarra eliminada')->success()->send();
+    }
+
+    public function generateProposal(): void
+    {
+        if (!$this->selectedEventId || !$this->castleType) {
+            Notification::make()->title('Selecciona un event i un tipus de castell')->warning()->send();
+            return;
+        }
+
+        $collaId     = auth()->user()?->colla_id;
+        $assignments = (new PinyaGeneratorService())->generate(
+            $this->selectedEventId,
+            $this->castleType,
+            $collaId,
+        );
+
+        if (empty($assignments)) {
+            Notification::make()->title('No hi ha prou assistents confirmats per generar una proposta')->warning()->send();
+            return;
+        }
+
+        $event    = Event::find($this->selectedEventId);
+        $name     = 'Proposta — ' . ($event?->name ?? $this->castleType);
+        $snapshot = BoardSnapshot::create([
+            'colla_id'    => $collaId,
+            'event_id'    => $this->selectedEventId,
+            'castle_type' => $this->castleType,
+            'name'        => substr($name, 0, 100),
+            'assignments' => $assignments,
+        ]);
+
+        $this->currentSnapshotId   = $snapshot->id;
+        $this->currentSnapshotName = $snapshot->name;
+
+        $this->dispatch('board-apply', assignments: json_encode($assignments));
+
+        Notification::make()
+            ->title('Proposta generada: ' . count($assignments) . ' assignacions')
+            ->success()
+            ->send();
     }
 
     public function getCantarLines(): array

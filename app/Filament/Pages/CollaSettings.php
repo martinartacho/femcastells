@@ -93,6 +93,44 @@ class CollaSettings extends Page
                         ->suffix('cm'),
                 ]),
 
+                Section::make('Generador de pinyes — pesos per categoria')
+                    ->description('Percentatges que determinen com es puntua cada casteller per a cada tipus de posició. La suma de pes + alçada + espatlla no cal que sigui 100.')
+                    ->schema([
+                        Section::make('Baix / Base')->schema([
+                            TextInput::make('generator_config.baix.weight')
+                                ->label('% Pes')->numeric()->default(60)->suffix('%')->minValue(0)->maxValue(100),
+                            TextInput::make('generator_config.baix.shoulder')
+                                ->label('% Espatlla')->numeric()->default(40)->suffix('%')->minValue(0)->maxValue(100),
+                            TextInput::make('generator_config.baix.height')
+                                ->label('% Alçada')->numeric()->default(0)->suffix('%')->minValue(0)->maxValue(100),
+                        ])->columns(3)->compact(),
+
+                        Section::make('Primer anell (Rengle, Falca, Angle, Lateral)')->schema([
+                            TextInput::make('generator_config.rengle.weight')
+                                ->label('% Pes')->numeric()->default(50)->suffix('%')->minValue(0)->maxValue(100),
+                            TextInput::make('generator_config.rengle.shoulder')
+                                ->label('% Espatlla')->numeric()->default(20)->suffix('%')->minValue(0)->maxValue(100),
+                            TextInput::make('generator_config.rengle.height')
+                                ->label('% Alçada')->numeric()->default(30)->suffix('%')->minValue(0)->maxValue(100),
+                        ])->columns(3)->compact(),
+
+                        Section::make('Nucli / Pisos alts (Nucli, Tronc, Contrafort, Folre…)')->schema([
+                            TextInput::make('generator_config.nucli.weight')
+                                ->label('% Pes (negatiu = menys pes és millor)')->numeric()->default(-50)->suffix('%')->minValue(-200)->maxValue(0),
+                            TextInput::make('generator_config.nucli.height')
+                                ->label('% Alçada')->numeric()->default(20)->suffix('%')->minValue(0)->maxValue(100),
+                            TextInput::make('generator_config.nucli.base')
+                                ->label('Puntuació base')->numeric()->default(150)->minValue(0)->maxValue(500),
+                        ])->columns(3)->compact(),
+
+                        Section::make('Agulla (cim del castell)')->schema([
+                            TextInput::make('generator_config.agulla.weight')
+                                ->label('% Pes (negatiu = menys pes és millor)')->numeric()->default(-200)->suffix('%')->minValue(-500)->maxValue(0),
+                            TextInput::make('generator_config.agulla.base')
+                                ->label('Puntuació base')->numeric()->default(200)->minValue(0)->maxValue(500),
+                        ])->columns(2)->compact(),
+                    ]),
+
                 Section::make('Protecció de dades (RGPD)')->schema([
                     TextInput::make('gdpr_version')
                         ->label('Versió del text RGPD')

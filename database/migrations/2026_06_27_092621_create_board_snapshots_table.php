@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('colla_id')->constrained('colles')->cascadeOnDelete();
             $table->foreignId('event_id')->nullable()->constrained('events')->nullOnDelete();
-            $table->string('castle_type', 20)->default('3d6');
+            $table->string('castle_type', 60)->default('3d6');
             $table->boolean('is_primary')->default(false);
             $table->uuid('public_token')->nullable()->unique();
             $table->unsignedTinyInteger('ronda_number')->nullable();

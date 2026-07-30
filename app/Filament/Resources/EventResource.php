@@ -148,6 +148,22 @@ class EventResource extends Resource
                     ]),
             ])
             ->actions([
+                Action::make('assistencia')
+                    ->label('')
+                    ->icon(Heroicon::OutlinedUserGroup)
+                    ->color(fn (Event $record) => $record->attendance()->whereNotNull('checked_in')->exists() ? 'success' : 'gray')
+                    ->tooltip('Verificació d\'assistència')
+                    ->url(fn (Event $record): string =>
+                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/attendance'
+                    ),
+                Action::make('preguntes')
+                    ->label('')
+                    ->icon(Heroicon::OutlinedChatBubbleLeftRight)
+                    ->color(fn (Event $record) => $record->questions()->exists() ? 'info' : 'gray')
+                    ->tooltip('Preguntes de l\'event')
+                    ->url(fn (Event $record): string =>
+                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/questions'
+                    ),
                 Action::make('pissarra')
                     ->label('')
                     ->icon(Heroicon::OutlinedTableCells)
@@ -192,9 +208,11 @@ class EventResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEvents::route('/'),
-            'create' => Pages\CreateEvent::route('/create'),
-            'edit' => Pages\EditEvent::route('/{record}/edit'),
+            'index'      => Pages\ListEvents::route('/'),
+            'create'     => Pages\CreateEvent::route('/create'),
+            'edit'       => Pages\EditEvent::route('/{record}/edit'),
+            'attendance' => Pages\ManageEventAttendance::route('/{record}/attendance'),
+            'questions'  => Pages\ManageEventQuestions::route('/{record}/questions'),
         ];
     }
 }

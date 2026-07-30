@@ -23,6 +23,22 @@ class EditEvent extends EditRecord
 {
     protected static string $resource = EventResource::class;
 
+    public function booted(): void
+    {
+        if (request()->query('scrollTo') === 'attendance') {
+            $this->js("
+                setTimeout(() => {
+                    const tabs = document.querySelectorAll('[role=\"tab\"]');
+                    const tab  = Array.from(tabs).find(t => t.textContent.trim() === 'Assistència');
+                    if (tab) {
+                        tab.closest('section, div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        tab.click();
+                    }
+                }, 400);
+            ");
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
