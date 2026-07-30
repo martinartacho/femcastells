@@ -15,14 +15,7 @@ class TemplateWizardPage extends Page
 
     protected static ?string $slug = 'wizard-plantilla';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Pissarra';
-
-    protected static ?int $navigationSort = 3;
-
-    public static function getNavigationIcon(): string|\BackedEnum|null
-    {
-        return 'heroicon-o-building-library';
-    }
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function canAccess(): bool
     {
