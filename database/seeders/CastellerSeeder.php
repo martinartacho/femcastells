@@ -71,7 +71,7 @@ class CastellerSeeder extends Seeder
                 'alias'      => 'DEMO',
                 'name'       => 'Usuari',
                 'last_name'  => 'Demo',
-                'email'      => 'demo@femcastells.artacho.org',
+                'email'      => 'femcastells@artacho.org',
                 'password'   => Hash::make($password),
                 'status'     => 1,
                 'created_at' => now(),
