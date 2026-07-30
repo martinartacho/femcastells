@@ -17,6 +17,7 @@ class MobileUserController extends Controller
     {
         /** @var Casteller $casteller */
         $casteller = $request->user();
+        $colla     = $casteller->colla;
 
         return response()->json([
             'castellerActiveId'    => $casteller->id,
@@ -28,7 +29,11 @@ class MobileUserController extends Controller
                     'castellerId'        => $casteller->id,
                 ],
             ],
-            'boardsEnabled' => true,
+            'boardsEnabled'  => true,
+            'collaName'      => $colla?->name,
+            'collaLogoUrl'   => ($colla?->show_logo_in_pinya && $colla?->logo)
+                ? $colla->getFilamentAvatarUrl()
+                : null,
         ]);
     }
 
