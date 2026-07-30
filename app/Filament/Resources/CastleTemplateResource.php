@@ -176,7 +176,7 @@ class CastleTemplateResource extends Resource
                     ->sortable(),
             ])
             ->recordUrl(fn (CastleTemplate $record): string =>
-                route('filament.admin.pages.generador', [
+                route('filament.admin.pages.wizard-plantilla', [
                     'tenant' => auth()->user()?->colla?->shortname,
                 ]) . '?template=' . $record->id
             )

@@ -26,7 +26,7 @@ class EditCastleTemplate extends EditRecord
                 ->label('Editar al Generador')
                 ->icon(Heroicon::OutlinedPencilSquare)
                 ->color('gray')
-                ->url(fn () => route('filament.admin.pages.generador', [
+                ->url(fn () => route('filament.admin.pages.wizard-plantilla', [
                     'tenant' => auth()->user()?->colla?->shortname,
                 ]) . '?template=' . $this->record->id)
                 ->openUrlInNewTab(false),
