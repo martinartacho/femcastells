@@ -27,7 +27,7 @@ class GeneradorPage extends Page
 
     public static function canAccess(): bool
     {
-        return false;
+        return auth()->user()?->canDo('pissarra') ?? false;
     }
 
     protected static ?string $slug = 'generador';
