@@ -37,10 +37,12 @@ class Colla extends Model implements HasAvatar
         'projected_snapshot_id',
         'rondes_display',
         'board_settings',
+        'generator_config',
     ];
 
     protected $casts = [
-        'board_settings' => 'array',
+        'board_settings'   => 'array',
+        'generator_config' => 'array',
     ];
 
     public function users(): HasMany

@@ -450,9 +450,18 @@ class TemplateWizardPage extends Page
         $pw  = max(34, $this->defaultW);
         $pos = [];
 
-        $r1 = (int) round(55 * $scale);   // anell interior: baixos + crosses
-        $r2 = (int) round(100 * $scale);  // anell mig: laterals
-        $r3 = (int) round(145 * $scale);  // anell exterior: mans altes
+        // Radis calibrats des de templates reals:
+        //   n=4 (Quatre de 7 folre): r_cross=55, r_baix=105, r2=155, r3=205
+        //   n=3 (Tres de 8 folre):   r_cross=55, r_baix=95,  r2=130, r3=155
+        [$r_cross_base, $r_baix_base, $r2_base, $r3_base] = match ($n) {
+            4       => [55, 105, 155, 205],
+            3       => [55,  95, 130, 155],
+            default => [55,  80, 120, 160],
+        };
+        $r_cross = (int) round($r_cross_base * $scale);
+        $r_baix  = (int) round($r_baix_base  * $scale);
+        $r2      = (int) round($r2_base      * $scale);
+        $r3      = (int) round($r3_base      * $scale);
 
         $armAngles = $this->getBaixBracAngles($n);
 
@@ -461,24 +470,24 @@ class TemplateWizardPage extends Page
             $pos[] = $this->makePos("f_ag_{$uid}", 0.0, 0.0, $pw, $ph, 0.0, 'agulla', 'agulles', 1);
         }
 
-        // Anell interior: baixos i crosses
+        // Anell interior: baixos als eixos (r_baix), crosses entre eixos (r_cross)
         if ($n === 1) {
             // Pilar: 1 baix + 3 crosses formant creu
             $armDeg = (float) $armAngles[0];
-            $cx = round($r1 * cos(deg2rad($armDeg)), 1);
-            $cy = round($r1 * sin(deg2rad($armDeg)), 1);
+            $cx = round($r_baix * cos(deg2rad($armDeg)), 1);
+            $cy = round($r_baix * sin(deg2rad($armDeg)), 1);
             $pos[] = $this->makePos("f_baix_0_{$uid}", $cx, $cy, $pw, $ph, fmod($armDeg + 90, 360), 'rengle', 'baix', 1);
             foreach ([0, 90, 180] as $j => $extraDeg) {
-                $cx = round($r1 * cos(deg2rad((float) $extraDeg)), 1);
-                $cy = round($r1 * sin(deg2rad((float) $extraDeg)), 1);
+                $cx = round($r_cross * cos(deg2rad((float) $extraDeg)), 1);
+                $cy = round($r_cross * sin(deg2rad((float) $extraDeg)), 1);
                 $pos[] = $this->makePos("f_cr_{$j}_{$uid}", $cx, $cy, $pw, $ph, fmod($extraDeg + 90, 360), 'porta', 'crossa ' . ($j + 1), 1);
             }
         } else {
-            // Torre/Tres/Quatre: baixos als eixos, crosses entre eixos
+            // Torre/Tres/Quatre: baixos als eixos (r_baix), crosses entre eixos (r_cross)
             foreach ($armAngles as $i => $armDeg) {
                 $armDeg = (float) $armDeg;
-                $cx = round($r1 * cos(deg2rad($armDeg)), 1);
-                $cy = round($r1 * sin(deg2rad($armDeg)), 1);
+                $cx = round($r_baix * cos(deg2rad($armDeg)), 1);
+                $cy = round($r_baix * sin(deg2rad($armDeg)), 1);
                 $label = $this->bracLabel($i, $n) !== '' ? 'baix ' . $this->bracLabel($i, $n) : 'baixos';
                 $pos[] = $this->makePos("f_baix_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($armDeg + 90, 360), 'rengle', $label, 1);
             }
@@ -486,8 +495,8 @@ class TemplateWizardPage extends Page
                 $a1 = (float) $armAngles[$i];
                 $a2 = (float) $armAngles[($i + 1) % $n];
                 $midDeg = $this->midAngle($a1, $a2);
-                $cx = round($r1 * cos(deg2rad($midDeg)), 1);
-                $cy = round($r1 * sin(deg2rad($midDeg)), 1);
+                $cx = round($r_cross * cos(deg2rad($midDeg)), 1);
+                $cy = round($r_cross * sin(deg2rad($midDeg)), 1);
                 $label = match ($i) { 0 => 'crosses D', 1 => 'crosses E', default => 'crossa ' . ($i + 1) };
                 $pos[] = $this->makePos("f_cr_{$i}_{$uid}", $cx, $cy, $pw, $ph, fmod($midDeg + 90, 360), 'porta', $label, 1);
             }

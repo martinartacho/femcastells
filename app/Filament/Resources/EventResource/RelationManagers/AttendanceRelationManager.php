@@ -10,7 +10,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
 
@@ -73,6 +75,21 @@ class AttendanceRelationManager extends RelationManager
                     }),
                 TextColumn::make('companions')
                     ->label('Acompanyants'),
+                ToggleColumn::make('checked_in')
+                    ->label('Verificada')
+                    ->onColor('success')
+                    ->offColor('gray')
+                    ->afterStateUpdated(function ($record, $state) {
+                        $record->update([
+                            'checked_in'    => $state,
+                            'checked_in_at' => $state ? now() : null,
+                        ]);
+                    }),
+                TextColumn::make('checked_in_at')
+                    ->label('Hora check-in')
+                    ->time('H:i')
+                    ->placeholder('—')
+                    ->color('success'),
             ])
             ->headerActions([
                 Action::make('veure_respostes')

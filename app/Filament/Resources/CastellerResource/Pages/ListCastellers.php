@@ -60,6 +60,12 @@ class ListCastellers extends ListRecords
                     );
                 }),
 
+            Action::make('profiles')
+                ->label('Perfils físics')
+                ->icon(Heroicon::OutlinedChartBar)
+                ->color('gray')
+                ->url(CastellerResource::getUrl('profiles')),
+
             Action::make('import')
                 ->label('Importar CSV')
                 ->icon(Heroicon::OutlinedArrowUpTray)

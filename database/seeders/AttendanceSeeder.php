@@ -37,23 +37,32 @@ class AttendanceSeeder extends Seeder
                     }
 
                     if ($isPast) {
-                        // Past: 75% ok, 25% nok
                         $status = rand(1, 100) <= 75 ? 'ok' : 'nok';
                     } else {
-                        // Future: 70% ok, 20% nok, 10% unknown
                         $roll   = rand(1, 100);
                         $status = $roll <= 70 ? 'ok' : ($roll <= 90 ? 'nok' : 'unknown');
                     }
 
-                    $companions = ($event->companions && $status === 'ok') ? rand(0, 2) : 0;
+                    $companions  = ($event->companions && $status === 'ok') ? rand(0, 2) : 0;
+                    $checkedIn   = null;
+                    $checkedInAt = null;
+                    if ($isPast && $status === 'ok' && rand(1, 10) <= 8) {
+                        $checkedIn   = true;
+                        $checkedInAt = $event->start_date->copy()
+                            ->subMinutes(30)
+                            ->addMinutes(rand(0, 44))
+                            ->toDateTimeString();
+                    }
 
                     $rows[] = [
-                        'event_id'     => $event->id,
-                        'casteller_id' => $castellerId,
-                        'status'       => $status,
-                        'companions'   => $companions,
-                        'created_at'   => $now,
-                        'updated_at'   => $now,
+                        'event_id'      => $event->id,
+                        'casteller_id'  => $castellerId,
+                        'status'        => $status,
+                        'companions'    => $companions,
+                        'checked_in'    => $checkedIn,
+                        'checked_in_at' => $checkedInAt,
+                        'created_at'    => $now,
+                        'updated_at'    => $now,
                     ];
                 }
 
