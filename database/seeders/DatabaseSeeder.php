@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CollaBaseSeeder::class,
+            CastellerSeeder::class,
             NoticiesSeeder::class,
             CastleTemplateSeeder::class,
         ]);

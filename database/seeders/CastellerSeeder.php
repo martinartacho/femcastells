@@ -60,23 +60,33 @@ class CastellerSeeder extends Seeder
             ?? throw new \RuntimeException('SEEDER_USER_PASSWORD no definit al .env');
 
         foreach (Colla::all() as $colla) {
+            if (DB::table('castellers')->where('colla_id', $colla->id)->exists()) {
+                continue;
+            }
             $this->seedForColla($colla->id, $faker, $password);
         }
 
         // Casteller de demo per a proves (Play Store review / QA)
         $demoColla = Colla::where('shortname', 'demo')->first();
         if ($demoColla) {
-            \Illuminate\Support\Facades\DB::table('castellers')->insertOrIgnore([[
-                'colla_id'   => $demoColla->id,
-                'alias'      => 'DEMO',
-                'name'       => 'Usuari',
-                'last_name'  => 'Demo',
-                'email'      => 'femcastells@artacho.org',
-                'password'   => Hash::make($password),
-                'status'     => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]]);
+            $alreadyExists = DB::table('castellers')
+                ->where('colla_id', $demoColla->id)
+                ->where('alias', 'DEMO')
+                ->exists();
+
+            if (! $alreadyExists) {
+                DB::table('castellers')->insert([
+                    'colla_id'   => $demoColla->id,
+                    'alias'      => 'DEMO',
+                    'name'       => 'Usuari',
+                    'last_name'  => 'Demo',
+                    'email'      => 'femcastells@artacho.org',
+                    'password'   => Hash::make($password),
+                    'status'     => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         }
     }
 
@@ -107,7 +117,7 @@ class CastellerSeeder extends Seeder
                 'alias'            => $alias,
                 'name'             => $firstName,
                 'last_name'        => $lastName,
-                'email'            => strtolower($alias) . '.c' . $collaId . '@fempinya.test',
+                'email'            => self::aliasToEmailSlug($alias) . '.c' . $collaId . '@fempinya.test',
                 'password'         => $hashedPassword,
                 'phone'            => $faker->phoneNumber,
                 'birthdate'        => $faker->dateTimeBetween('-60 years', '-18 years')->format('Y-m-d'),
@@ -152,5 +162,19 @@ class CastellerSeeder extends Seeder
         }
 
         return $result;
+    }
+
+    private static function aliasToEmailSlug(string $alias): string
+    {
+        $map = [
+            'À'=>'A','Á'=>'A','Â'=>'A','Ä'=>'A','Ã'=>'A','Å'=>'A',
+            'È'=>'E','É'=>'E','Ê'=>'E','Ë'=>'E',
+            'Ì'=>'I','Í'=>'I','Î'=>'I','Ï'=>'I',
+            'Ò'=>'O','Ó'=>'O','Ô'=>'O','Ö'=>'O','Õ'=>'O',
+            'Ù'=>'U','Ú'=>'U','Û'=>'U','Ü'=>'U',
+            'Ç'=>'C','Ñ'=>'N','·'=>'',
+        ];
+        $slug = strtr($alias, $map);
+        return strtolower(preg_replace('/[^a-z0-9]+/i', '', $slug));
     }
 }

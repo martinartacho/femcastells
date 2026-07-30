@@ -307,7 +307,7 @@ class CreateColla extends Command
                 'alias'           => $alias,
                 'name'            => $nomPool[$i % count($nomPool)],
                 'last_name'       => self::COGNOMS[$i % 15] . ' ' . self::COGNOMS[($i + 5) % 15],
-                'email'           => strtolower($alias) . '@' . $shortname . '.test',
+                'email'           => self::aliasToEmailSlug($alias) . '@' . $shortname . '.test',
                 'password'        => $hashedPassword,
                 'birthdate'       => date('Y-m-d', mktime(0, 0, 0, ($i % 12) + 1, ($i % 28) + 1, 1970 + ($i % 42) + 18)),
                 'status'          => $statusPool[$i % count($statusPool)],
@@ -541,6 +541,20 @@ class CreateColla extends Command
                 ],
             ]);
         }
+    }
+
+    private static function aliasToEmailSlug(string $alias): string
+    {
+        $map = [
+            'À'=>'A','Á'=>'A','Â'=>'A','Ä'=>'A','Ã'=>'A','Å'=>'A',
+            'È'=>'E','É'=>'E','Ê'=>'E','Ë'=>'E',
+            'Ì'=>'I','Í'=>'I','Î'=>'I','Ï'=>'I',
+            'Ò'=>'O','Ó'=>'O','Ô'=>'O','Ö'=>'O','Õ'=>'O',
+            'Ù'=>'U','Ú'=>'U','Û'=>'U','Ü'=>'U',
+            'Ç'=>'C','Ñ'=>'N','·'=>'',
+        ];
+        $slug = strtr($alias, $map);
+        return strtolower(preg_replace('/[^a-z0-9]+/i', '', $slug));
     }
 
     private function seedNoticies(Colla $colla, string $nomColla): void
