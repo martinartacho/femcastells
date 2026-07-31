@@ -28,8 +28,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/mobile_events/{id}',         [MobileEventsController::class, 'updateAttendance']);
         Route::post('/mobile_events/{id}/answers', [MobileEventsController::class, 'saveAnswers']);
 
-        Route::get('/mobile_rondas',         [MobileRondesController::class, 'index']);
+        Route::get('/mobile_rondas',           [MobileRondesController::class, 'index']);
         Route::get('/mobile_rondas/{id}',    [MobileRondesController::class, 'show']);
+        Route::get('/mobile_historial',      [MobileRondesController::class, 'historial']);
 
         Route::get('/public_display_url',    [MobileDisplayController::class, 'url']);
 

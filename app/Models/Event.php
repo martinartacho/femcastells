@@ -14,6 +14,10 @@ use Illuminate\Support\Str;
 class Event extends Model
 {
     use HasFactory;
+
+    public const TYPE_ASSAIG   = 1;
+    public const TYPE_ACTUACIO = 2;
+    public const TYPE_ACTIVITAT = 3;
     protected $fillable = [
         'colla_id',
         'name',
