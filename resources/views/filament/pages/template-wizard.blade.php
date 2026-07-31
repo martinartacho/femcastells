@@ -82,7 +82,6 @@
         <select wire:model.live="anells" style="{{ $selStyle }}">
             <option value="1">1 anell</option>
             <option value="2">2 anells</option>
-            <option value="3">3 anells</option>
         </select>
         @endif
         <button type="button" wire:click="addAllSteps" @click="showHint = true"
