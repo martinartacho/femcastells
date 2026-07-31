@@ -13,8 +13,9 @@ use Illuminate\Http\Request;
 
 class MobileRondesController extends Controller
 {
-    // type=1 assaig → sense historial; type=2 actuació + type=3 activitat → amb historial
-    private const TYPES_WITH_RONDES = [Event::TYPE_ACTUACIO, Event::TYPE_ACTIVITAT];
+    // type=1 assaig → sense historial; type=3 activitat (social) → sense historial
+    // type=2 actuació → amb historial de rondes
+    private const TYPES_WITH_RONDES = [Event::TYPE_ACTUACIO];
 
     public function index(Request $request): JsonResponse
     {
