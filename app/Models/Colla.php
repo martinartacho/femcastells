@@ -83,7 +83,7 @@ class Colla extends Model implements HasAvatar
 
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->logo ? asset('storage/'.$this->logo) : null;
+        return $this->logo ? secure_asset('storage/'.$this->logo) : null;
     }
 
     public function resolveGdprText(): string
