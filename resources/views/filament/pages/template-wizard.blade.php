@@ -51,9 +51,9 @@
 
     {{-- Topbar --}}
     <div style="display:flex; align-items:center; gap:10px; padding:6px 0; flex-shrink:0;">
-        {{-- Nom de la plantilla --}}
+        {{-- Descripció auto-generada (tipus de castell) --}}
         <div style="font-size:15px; font-weight:700; color:#111827; white-space:nowrap;">
-            {{ $templateName }}
+            {{ $this->getCastellName() }}
         </div>
 
         {{-- Selectors interactius --}}
@@ -176,21 +176,22 @@
         </label>
 
         <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
-            <input id="te-final-name" type="text" value="{{ $templateName }}"
-                   style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
-                          font-size:13px; width:200px; color:#374151; outline:none;">
             <button type="button"
                     onclick="
                         const name  = document.getElementById('te-final-name').value;
                         const views = window.templateEditor.exportAllViews();
                         const total = Object.values(views).reduce((s, v) => s + v.length, 0);
                         if (!total) { alert('El canvas és buit'); return; }
-                        @this.dispatch('template-save', { name, positionsJson: JSON.stringify(views) });
+                        const description = '{{ $this->getCastellName() }}';
+                        @this.dispatch('template-save', { name, positionsJson: JSON.stringify(views), description });
                     "
-                    style="padding:6px 18px; background:#059669; color:#fff; border:none; border-radius:8px;
-                           font-size:13px; font-weight:600; cursor:pointer;">
-                💾 Desa plantilla
+                    style="padding:6px 14px; background:#059669; color:#fff; border:none; border-radius:8px;
+                           font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">
+                💾 Desar
             </button>
+            <input id="te-final-name" type="text" value="{{ $templateName }}"
+                   style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
+                          font-size:13px; width:180px; color:#374151; outline:none;">
         </div>
     </div>
 

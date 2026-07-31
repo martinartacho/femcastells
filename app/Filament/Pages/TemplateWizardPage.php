@@ -820,7 +820,7 @@ class TemplateWizardPage extends Page
 
     // ── Desa la plantilla (cridat des de JS via Livewire dispatch) ────────────
     #[On('template-save')]
-    public function saveTemplate(string $name, string $positionsJson): void
+    public function saveTemplate(string $name, string $positionsJson, string $description = ''): void
     {
         $collaId   = auth()->user()?->colla_id;
         $name      = trim($name) ?: $this->getCastellName();
@@ -842,7 +842,7 @@ class TemplateWizardPage extends Page
 
         $template = CastleTemplate::updateOrCreate(
             ['colla_id' => $collaId, 'key' => $key],
-            ['name' => $name, 'positions' => $positions, 'ready' => true]
+            ['name' => $name, 'description' => trim($description) ?: null, 'positions' => $positions, 'ready' => true]
         );
 
         $template->saveVersion('Wizard ' . now()->format('d/m/Y H:i'));
