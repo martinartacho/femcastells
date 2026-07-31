@@ -191,12 +191,14 @@
 
     {{-- Banner treballant (visible durant addAllSteps / addStep) --}}
     <div wire:loading wire:target="addAllSteps,addStep"
-         style="background:#fefce8; border:1px solid #fde68a; border-radius:8px;
-                padding:7px 12px; display:flex; align-items:center; gap:8px; flex-shrink:0;">
-        <span style="font-size:15px; flex-shrink:0;">⏳</span>
-        <span style="font-size:12px; color:#92400e; flex:1;">
-            <strong>Treballant...</strong> Generant les posicions, un moment.
-        </span>
+         style="display:none; flex-shrink:0;">
+        <div style="background:#fefce8; border:1px solid #fde68a; border-radius:8px;
+                    padding:7px 12px; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:15px; flex-shrink:0;">⏳</span>
+            <span style="font-size:12px; color:#92400e; flex:1;">
+                <strong>Treballant...</strong> Generant les posicions, un moment.
+            </span>
+        </div>
     </div>
 
     {{-- Banner proposta personalitzable --}}
