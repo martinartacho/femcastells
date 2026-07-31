@@ -89,19 +89,13 @@
                 wire:loading.attr="disabled" wire:target="addAllSteps,addStep"
                 style="padding:5px 12px; border:1px solid #059669; border-radius:7px;
                        background:#ecfdf5; color:#065f46; font-size:12px; font-weight:600;
-                       cursor:pointer; white-space:nowrap; position:relative;">
-            <span wire:loading.remove wire:target="addAllSteps,addStep">
-                🔨 {{ match($this->nivell) {
-                    'tronc'    => 'Genera tronc',
-                    'folre'    => 'Genera folre',
-                    'manilles' => 'Genera manilles',
-                    default    => 'Genera pinya',
-                } }}
-            </span>
-            <span wire:loading wire:target="addAllSteps,addStep"
-                  style="display:inline-flex; align-items:center; gap:6px;">
-                ⏳ Treballant...
-            </span>
+                       cursor:pointer; white-space:nowrap;">
+            🔨 {{ match($this->nivell) {
+                'tronc'    => 'Genera tronc',
+                'folre'    => 'Genera folre',
+                'manilles' => 'Genera manilles',
+                default    => 'Genera pinya',
+            } }}
         </button>
 
         {{-- Desfés / Refés --}}
@@ -193,6 +187,16 @@
                    style="padding:5px 10px; border:1px solid #d1d5db; border-radius:7px;
                           font-size:13px; width:180px; color:#374151; outline:none;">
         </div>
+    </div>
+
+    {{-- Banner treballant (visible durant addAllSteps / addStep) --}}
+    <div wire:loading wire:target="addAllSteps,addStep"
+         style="background:#fefce8; border:1px solid #fde68a; border-radius:8px;
+                padding:7px 12px; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <span style="font-size:15px; flex-shrink:0;">⏳</span>
+        <span style="font-size:12px; color:#92400e; flex:1;">
+            <strong>Treballant...</strong> Generant les posicions, un moment.
+        </span>
     </div>
 
     {{-- Banner proposta personalitzable --}}
