@@ -86,15 +86,22 @@
         </select>
         @endif
         <button type="button" wire:click="addAllSteps" @click="showHint = true"
+                wire:loading.attr="disabled" wire:target="addAllSteps,addStep"
                 style="padding:5px 12px; border:1px solid #059669; border-radius:7px;
                        background:#ecfdf5; color:#065f46; font-size:12px; font-weight:600;
-                       cursor:pointer; white-space:nowrap;">
-            🔨 {{ match($this->nivell) {
-                'tronc'    => 'Genera tronc',
-                'folre'    => 'Genera folre',
-                'manilles' => 'Genera manilles',
-                default    => 'Genera pinya',
-            } }}
+                       cursor:pointer; white-space:nowrap; position:relative;">
+            <span wire:loading.remove wire:target="addAllSteps,addStep">
+                🔨 {{ match($this->nivell) {
+                    'tronc'    => 'Genera tronc',
+                    'folre'    => 'Genera folre',
+                    'manilles' => 'Genera manilles',
+                    default    => 'Genera pinya',
+                } }}
+            </span>
+            <span wire:loading wire:target="addAllSteps,addStep"
+                  style="display:inline-flex; align-items:center; gap:6px;">
+                ⏳ Treballant...
+            </span>
         </button>
 
         {{-- Desfés / Refés --}}

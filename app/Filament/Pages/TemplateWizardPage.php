@@ -47,7 +47,6 @@ class TemplateWizardPage extends Page
     public function updatedPisos(): void   { $this->templateName = $this->getCastellName(); }
     public function updatedNivell(): void
     {
-        $this->templateName = $this->getCastellName();
         $this->dispatch('template-view-change', nivell: $this->nivell);
     }
 
