@@ -47,7 +47,6 @@ class TemplateWizardPage extends Page
     public function updatedPisos(): void   { $this->templateName = $this->getCastellName(); }
     public function updatedNivell(): void
     {
-        $this->templateName = $this->getCastellName();
         $this->dispatch('template-view-change', nivell: $this->nivell);
     }
 
@@ -443,18 +442,22 @@ class TemplateWizardPage extends Page
         $pw  = max(34, $this->defaultW);
         $pos = [];
 
-        // Radis calibrats des de templates reals:
-        //   n=4 (Quatre de 7 folre): r_cross=55, r_baix=105, r2=155, r3=205
-        //   n=3 (Tres de 8 folre):   r_cross=55, r_baix=95,  r2=130, r3=155
-        [$r_cross_base, $r_baix_base, $r2_base, $r3_base] = match ($n) {
-            4       => [55, 105, 155, 205],
-            3       => [55,  95, 130, 155],
-            default => [55,  80, 120, 160],
-        };
-        $r_cross = (int) round($r_cross_base * $scale);
-        $r_baix  = (int) round($r_baix_base  * $scale);
-        $r2      = (int) round($r2_base      * $scale);
-        $r3      = (int) round($r3_base      * $scale);
+        // Radis calibrats des de templates reals (valors absoluts, no escalats):
+        //   Folre (scale=1.0):   n=3→[55,95,130,155]  n=4→[55,105,155,205]
+        //   Manilles (scale>1.0): n=3→[94,113,163,214] calibrat manualment
+        if ($scale > 1.0) {
+            [$r_cross, $r_baix, $r2, $r3] = match ($n) {
+                4       => [94, 125, 195, 280],
+                3       => [94, 113, 163, 214],
+                default => [80, 108, 160, 210],
+            };
+        } else {
+            [$r_cross, $r_baix, $r2, $r3] = match ($n) {
+                4       => [55, 105, 155, 205],
+                3       => [55,  95, 130, 155],
+                default => [55,  80, 120, 160],
+            };
+        }
 
         $armAngles = $this->getBaixBracAngles($n);
 
@@ -821,7 +824,7 @@ class TemplateWizardPage extends Page
 
     // ── Desa la plantilla (cridat des de JS via Livewire dispatch) ────────────
     #[On('template-save')]
-    public function saveTemplate(string $name, string $positionsJson): void
+    public function saveTemplate(string $name, string $positionsJson, string $description = ''): void
     {
         $collaId   = auth()->user()?->colla_id;
         $name      = trim($name) ?: $this->getCastellName();
@@ -843,7 +846,7 @@ class TemplateWizardPage extends Page
 
         $template = CastleTemplate::updateOrCreate(
             ['colla_id' => $collaId, 'key' => $key],
-            ['name' => $name, 'positions' => $positions, 'ready' => true]
+            ['name' => $name, 'description' => trim($description) ?: null, 'positions' => $positions, 'ready' => true]
         );
 
         $template->saveVersion('Wizard ' . now()->format('d/m/Y H:i'));

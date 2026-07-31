@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CastleTemplate extends Model
 {
-    protected $fillable = ['colla_id', 'name', 'key', 'svg_path', 'positions', 'ready'];
+    protected $fillable = ['colla_id', 'name', 'description', 'key', 'svg_path', 'positions', 'ready'];
 
     protected function casts(): array
     {
