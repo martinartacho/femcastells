@@ -2,7 +2,7 @@
 
 ## Motivació
 
-FemPinya 4 neix de l'auditoria de l'ecosistema existent (juny 2026):
+FemPinya 4 neix de l'auditoria de l'ecosistema existent (maig 2026):
 
 - **FP3 backend** ([AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend), Laravel 8) és el repo més actiu, en producció, però tecnològicament desfasat. Migrar-lo a Laravel 11+ seria una reescriptura gairebé total: canvi de Blade tradicional, model de permisos, Livewire/Filament... Un risc alt si l'organització no hi participa activament.
 - **FP3 api** (Laravel 11) té una arquitectura correcta com a pont entre backend i app Flutter, però l'activitat és escassa i els endpoints cobreixen poc domini.
@@ -35,6 +35,7 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
 | Canvas interactiu | Konva.js (via Vite) |
 | Assets | Vite |
 | Permisos | spatie/laravel-permission |
+| API mòbil | Laravel Sanctum (token Bearer) |
 
 ---
 
@@ -58,7 +59,10 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
     - Mode pestanyes: vista interactiva amb canvas Konva.js integrat
     - Mode targetes: llista clicable cap a cada pinya individual
     - Configurable per colla (pestanyes / targetes)
-- **Plantilles de castell** — generació i gestió de mapes de posicions (Cinc de 6, Set de X, 3d6…)
+- **Plantilles de castell** — generació i gestió de mapes de posicions:
+  - **Wizard visual** (`/admin/{shortname}/wizard-plantilla`) — generació automàtica per tipus (Tres, Quatre…), pisos, nivell (base, tronc, folre, manilles) i anells; radis calibrats des de templates reals
+  - CRUD de plantilles amb accions de reanomenar i eliminar
+  - Camp `description` auto-generat (p.ex. "Tres de 8 amb folre") per identificar el tipus de canvas
 - **Noticies** — tauler d'anuncis intern
 - **Configuració** — gestió de la colla, GDPR, permisos per rol
 
@@ -66,6 +70,19 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
 - **Calendari** — events visibles amb confirmació d'assistència i respostes a preguntes
 - **La meva pinya** — mostra la pinya projectada per la tècnica i destaca la posició del casteller
 - **Rondes** — vista de les rondes de l'event més proper, en mode pestanyes o targetes
+
+### API REST per a app mòbil (`/api-fempinya/`)
+
+Endpoints autenticats via Sanctum (token Bearer), consumits per l'app Flutter FP3:
+
+| Endpoint | Descripció |
+|---|---|
+| `POST /api/auth/login` | Login → retorna token |
+| `GET /api-fempinya/mobile_user_context` | Dades del casteller actiu, colla i logo |
+| `GET /api-fempinya/mobile_gdpr` | Estat GDPR del casteller |
+| `GET /api-fempinya/noticies` | Tauler de notícies |
+| `GET /api-fempinya/events` | Events de la colla |
+| `GET /api-fempinya/rondes` | Rondes de l'event actiu |
 
 ### Pantalles públiques (sense login)
 - `/display/{shortname}/{token}` — projector en temps real (auto-refresh 30s)
@@ -102,8 +119,11 @@ DB_DATABASE=fempinya4
 DB_USERNAME=root
 DB_PASSWORD=
 SEEDER_ADMIN_PASSWORD=<contrasenya-segura>
+SEEDER_USER_PASSWORD=<contrasenya-membres>
 SEEDER_ADMIN_EMAIL=<email>
 ```
+
+> **Casteller de demo:** el seeder crea `femcastells@artacho.org` (alias `DEMO`) a la colla demo, per a proves de l'app mòbil i revisió Play Store.
 
 ```bash
 php artisan migrate --seed
