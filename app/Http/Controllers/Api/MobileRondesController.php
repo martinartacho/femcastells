@@ -17,12 +17,26 @@ class MobileRondesController extends Controller
         /** @var Casteller $casteller */
         $casteller = $request->user();
 
-        $snapshots = BoardSnapshot::where('colla_id', $casteller->colla_id)
-            ->whereNotNull('ronda_number')
-            ->whereNotNull('public_token')
-            ->with('event')
-            ->orderBy('ronda_number')
-            ->get();
+        $hasRondes = fn ($q) => $q->whereNotNull('ronda_number')->whereNotNull('public_token');
+
+        $event = $casteller->colla->events()
+            ->whereHas('boardSnapshots', $hasRondes)
+            ->where('start_date', '>=', now())
+            ->orderBy('start_date')
+            ->first()
+            ?? $casteller->colla->events()
+                ->whereHas('boardSnapshots', $hasRondes)
+                ->orderByDesc('start_date')
+                ->first();
+
+        $snapshots = $event
+            ? BoardSnapshot::where('colla_id', $casteller->colla_id)
+                ->where('event_id', $event->id)
+                ->whereNotNull('ronda_number')
+                ->whereNotNull('public_token')
+                ->orderBy('ronda_number')
+                ->get()
+            : collect();
 
         $colla = $casteller->colla;
 
