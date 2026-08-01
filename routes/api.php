@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\MobileGdprController;
 use App\Http\Controllers\Api\MobileDisplayController;
 use App\Http\Controllers\Api\MobileEventsController;
@@ -36,5 +37,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/mobile_gdpr',           [MobileGdprController::class, 'status']);
         Route::post('/mobile_gdpr/accept',   [MobileGdprController::class, 'accept']);
+
+        Route::post('/device-token',         [DeviceTokenController::class, 'store']);
     });
 });
