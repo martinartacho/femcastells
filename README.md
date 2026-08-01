@@ -91,6 +91,21 @@ Endpoints autenticats via Sanctum (token Bearer), consumits per l'app Flutter FP
 
 ---
 
+## Pagaments — Stripe Connect (en desenvolupament)
+
+Cada colla podrà tenir la seva pròpia botiga i rebre els pagaments directament al seu propi compte, sense que FemPinya 4 retingui ni gestioni els diners.
+
+**Arquitectura:**
+- `.env` conté **un únic joc de credencials de plataforma** (`STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_CONNECT_CLIENT_ID`) — són les de l'aplicació FemPinya4 a Stripe, compartides per totes les colles, no per cap colla en concret.
+- Cada colla es diferencia pel camp `colla.stripe_account_id` (format `acct_...`), obtingut en connectar el seu propi compte Stripe via OAuth (Standard Connect) des de Configuració → Pagament.
+- Les crides a l'API que afecten una colla concreta (checkout, reemborsaments...) s'autentiquen amb el secret de plataforma però passant `['stripe_account' => $colla->stripe_account_id]`, de manera que l'operació s'executa sobre el compte Stripe de la colla (direct charge) — els diners hi van directes.
+- Sense comissió de plataforma (`application_fee_amount` no s'utilitza).
+- Cada colla decideix el seu propi tipus d'IVA per producte segons li indiqui el seu gestor — no s'assumeix cap exempció fiscal al codi.
+
+**Estat actual:** connexió/desconnexió del compte Stripe implementada (`StripeConnectController`, pestanya Pagament a Configuració de la colla). Catàleg de productes i checkout encara no implementats.
+
+---
+
 ## Instal·lació en local
 
 ### Requisits
@@ -121,6 +136,11 @@ DB_PASSWORD=
 SEEDER_ADMIN_PASSWORD=<contrasenya-segura>
 SEEDER_USER_PASSWORD=<contrasenya-membres>
 SEEDER_ADMIN_EMAIL=<email>
+
+# Opcional — només si vols provar la connexió de pagaments (Stripe Connect)
+STRIPE_KEY=
+STRIPE_SECRET=
+STRIPE_CONNECT_CLIENT_ID=
 ```
 
 > **Casteller de demo:** el seeder crea `femcastells@artacho.org` (alias `DEMO`) a la colla demo, per a proves de l'app mòbil i revisió Play Store.

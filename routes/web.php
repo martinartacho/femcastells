@@ -3,6 +3,7 @@
 use App\Http\Controllers\DisplayPinyaController;
 use App\Http\Controllers\DisplayRondesController;
 use App\Http\Controllers\ProjectorDisplayController;
+use App\Http\Controllers\StripeConnectController;
 use App\Models\Noticia;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,12 @@ Route::get('/share/{shortname}/{token}', DisplayPinyaController::class)->name('d
 
 // Pàgina pública de rondes d'un event
 Route::get('/display/{shortname}/rondes/{token}', DisplayRondesController::class)->name('display.rondes');
+
+Route::get('/stripe/connect/callback', [StripeConnectController::class, 'callback'])->name('stripe.connect.callback');
+
+Route::get('/admin/{shortname}/stripe/connect', [StripeConnectController::class, 'redirect'])
+    ->middleware(['web', 'auth'])
+    ->name('stripe.connect');
 
 Route::get('/noticies', function () {
     $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();

@@ -38,11 +38,14 @@ class Colla extends Model implements HasAvatar
         'rondes_display',
         'board_settings',
         'generator_config',
+        'stripe_account_id',
+        'stripe_onboarded_at',
     ];
 
     protected $casts = [
-        'board_settings'   => 'array',
-        'generator_config' => 'array',
+        'board_settings'     => 'array',
+        'generator_config'   => 'array',
+        'stripe_onboarded_at' => 'datetime',
     ];
 
     public function users(): HasMany
@@ -84,6 +87,11 @@ class Colla extends Model implements HasAvatar
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? secure_asset('storage/'.$this->logo) : null;
+    }
+
+    public function isStripeConnected(): bool
+    {
+        return filled($this->stripe_account_id) && $this->stripe_onboarded_at !== null;
     }
 
     public function resolveGdprText(): string
