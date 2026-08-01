@@ -57,6 +57,7 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         'gdpr_version',
         'last_login_at',
         'login_count',
+        'fcm_token',
     ];
 
     protected $hidden = [
