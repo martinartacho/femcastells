@@ -80,6 +80,11 @@ class ProductResource extends Resource
                 Toggle::make('active')
                     ->label('Actiu (visible a la botiga)')
                     ->default(true),
+
+                Toggle::make('members_only')
+                    ->label('Exclusiu per a socis/castellers')
+                    ->helperText('Si s\'activa, només el veuran els membres amb login al portal membre.')
+                    ->default(false),
             ])->columns(1),
 
             Section::make('Variants')
@@ -100,11 +105,18 @@ class ProductResource extends Resource
                                 ->maxLength(50),
 
                             TextInput::make('price')
-                                ->label('Preu')
+                                ->label('Preu públic')
                                 ->numeric()
                                 ->prefix('€')
                                 ->minValue(0)
                                 ->required(),
+
+                            TextInput::make('member_price')
+                                ->label('Preu soci/casteller')
+                                ->numeric()
+                                ->prefix('€')
+                                ->minValue(0)
+                                ->helperText('Buit = mateix preu que el públic'),
 
                             TextInput::make('tax_rate')
                                 ->label('IVA')
@@ -126,7 +138,7 @@ class ProductResource extends Resource
                                 ->label('Activa')
                                 ->default(true),
                         ])
-                        ->columns(3)
+                        ->columns(4)
                         ->defaultItems(1)
                         ->addActionLabel('Afegir variant')
                         ->reorderable(false),
@@ -164,6 +176,10 @@ class ProductResource extends Resource
 
                 IconColumn::make('active')
                     ->label('Actiu')
+                    ->boolean(),
+
+                IconColumn::make('members_only')
+                    ->label('Exclusiu socis')
                     ->boolean(),
             ])
             ->defaultSort('name')

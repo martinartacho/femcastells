@@ -17,15 +17,17 @@ class ProductVariant extends Model
         'name',
         'sku',
         'price',
+        'member_price',
         'tax_rate',
         'stock',
         'active',
     ];
 
     protected $casts = [
-        'price'    => 'decimal:2',
-        'tax_rate' => 'decimal:2',
-        'active'   => 'boolean',
+        'price'        => 'decimal:2',
+        'member_price' => 'decimal:2',
+        'tax_rate'     => 'decimal:2',
+        'active'       => 'boolean',
     ];
 
     public function product(): BelongsTo
@@ -33,9 +35,18 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function priceWithTax(): float
+    public function priceFor(bool $isMember): float
     {
-        return round((float) $this->price * (1 + (float) $this->tax_rate / 100), 2);
+        if ($isMember && $this->member_price !== null) {
+            return (float) $this->member_price;
+        }
+
+        return (float) $this->price;
+    }
+
+    public function priceWithTax(bool $isMember = false): float
+    {
+        return round($this->priceFor($isMember) * (1 + (float) $this->tax_rate / 100), 2);
     }
 
     public function isInStock(): bool

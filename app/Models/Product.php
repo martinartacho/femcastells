@@ -19,10 +19,12 @@ class Product extends Model
         'description',
         'image',
         'active',
+        'members_only',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'active'       => 'boolean',
+        'members_only' => 'boolean',
     ];
 
     public function colla(): BelongsTo

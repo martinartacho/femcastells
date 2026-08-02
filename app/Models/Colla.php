@@ -16,6 +16,16 @@ class Colla extends Model implements HasAvatar
 {
     use HasFactory;
 
+    public const SHOP_DISABLED = 'disabled';
+    public const SHOP_MEMBERS  = 'members';
+    public const SHOP_PUBLIC   = 'public';
+
+    public const SHOP_VISIBILITY_OPTIONS = [
+        self::SHOP_DISABLED => 'Desactivada',
+        self::SHOP_MEMBERS  => 'Només membres',
+        self::SHOP_PUBLIC   => 'Pública',
+    ];
+
     protected $table = 'colles';
 
     protected $fillable = [
@@ -40,6 +50,7 @@ class Colla extends Model implements HasAvatar
         'generator_config',
         'stripe_account_id',
         'stripe_onboarded_at',
+        'shop_visibility',
     ];
 
     protected $casts = [
@@ -97,6 +108,16 @@ class Colla extends Model implements HasAvatar
     public function isStripeConnected(): bool
     {
         return filled($this->stripe_account_id) && $this->stripe_onboarded_at !== null;
+    }
+
+    public function isShopEnabled(): bool
+    {
+        return $this->shop_visibility !== self::SHOP_DISABLED;
+    }
+
+    public function isShopPublic(): bool
+    {
+        return $this->shop_visibility === self::SHOP_PUBLIC;
     }
 
     public function resolveGdprText(): string

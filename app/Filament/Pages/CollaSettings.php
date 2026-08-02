@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Models\Colla;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -164,6 +165,18 @@ class CollaSettings extends Page
                                                 ->label('Puntuació base')->numeric()->default(200)->minValue(0)->maxValue(500),
                                         ])->columns(2)->compact(),
                                     ]),
+                            ]),
+
+                        Tab::make('Botiga')
+                            ->icon(Heroicon::OutlinedShoppingBag)
+                            ->schema([
+                                Select::make('shop_visibility')
+                                    ->label('Visibilitat de la botiga')
+                                    ->options(Colla::SHOP_VISIBILITY_OPTIONS)
+                                    ->default(Colla::SHOP_DISABLED)
+                                    ->native(false)
+                                    ->required()
+                                    ->helperText('"Només membres" requereix login al portal membre. "Pública" permet comprar sense compte.'),
                             ]),
 
                         Tab::make('Pagament')
