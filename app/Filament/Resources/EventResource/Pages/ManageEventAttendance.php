@@ -6,11 +6,15 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\EventResource;
 use App\Models\Attendance;
+use App\Services\IdcClient;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Log;
 
 class ManageEventAttendance extends ManageRelatedRecords
 {
@@ -22,9 +26,9 @@ class ManageEventAttendance extends ManageRelatedRecords
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    public function getTitle(): string|Htmlable
     {
-        return 'Assistència — ' . $this->getRecord()->name;
+        return 'Assistència — '.$this->getRecord()->name;
     }
 
     public function table(Table $table): Table
@@ -43,13 +47,13 @@ class ManageEventAttendance extends ManageRelatedRecords
                     ->label('Prevista')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => match ($state) {
-                        'ok'      => 'Assisteix',
-                        'nok'     => 'No assisteix',
+                        'ok' => 'Assisteix',
+                        'nok' => 'No assisteix',
                         'unknown' => 'Pendent',
                     })
                     ->color(fn (string $state) => match ($state) {
-                        'ok'      => 'success',
-                        'nok'     => 'danger',
+                        'ok' => 'success',
+                        'nok' => 'danger',
                         'unknown' => 'warning',
                     }),
                 ToggleColumn::make('checked_in')
@@ -58,9 +62,25 @@ class ManageEventAttendance extends ManageRelatedRecords
                     ->offColor('gray')
                     ->afterStateUpdated(function (Attendance $record, $state) {
                         $record->update([
-                            'checked_in'    => $state,
+                            'checked_in' => $state,
                             'checked_in_at' => $state ? now() : null,
                         ]);
+
+                        if ($state && $record->event->type === 2) {
+                            try {
+                                $idc = app(IdcClient::class);
+                                $uuid = $idc->findOrCreateCastellerUuid($record->casteller);
+
+                                if ($uuid) {
+                                    $idc->issueCredential($uuid, 'participacio-diada');
+                                }
+                            } catch (\Throwable $e) {
+                                Log::warning('IDC: error inesperat emetent credencial des de check-in', [
+                                    'attendance_id' => $record->id,
+                                    'message' => $e->getMessage(),
+                                ]);
+                            }
+                        }
                     }),
                 TextColumn::make('checked_in_at')
                     ->label('Hora check-in')
@@ -72,11 +92,11 @@ class ManageEventAttendance extends ManageRelatedRecords
             ])
             ->defaultSort('casteller.alias')
             ->filters([
-                \Filament\Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->label('Prevista')
                     ->options([
-                        'ok'      => 'Assisteix',
-                        'nok'     => 'No assisteix',
+                        'ok' => 'Assisteix',
+                        'nok' => 'No assisteix',
                         'unknown' => 'Pendent',
                     ]),
             ]);

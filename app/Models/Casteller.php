@@ -9,18 +9,19 @@ use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 
-class Casteller extends Authenticatable implements FilamentUser, HasTenants, CanResetPasswordContract
+class Casteller extends Authenticatable implements CanResetPasswordContract, FilamentUser, HasTenants
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
+    use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'colla_id',
@@ -58,6 +59,7 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         'last_login_at',
         'login_count',
         'fcm_token',
+        'idc_uuid',
     ];
 
     protected $hidden = [
@@ -73,8 +75,8 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
             'password' => 'hashed',
             'noticies_last_seen_at' => 'datetime',
             'gdpr_accepted_at' => 'datetime',
-            'last_login_at'    => 'datetime',
-            'login_count'      => 'integer',
+            'last_login_at' => 'datetime',
+            'login_count' => 'integer',
         ];
     }
 
@@ -98,12 +100,12 @@ class Casteller extends Authenticatable implements FilamentUser, HasTenants, Can
         return $this->colla ? collect([$this->colla]) : collect();
     }
 
-    public function getDefaultTenant(Panel $panel): ?\Illuminate\Database\Eloquent\Model
+    public function getDefaultTenant(Panel $panel): ?Model
     {
         return $this->colla;
     }
 
-    public function canAccessTenant(\Illuminate\Database\Eloquent\Model $tenant): bool
+    public function canAccessTenant(Model $tenant): bool
     {
         return $this->colla_id === $tenant->id;
     }
