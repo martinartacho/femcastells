@@ -84,6 +84,11 @@ class Colla extends Model implements HasAvatar
         return $this->hasMany(Event::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? secure_asset('storage/'.$this->logo) : null;

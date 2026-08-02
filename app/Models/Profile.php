@@ -30,6 +30,7 @@ class Profile extends Model
             'tags'         => ['read' => false, 'write' => false],
             'config'       => ['read' => false, 'write' => false],
             'generador'    => ['read' => false, 'write' => false],
+            'botiga'       => ['read' => false, 'write' => false],
         ];
     }
 
