@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Jobs\IssueIdcCredentialJob;
 use App\Models\Attendance;
 use App\Models\Casteller;
 use App\Models\Colla;
@@ -48,13 +49,28 @@ class IdcIntegrationTest extends TestCase
             'checked_in_at' => now(),
         ]);
 
-        $idc = app(IdcClient::class);
-        $uuid = $idc->findOrCreateCastellerUuid($attendance->casteller);
-        $idc->issueCredential($uuid, 'participacio-diada');
+        IssueIdcCredentialJob::dispatch($attendance->id);
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/api/v1/castellers'));
         Http::assertSent(fn ($request) => str_contains($request->url(), '/api/v1/credentials'));
         $this->assertSame('casteller-uuid-123', $casteller->fresh()->idc_uuid);
+    }
+
+    public function test_job_skips_attendance_that_is_not_checked_in(): void
+    {
+        Http::fake();
+
+        $casteller = Casteller::factory()->create(['colla_id' => $this->colla->id, 'email' => 'test3@fempinya4.test']);
+        $attendance = Attendance::create([
+            'event_id' => $this->actuacio->id,
+            'casteller_id' => $casteller->id,
+            'status' => 'ok',
+            'checked_in' => false,
+        ]);
+
+        IssueIdcCredentialJob::dispatch($attendance->id);
+
+        Http::assertNothingSent();
     }
 
     public function test_casteller_without_email_is_skipped_without_calling_idc(): void

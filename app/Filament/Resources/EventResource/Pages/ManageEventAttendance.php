@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\EventResource;
+use App\Jobs\IssueIdcCredentialJob;
 use App\Models\Attendance;
-use App\Services\IdcClient;
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -14,7 +14,6 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\Log;
 
 class ManageEventAttendance extends ManageRelatedRecords
 {
@@ -67,19 +66,7 @@ class ManageEventAttendance extends ManageRelatedRecords
                         ]);
 
                         if ($state && $record->event->type === 2) {
-                            try {
-                                $idc = app(IdcClient::class);
-                                $uuid = $idc->findOrCreateCastellerUuid($record->casteller);
-
-                                if ($uuid) {
-                                    $idc->issueCredential($uuid, 'participacio-diada');
-                                }
-                            } catch (\Throwable $e) {
-                                Log::warning('IDC: error inesperat emetent credencial des de check-in', [
-                                    'attendance_id' => $record->id,
-                                    'message' => $e->getMessage(),
-                                ]);
-                            }
+                            IssueIdcCredentialJob::dispatch($record->id);
                         }
                     }),
                 TextColumn::make('checked_in_at')
