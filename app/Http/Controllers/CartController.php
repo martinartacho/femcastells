@@ -26,13 +26,14 @@ class CartController extends Controller
         $cart = new Cart($colla->id);
 
         return view('botiga.carret', [
-            'colla'       => $colla,
-            'isMember'    => $isMember,
-            'lines'       => $cart->lines($isMember),
-            'subtotal'    => $cart->subtotal($isMember),
-            'taxTotal'    => $cart->taxTotal($isMember),
-            'total'       => $cart->total($isMember),
-            'stripeReady' => $colla->isStripeConnected(),
+            'colla'          => $colla,
+            'isMember'       => $isMember,
+            'lines'          => $cart->lines($isMember),
+            'subtotal'       => $cart->subtotal($isMember),
+            'taxTotal'       => $cart->taxTotal($isMember),
+            'total'          => $cart->total($isMember),
+            'stripeReady'    => $colla->isStripeConnected(),
+            'bizumAvailable' => $colla->isBizumAvailable(),
         ]);
     }
 
@@ -57,7 +58,7 @@ class CartController extends Controller
             )
             ->firstOrFail();
 
-        (new Cart($colla->id))->add($variant->id, $data['quantity'] ?? 1);
+        (new Cart($colla->id))->add($variant->id, (int) ($data['quantity'] ?? 1));
 
         return back()->with('success', 'Afegit al carret.');
     }
@@ -71,7 +72,7 @@ class CartController extends Controller
             'quantity'   => ['required', 'integer', 'min:0', 'max:99'],
         ]);
 
-        (new Cart($colla->id))->update($data['variant_id'], $data['quantity']);
+        (new Cart($colla->id))->update((int) $data['variant_id'], (int) $data['quantity']);
 
         return back();
     }

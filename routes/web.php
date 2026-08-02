@@ -43,6 +43,8 @@ Route::post('/botiga/{shortname}/carret/eliminar/{variant}', [CartController::cl
 
 Route::post('/botiga/{shortname}/checkout', [CheckoutController::class, 'store'])->name('botiga.checkout');
 Route::get('/botiga/{shortname}/comanda/{order}/confirmacio', [CheckoutController::class, 'success'])->name('botiga.checkout.success');
+Route::post('/botiga/{shortname}/comanda/{order}/confirmar-enviament', [CheckoutController::class, 'confirmSent'])->name('botiga.checkout.confirmar');
+Route::post('/botiga/{shortname}/comanda/{order}/anullar', [CheckoutController::class, 'cancel'])->name('botiga.checkout.anullar');
 
 Route::get('/noticies', function () {
     $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();

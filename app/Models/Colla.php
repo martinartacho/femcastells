@@ -51,12 +51,15 @@ class Colla extends Model implements HasAvatar
         'stripe_account_id',
         'stripe_onboarded_at',
         'shop_visibility',
+        'bizum_enabled',
+        'bizum_phone',
     ];
 
     protected $casts = [
-        'board_settings'     => 'array',
-        'generator_config'   => 'array',
+        'board_settings'      => 'array',
+        'generator_config'    => 'array',
         'stripe_onboarded_at' => 'datetime',
+        'bizum_enabled'       => 'boolean',
     ];
 
     public function users(): HasMany
@@ -113,6 +116,11 @@ class Colla extends Model implements HasAvatar
     public function isStripeConnected(): bool
     {
         return filled($this->stripe_account_id) && $this->stripe_onboarded_at !== null;
+    }
+
+    public function isBizumAvailable(): bool
+    {
+        return $this->bizum_enabled && filled($this->bizum_phone);
     }
 
     public function isShopEnabled(): bool

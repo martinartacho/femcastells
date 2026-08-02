@@ -21,6 +21,7 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -216,6 +217,21 @@ class CollaSettings extends Page
                                         ->action('disconnectStripe')
                                         ->visible(fn () => filament()->getTenant()?->isStripeConnected() ?? false),
                                 ]),
+
+                                Section::make('Bizum (manual)')
+                                    ->description('Alternativa sense passarel·la: el comprador fa el Bizum pel seu compte i un admin confirma manualment la comanda.')
+                                    ->schema([
+                                        Toggle::make('bizum_enabled')
+                                            ->label('Acceptar Bizum')
+                                            ->live()
+                                            ->default(false),
+                                        TextInput::make('bizum_phone')
+                                            ->label('Número de telèfon Bizum')
+                                            ->tel()
+                                            ->maxLength(20)
+                                            ->required(fn (Get $get) => $get('bizum_enabled'))
+                                            ->visible(fn (Get $get) => $get('bizum_enabled')),
+                                    ]),
                             ]),
 
                         Tab::make('RGPD')

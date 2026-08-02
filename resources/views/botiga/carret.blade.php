@@ -49,12 +49,16 @@
                         <p class="text-sm text-gray-500">{{ number_format($variant->priceFor($isMember), 2) }} € / unitat</p>
                     </div>
 
-                    <form method="POST" action="{{ route('botiga.carret.actualitzar', $colla->shortname) }}" class="flex items-center gap-2">
+                    <form method="POST" action="{{ route('botiga.carret.actualitzar', $colla->shortname) }}" class="flex items-center gap-1.5">
                         @csrf
                         <input type="hidden" name="variant_id" value="{{ $variant->id }}">
                         <input type="number" name="quantity" value="{{ $line['quantity'] }}" min="1" max="99"
-                               onchange="this.form.submit()"
                                class="w-16 text-sm border-gray-300 rounded-lg text-center">
+                        <button type="submit"
+                                class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg px-2 py-1.5 transition"
+                                title="Actualitzar quantitat">
+                            ↻
+                        </button>
                     </form>
 
                     <p class="w-20 text-right text-sm font-semibold text-gray-900">
@@ -83,17 +87,30 @@
                 <span>{{ number_format($total, 2) }} €</span>
             </div>
 
-            @if($stripeReady)
-                <form method="POST" action="{{ route('botiga.checkout', $colla->shortname) }}">
+            @if($stripeReady || $bizumAvailable)
+                <form method="POST" action="{{ route('botiga.checkout', $colla->shortname) }}" class="mt-4 space-y-2">
                     @csrf
-                    <button type="submit"
-                            class="w-full mt-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg py-3 transition">
-                        Pagar amb Stripe
-                    </button>
+                    <label for="notes" class="block text-xs font-semibold text-gray-500">Observacions per a la colla (opcional)</label>
+                    <textarea id="notes" name="notes" rows="2" maxlength="1000"
+                              placeholder="P.ex. talla, horari de recollida..."
+                              class="w-full text-sm border-gray-300 rounded-lg">{{ old('notes') }}</textarea>
+
+                    @if($stripeReady)
+                        <button type="submit" name="payment_method" value="stripe"
+                                class="w-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg py-3 transition">
+                            Pagar amb targeta (Stripe)
+                        </button>
+                    @endif
+                    @if($bizumAvailable)
+                        <button type="submit" name="payment_method" value="bizum"
+                                class="w-full text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg py-3 transition">
+                            Pagar amb Bizum
+                        </button>
+                    @endif
                 </form>
             @else
                 <p class="mt-4 text-xs text-center text-gray-400">
-                    La colla encara no ha connectat el seu compte de pagament — el checkout no està disponible.
+                    La colla encara no ha activat cap mètode de pagament — el checkout no està disponible.
                 </p>
             @endif
         </div>
