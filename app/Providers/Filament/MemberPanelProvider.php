@@ -13,10 +13,12 @@ use App\Filament\Member\Pages\EditProfile;
 use App\Filament\Member\Pages\GdprConsent;
 use App\Filament\Member\Widgets\NoticiesWidget;
 use App\Http\Middleware\CheckGdprConsent;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -51,6 +53,12 @@ class MemberPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 NoticiesWidget::class,
+            ])
+            ->navigationItems([
+                NavigationItem::make('Botiga')
+                    ->icon(Heroicon::OutlinedShoppingBag)
+                    ->url(fn () => route('botiga.index', ['shortname' => filament()->getTenant()?->shortname]))
+                    ->visible(fn () => filament()->getTenant()?->isShopEnabled() ?? false),
             ])
             ->middleware([
                 EncryptCookies::class,

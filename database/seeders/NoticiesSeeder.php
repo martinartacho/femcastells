@@ -58,5 +58,22 @@ class NoticiesSeeder extends Seeder
             'version'      => '1.0.2',
             'published_at' => now(),
         ]);
+
+        Noticia::create([
+            'colla_id'     => null,
+            'tag_id'       => null,
+            'title'        => 'Novetat en preparació: botiga i pagaments per colla',
+            'summary'      => 'Cada colla podrà tenir la seva pròpia botiga i rebre els pagaments directament al seu compte.',
+            'body'         => '<p>Estem preparant una nova funcionalitat de botiga perquè cada colla pugui vendre samarretes, entrades o qualsevol altra cosa als seus membres.</p>'
+                . '<ul>'
+                . '<li><strong>Cada colla té el seu propi compte de pagament</strong> — es connecta amb Stripe des de la pàgina de Configuració de la colla.</li>'
+                . '<li><strong>Els diners van directes a la colla</strong> — FemPinya 4 no reté ni gestiona els diners en cap moment, ni es queda cap comissió.</li>'
+                . '<li><strong>Cada colla decideix el seu propi IVA</strong> — segons li indiqui el seu gestor, ja que no totes les vendes tributen igual.</li>'
+                . '</ul>'
+                . '<p>De moment només està disponible la connexió del compte de pagament. La botiga (productes, comandes) arribarà en properes actualitzacions.</p>',
+            'labels'       => ['sistema', 'admin'],
+            'version'      => '1.1.0',
+            'published_at' => now(),
+        ]);
     }
 }

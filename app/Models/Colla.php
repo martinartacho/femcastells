@@ -16,6 +16,16 @@ class Colla extends Model implements HasAvatar
 {
     use HasFactory;
 
+    public const SHOP_DISABLED = 'disabled';
+    public const SHOP_MEMBERS  = 'members';
+    public const SHOP_PUBLIC   = 'public';
+
+    public const SHOP_VISIBILITY_OPTIONS = [
+        self::SHOP_DISABLED => 'Desactivada',
+        self::SHOP_MEMBERS  => 'Només membres',
+        self::SHOP_PUBLIC   => 'Pública',
+    ];
+
     protected $table = 'colles';
 
     protected $fillable = [
@@ -38,11 +48,18 @@ class Colla extends Model implements HasAvatar
         'rondes_display',
         'board_settings',
         'generator_config',
+        'stripe_account_id',
+        'stripe_onboarded_at',
+        'shop_visibility',
+        'bizum_enabled',
+        'bizum_phone',
     ];
 
     protected $casts = [
-        'board_settings'   => 'array',
-        'generator_config' => 'array',
+        'board_settings'      => 'array',
+        'generator_config'    => 'array',
+        'stripe_onboarded_at' => 'datetime',
+        'bizum_enabled'       => 'boolean',
     ];
 
     public function users(): HasMany
@@ -81,9 +98,51 @@ class Colla extends Model implements HasAvatar
         return $this->hasMany(Event::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? secure_asset('storage/'.$this->logo) : null;
+    }
+
+    public function isStripeConnected(): bool
+    {
+        return filled($this->stripe_account_id) && $this->stripe_onboarded_at !== null;
+    }
+
+    public function isBizumAvailable(): bool
+    {
+        return $this->bizum_enabled && filled($this->bizum_phone);
+    }
+
+    public function isShopEnabled(): bool
+    {
+        return $this->shop_visibility !== self::SHOP_DISABLED;
+    }
+
+    public function isShopPublic(): bool
+    {
+        return $this->shop_visibility === self::SHOP_PUBLIC;
+    }
+
+    public function authenticatedMemberIsMine(): bool
+    {
+        $member = auth('member')->user();
+
+        return $member !== null && $member->colla_id === $this->id;
+    }
+
+    public function shopNeedsLogin(): bool
+    {
+        return !$this->isShopPublic() && !$this->authenticatedMemberIsMine();
     }
 
     public function resolveGdprText(): string

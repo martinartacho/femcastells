@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             CastellerSeeder::class,
             NoticiesSeeder::class,
             CastleTemplateSeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

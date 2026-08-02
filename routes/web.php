@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DisplayPinyaController;
 use App\Http\Controllers\DisplayRondesController;
 use App\Http\Controllers\ProjectorDisplayController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\StripeConnectController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Models\Noticia;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +27,24 @@ Route::get('/share/{shortname}/{token}', DisplayPinyaController::class)->name('d
 
 // Pàgina pública de rondes d'un event
 Route::get('/display/{shortname}/rondes/{token}', DisplayRondesController::class)->name('display.rondes');
+
+Route::get('/stripe/connect/callback', [StripeConnectController::class, 'callback'])->name('stripe.connect.callback');
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
+
+Route::get('/admin/{shortname}/stripe/connect', [StripeConnectController::class, 'redirect'])
+    ->middleware(['web', 'auth'])
+    ->name('stripe.connect');
+
+Route::get('/botiga/{shortname}', [ShopController::class, 'index'])->name('botiga.index');
+Route::get('/botiga/{shortname}/carret', [CartController::class, 'show'])->name('botiga.carret');
+Route::post('/botiga/{shortname}/carret/afegir', [CartController::class, 'add'])->name('botiga.carret.afegir');
+Route::post('/botiga/{shortname}/carret/actualitzar', [CartController::class, 'update'])->name('botiga.carret.actualitzar');
+Route::post('/botiga/{shortname}/carret/eliminar/{variant}', [CartController::class, 'remove'])->name('botiga.carret.eliminar');
+
+Route::post('/botiga/{shortname}/checkout', [CheckoutController::class, 'store'])->name('botiga.checkout');
+Route::get('/botiga/{shortname}/comanda/{order}/confirmacio', [CheckoutController::class, 'success'])->name('botiga.checkout.success');
+Route::post('/botiga/{shortname}/comanda/{order}/confirmar-enviament', [CheckoutController::class, 'confirmSent'])->name('botiga.checkout.confirmar');
+Route::post('/botiga/{shortname}/comanda/{order}/anullar', [CheckoutController::class, 'cancel'])->name('botiga.checkout.anullar');
 
 Route::get('/noticies', function () {
     $noticies   = Noticia::published()->global()->public()->orderByDesc('published_at')->get();

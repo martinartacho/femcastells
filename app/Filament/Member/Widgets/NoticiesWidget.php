@@ -37,6 +37,7 @@ class NoticiesWidget extends Widget
                 ->whereNull('colla_id')
                 ->orWhere('colla_id', $collaId)
             )
+            ->whereJsonDoesntContain('labels', 'admin')
             ->orderByDesc('published_at');
     }
 

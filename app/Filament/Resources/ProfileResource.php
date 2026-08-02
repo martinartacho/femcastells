@@ -47,6 +47,7 @@ class ProfileResource extends Resource
             'tags'          => 'Etiquetes',
             'config'        => 'Configuració',
             'generador'     => 'Generador',
+            'botiga'        => 'Botiga',
         ];
 
         $header = Grid::make(4)->schema([
