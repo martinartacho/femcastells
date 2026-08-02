@@ -100,6 +100,11 @@ class Colla extends Model implements HasAvatar
         return $this->hasMany(Product::class);
     }
 
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->logo ? secure_asset('storage/'.$this->logo) : null;
@@ -118,6 +123,18 @@ class Colla extends Model implements HasAvatar
     public function isShopPublic(): bool
     {
         return $this->shop_visibility === self::SHOP_PUBLIC;
+    }
+
+    public function authenticatedMemberIsMine(): bool
+    {
+        $member = auth('member')->user();
+
+        return $member !== null && $member->colla_id === $this->id;
+    }
+
+    public function shopNeedsLogin(): bool
+    {
+        return !$this->isShopPublic() && !$this->authenticatedMemberIsMine();
     }
 
     public function resolveGdprText(): string
