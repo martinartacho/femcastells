@@ -42,4 +42,9 @@ return [
         'connect_webhook_secret' => env('STRIPE_CONNECT_WEBHOOK_SECRET'),
     ],
 
+    'idc' => [
+        'base_url' => env('IDC_BASE_URL'),
+        'token' => env('IDC_API_TOKEN'),
+    ],
+
 ];
