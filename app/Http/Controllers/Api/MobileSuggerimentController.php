@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\SuggerimentRebut;
 use App\Models\Casteller;
 use App\Models\Suggeriment;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -29,9 +30,17 @@ class MobileSuggerimentController extends Controller
 
         $suggeriment->load('casteller', 'colla');
 
-        $adminEmail = $casteller->colla->email;
-        if ($adminEmail) {
-            Mail::to($adminEmail)->send(new SuggerimentRebut($suggeriment));
+        // Admins de la mateixa colla + tots els super-admins
+        $admins = User::whereNotNull('email')
+            ->where(fn ($q) => $q
+                ->where(fn ($q2) => $q2->role('admin')->where('colla_id', $casteller->colla_id))
+                ->orWhere(fn ($q2) => $q2->role('super-admin'))
+            )
+            ->pluck('email')
+            ->unique();
+
+        if ($admins->isNotEmpty()) {
+            Mail::to($admins)->send(new SuggerimentRebut($suggeriment));
         }
 
         return response()->json(['message' => 'Suggeriment rebut. Gràcies!'], 201);
