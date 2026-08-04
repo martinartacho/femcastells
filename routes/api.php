@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\MobileEventsController;
 use App\Http\Controllers\Api\MobileHomeController;
 use App\Http\Controllers\Api\MobileNoticiesController;
 use App\Http\Controllers\Api\MobileRondesController;
+use App\Http\Controllers\Api\MobileSuggerimentController;
 use App\Http\Controllers\Api\MobileUserController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,5 +40,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/mobile_gdpr/accept',   [MobileGdprController::class, 'accept']);
 
         Route::post('/device-token',         [DeviceTokenController::class, 'store']);
+        Route::post('/mobile_suggeriment',   [MobileSuggerimentController::class, 'store']);
     });
 });
