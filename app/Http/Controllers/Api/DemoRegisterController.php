@@ -9,9 +9,7 @@ use App\Models\Casteller;
 use App\Models\Colla;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class DemoRegisterController extends Controller
 {
@@ -22,11 +20,11 @@ class DemoRegisterController extends Controller
         if (RateLimiter::tooManyAttempts($key, maxAttempts: 5)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
-                'message' => "Massa registres seguits. Torna-ho a provar en {$seconds} segons.",
+                'message' => "Massa accessos seguits. Torna-ho a provar en {$seconds} segons.",
             ], 429);
         }
 
-        RateLimiter::hit($key, decay: 3600);
+        RateLimiter::hit($key, 3600);
 
         $colla = Colla::where('shortname', 'demo')->first();
 
@@ -34,21 +32,17 @@ class DemoRegisterController extends Controller
             return response()->json(['message' => 'La colla demo no està disponible.'], 503);
         }
 
-        $suffix = strtoupper(Str::random(4));
-        $alias  = "Visitant-{$suffix}";
-        $email  = "visitant.{$suffix}@demo.femcastells";
+        $casteller = Casteller::where('colla_id', $colla->id)
+            ->where('email', 'like', '%@demo.test')
+            ->inRandomOrder()
+            ->first();
 
-        $casteller = Casteller::create([
-            'colla_id'        => $colla->id,
-            'alias'           => $alias,
-            'name'            => 'Visitant',
-            'last_name'       => $suffix,
-            'email'           => $email,
-            'password'        => Hash::make(Str::random(32)),
-            'gdpr_accepted_at' => now(),
-            'gdpr_version'    => '1.0',
-            'status'          => 'actiu',
-        ]);
+        if (! $casteller) {
+            return response()->json(['message' => 'No hi ha castellers demo disponibles.'], 503);
+        }
+
+        // Revoca tokens de demo antics d'aquest casteller per mantenir-ho net
+        $casteller->tokens()->where('name', 'mobile-demo')->delete();
 
         $token = $casteller->createToken('mobile-demo')->plainTextToken;
 
@@ -56,7 +50,7 @@ class DemoRegisterController extends Controller
             'access_token' => $token,
             'token_type'   => 'Bearer',
             'demo'         => true,
-            'alias'        => $alias,
+            'alias'        => $casteller->alias,
         ]);
     }
 }
