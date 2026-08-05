@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DemoRegisterController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\MobileGdprController;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\Route;
 
 // Paths exactes que usa l'app FP3 Flutter
 Route::post('/api/auth/login',  [AuthController::class, 'login']);
-Route::post('/api/forgot-password', [ForgotPasswordController::class, 'sendLink']);
+Route::post('/api/forgot-password',   [ForgotPasswordController::class, 'sendLink']);
+Route::post('/api/demo/register',     [DemoRegisterController::class, 'register']);
 Route::post('/api/reset-password',  [ForgotPasswordController::class, 'reset']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
