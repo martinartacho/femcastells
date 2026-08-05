@@ -9,6 +9,7 @@ use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\URL;
 
 class ForgotPasswordController extends Controller
 {
@@ -17,7 +18,7 @@ class ForgotPasswordController extends Controller
         $request->validate(['email' => 'required|email']);
 
         ResetPasswordNotification::createUrlUsing(function ($notifiable, string $token) {
-            return route('filament.member.auth.password-reset.reset', [
+            return URL::signedRoute('filament.member.auth.password-reset.reset', [
                 'token' => $token,
                 'email' => $notifiable->getEmailForPasswordReset(),
             ]);
