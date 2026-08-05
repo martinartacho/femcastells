@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FemPinya 4 — Novetats</title>
+    <title>FemCastells — Novetats</title>
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -25,7 +25,7 @@
                         <rect x="14" y="4" width="4" height="24" rx="2" fill="white"/>
                         <rect x="6" y="10" width="20" height="4" rx="2" fill="white"/>
                     </svg>
-                    <span style="font-size:22px; font-weight:700; letter-spacing:-0.5px;">FemPinya 4</span>
+                    <span style="font-size:22px; font-weight:700; letter-spacing:-0.5px;">FemCastells</span>
                 </div>
                 <p style="margin:4px 0 0 42px; font-size:13px; color:#94a3b8;">Gestió digital de colles castelleres</p>
             </div>
@@ -114,8 +114,8 @@
 
     {{-- Peu --}}
     <footer style="border-top:1px solid #e2e8f0; padding:16px 24px; text-align:center; font-size:11px; color:#94a3b8;">
-        FemPinya 4 &middot; H. Artacho &middot;
-        <a href="https://github.com/martinartacho/fempinya4" style="color:#64748b;">GitHub</a>
+        FemCastells &middot; H. Artacho &middot;
+        <a href="https://github.com/martinartacho/femcastells" style="color:#64748b;">GitHub</a>
     </footer>
 
 </body>
