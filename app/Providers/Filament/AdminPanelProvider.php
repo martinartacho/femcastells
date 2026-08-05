@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->passwordReset()
+            ->favicon(asset('favicon.svg'))
             ->colors([
                 'primary' => Color::Red,
             ])
