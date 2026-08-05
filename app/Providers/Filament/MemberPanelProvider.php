@@ -39,6 +39,7 @@ class MemberPanelProvider extends PanelProvider
             ->profile(EditProfile::class)
             ->authGuard('member')
             ->authPasswordBroker('castellers')
+            ->favicon(asset('favicon.svg'))
             ->colors([
                 'primary' => Color::Green,
             ])

@@ -1,24 +1,19 @@
-# FemPinya 4
-
-## Motivació
-
-FemPinya 4 neix de l'auditoria de l'ecosistema existent (maig 2026):
-
-- **FP3 backend** ([AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend), Laravel 8) és el repo més actiu, en producció, però tecnològicament desfasat. Migrar-lo a Laravel 11+ seria una reescriptura gairebé total: canvi de Blade tradicional, model de permisos, Livewire/Filament... Un risc alt si l'organització no hi participa activament.
-- **FP3 api** (Laravel 11) té una arquitectura correcta com a pont entre backend i app Flutter, però l'activitat és escassa i els endpoints cobreixen poc domini.
-- L'organització **AssociacioFemPinya** és semi-activa. Contribuir via PR requereix coordinació i cessió del codi (AGPL-3.0).
-
-La decisió: **fork privat + reescriptura neta** amb stack modern (Laravel 13 + Filament 5), llibertat total de disseny, i opció d'oferir-lo upstream quan estigui madur.
-
-
-## Referència FP3
-
-Els repos de FP3 estan disponibles a [AssociacioFemPinya](https://github.com/AssociacioFemPinya/backend) per a consulta de domini. No se'n copia codi directament.
-
+# FemCastells — Backend
 
 Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https://github.com/AssociacioFemPinya/backend) (Laravel 8), reescrit des de zero amb Laravel 13 i Filament 5.
 
 > Projecte personal de [H. Artacho](https://github.com/martinartacho). Intenció futura d'oferir-lo a l'organització AssociacioFemPinya.
+
+---
+
+## Motivació
+
+FemCastells neix de l'auditoria de l'ecosistema existent (maig 2026):
+
+- **FP3 backend** ([AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend), Laravel 8) és el repo més actiu, en producció, però tecnològicament desfasat. Migrar-lo a Laravel 11+ seria una reescriptura gairebé total.
+- L'organització **AssociacioFemPinya** és semi-activa. Contribuir via PR requereix coordinació i cessió del codi (AGPL-3.0).
+
+La decisió: **reescriptura neta** amb stack modern (Laravel 13 + Filament 5), llibertat total de disseny, i opció d'oferir-lo upstream quan estigui madur.
 
 ---
 
@@ -44,45 +39,30 @@ Aplicació de gestió per a colles castelleres. Substitut de [FemPinya 3](https:
 ### Panell admin (`/admin/{shortname}/`)
 - **Castellers** — CRUD complet, import CSV, grups, assignació de rols
 - **Esdeveniments** — calendari, gestió d'assistència amb respostes personalitzades, export CSV
-- **Pissarra** — editor visual de pinyes (Konva.js):
-  - Assignació de castellers a posicions (clic, drag & drop)
-  - Múltiples versions desades per event (`board_snapshots`), reanomenables
-  - Nom per defecte al desar = tipologia del castell actual
-  - Pissarra oficial (⭐) per event
-  - Undo (Ctrl+Z), indicador de canvis no desats
-  - **Projector** — URL permanent per colla per a TV/Raspberry Pi en mode quiosc
-  - **Compartir** — URL pública per a un snapshot concret
-  - **Canta la pinya** — vista d'impressió agrupada per posició
-  - **Rondes** — gestió de l'ordre d'actuació per event:
-    - Assignació de pinyes a rondes (Ronda 1, 2, 3…) amb reordenació ▲▼
-    - Publicació amb URL pública per als castellers (sense login)
-    - Mode pestanyes: vista interactiva amb canvas Konva.js integrat
-    - Mode targetes: llista clicable cap a cada pinya individual
-    - Configurable per colla (pestanyes / targetes)
-- **Plantilles de castell** — generació i gestió de mapes de posicions:
-  - **Wizard visual** (`/admin/{shortname}/wizard-plantilla`) — generació automàtica per tipus (Tres, Quatre…), pisos, nivell (base, tronc, folre, manilles) i anells; radis calibrats des de templates reals
-  - CRUD de plantilles amb accions de reanomenar i eliminar
-  - Camp `description` auto-generat (p.ex. "Tres de 8 amb folre") per identificar el tipus de canvas
+- **Pissarra** — editor visual de pinyes (Konva.js): assignació de castellers a posicions, múltiples versions desades, projector per TV/Raspberry Pi, URL pública per snapshot
+- **Rondes** — gestió de l'ordre d'actuació per event amb URL pública per als castellers
+- **Plantilles de castell** — wizard visual per generar mapes de posicions
 - **Noticies** — tauler d'anuncis intern
 - **Configuració** — gestió de la colla, GDPR, permisos per rol
 
 ### Portal membre (`/member/{shortname}/`)
-- **Calendari** — events visibles amb confirmació d'assistència i respostes a preguntes
-- **La meva pinya** — mostra la pinya projectada per la tècnica i destaca la posició del casteller
-- **Rondes** — vista de les rondes de l'event més proper, en mode pestanyes o targetes
+- **Calendari** — events visibles amb confirmació d'assistència
+- **La meva pinya** — mostra la posició del casteller a la pinya projectada
+- **Rondes** — vista de les rondes de l'event més proper
 
 ### API REST per a app mòbil (`/api-fempinya/`)
 
-Endpoints autenticats via Sanctum (token Bearer), consumits per l'app Flutter FP3:
+Endpoints autenticats via Sanctum, consumits per [l'app FemCastells](https://github.com/martinartacho/femcastells-app):
 
 | Endpoint | Descripció |
 |---|---|
 | `POST /api/auth/login` | Login → retorna token |
-| `GET /api-fempinya/mobile_user_context` | Dades del casteller actiu, colla i logo |
-| `GET /api-fempinya/mobile_gdpr` | Estat GDPR del casteller |
-| `GET /api-fempinya/noticies` | Tauler de notícies |
-| `GET /api-fempinya/events` | Events de la colla |
-| `GET /api-fempinya/rondes` | Rondes de l'event actiu |
+| `POST /api/forgot-password` | Envia codi de reset per email |
+| `POST /api/reset-password` | Verifica codi i actualitza contrasenya |
+| `POST /api/demo/register` | Accés demo sense registre |
+| `GET /api-fempinya/mobile_home` | Home: notícies i events |
+| `GET /api-fempinya/mobile_events` | Events de la colla |
+| `GET /api-fempinya/mobile_rondas` | Rondes de l'event actiu |
 
 ### Pantalles públiques (sense login)
 - `/display/{shortname}/{token}` — projector en temps real (auto-refresh 30s)
@@ -91,37 +71,18 @@ Endpoints autenticats via Sanctum (token Bearer), consumits per l'app Flutter FP
 
 ---
 
-## Pagaments — Stripe Connect (en desenvolupament)
-
-Cada colla podrà tenir la seva pròpia botiga i rebre els pagaments directament al seu propi compte, sense que FemPinya 4 retingui ni gestioni els diners.
-
-**Arquitectura:**
-- `.env` conté **un únic joc de credencials de plataforma** (`STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_CONNECT_CLIENT_ID`) — són les de l'aplicació FemPinya4 a Stripe, compartides per totes les colles, no per cap colla en concret.
-- Cada colla es diferencia pel camp `colla.stripe_account_id` (format `acct_...`), obtingut en connectar el seu propi compte Stripe via OAuth (Standard Connect) des de Configuració → Pagament.
-- Les crides a l'API que afecten una colla concreta (checkout, reemborsaments...) s'autentiquen amb el secret de plataforma però passant `['stripe_account' => $colla->stripe_account_id]`, de manera que l'operació s'executa sobre el compte Stripe de la colla (direct charge) — els diners hi van directes.
-- Sense comissió de plataforma (`application_fee_amount` no s'utilitza).
-- Cada colla decideix el seu propi tipus d'IVA per producte segons li indiqui el seu gestor — no s'assumeix cap exempció fiscal al codi.
-
-**Estat actual:** connexió/desconnexió del compte Stripe implementada (`StripeConnectController`, pestanya Pagament a Configuració de la colla). Catàleg de productes i checkout encara no implementats.
-
----
-
 ## Instal·lació en local
 
 ### Requisits
-- PHP 8.3+, Composer
-- Node.js 20+, npm
-- MySQL
-- Laragon (Windows) o equivalent
+- PHP 8.3+, Composer, Node.js 20+, MySQL
 
 ### Passos
 
 ```bash
-git clone git@github.com:martinartacho/fempinya4.git
-cd fempinya4
+git clone git@github.com:martinartacho/femcastells.git
+cd femcastells
 
-composer install
-npm install
+composer install && npm install
 
 cp .env.example .env
 php artisan key:generate
@@ -131,19 +92,10 @@ Edita `.env`:
 ```
 APP_URL=http://fempinya4.test
 DB_DATABASE=fempinya4
-DB_USERNAME=root
-DB_PASSWORD=
 SEEDER_ADMIN_PASSWORD=<contrasenya-segura>
 SEEDER_USER_PASSWORD=<contrasenya-membres>
 SEEDER_ADMIN_EMAIL=<email>
-
-# Opcional — només si vols provar la connexió de pagaments (Stripe Connect)
-STRIPE_KEY=
-STRIPE_SECRET=
-STRIPE_CONNECT_CLIENT_ID=
 ```
-
-> **Casteller de demo:** el seeder crea `femcastells@artacho.org` (alias `DEMO`) a la colla demo, per a proves de l'app mòbil i revisió Play Store.
 
 ```bash
 php artisan migrate --seed
@@ -154,35 +106,17 @@ Accés: `http://fempinya4.test/admin`
 
 ---
 
-## Estructura clau
+## Repos relacionats
 
-```
-app/
-├── Filament/
-│   ├── Pages/BoardEditorPage.php        ← Editor de pissarres (Livewire)
-│   ├── Resources/EventResource.php
-│   ├── Resources/CastellerResource.php
-│   └── Member/                          ← Recursos del portal membre
-├── Http/Controllers/
-│   ├── ProjectorDisplayController.php   ← Pantalla TV/Raspberry
-│   └── DisplayPinyaController.php       ← Snapshot compartit
-├── Models/
-│   ├── Colla.php                        ← Tenant (display_token, projected_snapshot_id)
-│   ├── BoardSnapshot.php                ← Versions de pinya desades
-│   ├── CastleTemplate.php               ← Mapes de posicions
-│   └── Casteller.php                    ← Autenticable (guard member)
-resources/
-├── js/board-editor.js                   ← Canvas Konva.js (assignacions, undo)
-└── views/
-    ├── filament/pages/board-editor.blade.php
-    ├── filament/member/pages/pinya.blade.php
-    └── display/                         ← Vistes públiques del projector
-```
+| Repo | Descripció |
+|---|---|
+| [martinartacho/femcastells](https://github.com/martinartacho/femcastells) | Aquest repo — backend Laravel |
+| [martinartacho/femcastells-app](https://github.com/martinartacho/femcastells-app) | App mòbil Flutter |
 
 ---
 
 ## Llicència
 
-Actualment en desenvolupament privat. La intenció és publicar-lo sota llicència **AGPL-3.0**, la mateixa que [AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend), per facilitar una eventual integració o cessió a l'organització.
+La intenció és publicar-lo sota llicència **AGPL-3.0**, la mateixa que [AssociacioFemPinya/backend](https://github.com/AssociacioFemPinya/backend).
 
 © H. Artacho
