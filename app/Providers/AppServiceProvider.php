@@ -12,11 +12,18 @@ use App\Observers\CollaObserver;
 use App\Observers\NoticiaObserver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
+use Filament\Auth\Http\Responses\Contracts\PasswordResetResponse;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        $this->app->bind(
+            PasswordResetResponse::class,
+            \App\Http\Responses\PasswordResetResponse::class,
+        );
+    }
 
     public function boot(): void
     {
