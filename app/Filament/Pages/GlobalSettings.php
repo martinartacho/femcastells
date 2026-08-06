@@ -25,6 +25,8 @@ class GlobalSettings extends Page
 
     protected static ?string $title = 'Configuració global del sistema';
 
+    protected static \UnitEnum|string|null $navigationGroup = 'Administració';
+
     protected static ?int $navigationSort = 100;
 
     public ?array $data = [];

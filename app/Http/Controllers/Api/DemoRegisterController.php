@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class DemoRegisterController extends Controller
 {
+    public function status(): JsonResponse
+    {
+        return response()->json([
+            'enabled' => GlobalSetting::get('demo_enabled', '1') === '1',
+        ]);
+    }
+
     public function register(Request $request): JsonResponse
     {
         $key = 'demo-register:' . $request->ip();

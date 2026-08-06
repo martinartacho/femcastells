@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MobileEventsController;
 use App\Http\Controllers\Api\MobileHomeController;
 use App\Http\Controllers\Api\MobileNoticiesController;
 use App\Http\Controllers\Api\MobileRondesController;
+use App\Http\Controllers\Api\MobileHelpController;
 use App\Http\Controllers\Api\MobileSuggerimentController;
 use App\Http\Controllers\Api\MobileUserController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 // Paths exactes que usa l'app FP3 Flutter
 Route::post('/api/auth/login',  [AuthController::class, 'login']);
 Route::post('/api/forgot-password',   [ForgotPasswordController::class, 'sendLink']);
+Route::get('/api/demo/status',        [DemoRegisterController::class, 'status']);
 Route::post('/api/demo/register',     [DemoRegisterController::class, 'register']);
 Route::post('/api/reset-password',  [ForgotPasswordController::class, 'reset']);
 
@@ -46,5 +48,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::post('/device-token',         [DeviceTokenController::class, 'store']);
         Route::post('/mobile_suggeriment',   [MobileSuggerimentController::class, 'store']);
+        Route::get('/mobile_help',           [MobileHelpController::class, 'index']);
     });
 });
