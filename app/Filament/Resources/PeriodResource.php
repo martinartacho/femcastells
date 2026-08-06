@@ -24,7 +24,7 @@ class PeriodResource extends Resource
 
     protected static ?string $navigationLabel = 'Períodes';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Configuració';
+    protected static \UnitEnum|string|null $navigationGroup = 'Administració';
 
     protected static ?int $navigationSort = 3;
 

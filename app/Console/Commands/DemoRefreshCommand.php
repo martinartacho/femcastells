@@ -9,6 +9,8 @@ use App\Models\Colla;
 use App\Models\Event;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DemoRefreshCommand extends Command
 {
@@ -24,11 +26,32 @@ class DemoRefreshCommand extends Command
             return self::FAILURE;
         }
 
+        $this->resetDemoCredentials($colla);
         $this->addWeeklyAssaig($colla);
         $this->cleanOldEvents($colla);
 
         $this->info('Demo refreshed.');
         return self::SUCCESS;
+    }
+
+    private function resetDemoCredentials(Colla $colla): void
+    {
+        // Revoca tots els tokens demo i restaura email i password originals
+        $castellers = Casteller::where('colla_id', $colla->id)
+            ->where('email', 'not like', '%@demo.test')
+            ->get();
+
+        foreach ($castellers as $c) {
+            $c->tokens()->where('name', 'mobile-demo')->delete();
+            $c->update([
+                'email'    => mb_strtolower($c->alias) . '@demo.test',
+                'password' => Hash::make(Str::random(32)),
+            ]);
+        }
+
+        if ($castellers->count() > 0) {
+            $this->info("Credencials de {$castellers->count()} comptes demo restaurades.");
+        }
     }
 
     private function addWeeklyAssaig(Colla $colla): void

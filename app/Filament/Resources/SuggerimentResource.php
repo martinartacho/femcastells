@@ -22,7 +22,7 @@ class SuggerimentResource extends Resource
 
     protected static ?string $navigationLabel = 'Suggeriments';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Comunicació';
+    protected static \UnitEnum|string|null $navigationGroup = 'Administració';
 
     protected static ?int $navigationSort = 55;
 
