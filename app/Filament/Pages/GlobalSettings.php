@@ -31,7 +31,7 @@ class GlobalSettings extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->check();
+        return auth()->user()?->hasRole('super-admin') ?? false;
     }
 
     public function mount(): void
