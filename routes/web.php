@@ -16,6 +16,7 @@ Route::get('/', function () {
 });
 
 Route::get('/privacy', fn () => view('privacy'))->name('privacy');
+Route::get('/delete-account', fn () => view('delete_account'))->name('delete.account');
 
 Route::get('/app-open', fn () => view('app_open'))->name('app.open');
 
