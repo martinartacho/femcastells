@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Attendance;
+use App\Models\BoardSnapshot;
+use App\Models\CastleTemplate;
 use App\Models\Casteller;
 use App\Models\Colla;
 use App\Models\Event;
@@ -24,13 +26,16 @@ class ImportFp3Colla extends Command
         'casteller' => [],
         'event'     => [],
         'tag'       => [],
+        'board'     => [],
     ];
     private array $stats = [
-        'colles'     => 0,
-        'castellers' => 0,
-        'events'     => 0,
-        'attendance' => 0,
-        'tags'       => 0,
+        'colles'           => 0,
+        'castellers'       => 0,
+        'events'           => 0,
+        'attendance'       => 0,
+        'tags'             => 0,
+        'castle_templates' => 0,
+        'board_snapshots'  => 0,
     ];
 
     public function handle(): int
@@ -62,6 +67,7 @@ class ImportFp3Colla extends Command
         $this->importCastellers($fp3Colla);
         $this->importEvents($fp3Colla);
         $this->importAttendance($fp3Colla);
+        $this->importBoards($fp3Colla);
         $this->importCastellerTags($fp3Colla);
         $this->importEventTags($fp3Colla);
 
@@ -165,7 +171,7 @@ class ImportFp3Colla extends Command
                 'shoulder_height'   => $c->shoulder_height ? (int) round($c->shoulder_height) : null,
                 'photo'             => $c->photo,
                 'comments'          => $c->comments,
-                'num_soci'          => $c->num_soci ?? null,
+                'num_soci'          => is_numeric($c->num_soci) ? (int) $c->num_soci : null,
                 'national_id'       => $c->national_id_number ?? null,
                 'national_id_type'  => $c->national_id_type ?? null,
                 'nationality'       => $c->nationality ?? null,
@@ -337,6 +343,103 @@ class ImportFp3Colla extends Command
         }
 
         $this->line("   ✓ {$count} vincles event-tag");
+    }
+
+    private function importBoards(object $fp3Colla): void
+    {
+        $this->info('→ Boards (plantilles i snapshots)...');
+
+        $fp4CollaId = $this->idMap['colla'][$fp3Colla->id_colla];
+
+        // Mapa fp4_casteller_id → alias per construir assignments en format {pos_id: alias}
+        $aliasById = Casteller::where('colla_id', $fp4CollaId)->pluck('alias', 'id')->toArray();
+
+        $fp3Boards = DB::connection('mysql_fp3')
+            ->table('boards')
+            ->where('colla_id', $fp3Colla->id_colla)
+            ->get();
+
+        foreach ($fp3Boards as $board) {
+            $templateKey = 'fp3_' . $board->id_board;
+
+            $rows = DB::connection('mysql_fp3')
+                ->table('rows')
+                ->where('board_id', $board->id_board)
+                ->orderBy('id')
+                ->get()
+                ->keyBy('id');
+
+            $positions = $rows->map(fn ($r) => [
+                'id'       => 'fp3_' . $r->id,
+                'position' => $r->position,
+                'cord'     => (int) $r->cord,
+                'side'     => $r->side ?? '',
+                'div_id'   => $r->div_id,
+                'row'      => $r->row,
+                'base'     => $r->base,
+            ])->values()->toArray();
+
+            if (! $this->dryRun) {
+                $template = CastleTemplate::updateOrCreate(
+                    ['colla_id' => $fp4CollaId, 'name' => $board->name],
+                    [
+                        'key'       => $templateKey,
+                        'positions' => $positions,
+                        'ready'     => true,
+                    ]
+                );
+                $this->idMap['board'][$board->id_board] = $template->id;
+            } else {
+                $this->idMap['board'][$board->id_board] = 0;
+            }
+
+            $this->stats['castle_templates']++;
+
+            $boardEvents = DB::connection('mysql_fp3')
+                ->table('board_event')
+                ->where('board_id', $board->id_board)
+                ->get();
+
+            foreach ($boardEvents as $be) {
+                $fp4EventId = $this->idMap['event'][$be->event_id] ?? null;
+                if (! $fp4EventId) {
+                    continue;
+                }
+
+                $bpRows = DB::connection('mysql_fp3')
+                    ->table('board_position')
+                    ->where('board_event_id', $be->id)
+                    ->get();
+
+                // Format FP4: {"fp3_{row_id}": "alias"}
+                $assignments = [];
+                foreach ($bpRows as $bp) {
+                    $fp4CastellerId = $this->idMap['casteller'][$bp->casteller_id] ?? null;
+                    $alias = $fp4CastellerId ? ($aliasById[$fp4CastellerId] ?? null) : null;
+                    $row   = $rows[$bp->row_id] ?? null;
+                    if (! $alias || ! $row) {
+                        continue;
+                    }
+                    $assignments['fp3_' . $row->id] = $alias;
+                }
+
+                if (! $this->dryRun) {
+                    BoardSnapshot::updateOrCreate(
+                        ['colla_id' => $fp4CollaId, 'event_id' => $fp4EventId, 'castle_type' => $templateKey],
+                        [
+                            'name'        => $board->name,
+                            'castle_type' => $templateKey,
+                            'assignments' => $assignments,
+                            'is_primary'  => true,
+                        ]
+                    );
+                }
+
+                $this->stats['board_snapshots']++;
+            }
+        }
+
+        $this->line("   ✓ {$this->stats['castle_templates']} plantilles, {$this->stats['board_snapshots']} snapshots");
     }
 
     private function mapCountry(?string $country): string

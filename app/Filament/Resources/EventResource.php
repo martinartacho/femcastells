@@ -154,7 +154,7 @@ class EventResource extends Resource
                     ->color(fn (Event $record) => $record->attendance()->whereNotNull('checked_in')->exists() ? 'success' : 'gray')
                     ->tooltip('Verificació d\'assistència')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/attendance'
+                        '/admin/' . filament()->getTenant()->shortname . '/events/' . $record->id . '/attendance'
                     ),
                 Action::make('preguntes')
                     ->label('')
@@ -162,7 +162,7 @@ class EventResource extends Resource
                     ->color(fn (Event $record) => $record->questions()->exists() ? 'info' : 'gray')
                     ->tooltip('Preguntes de l\'event')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/questions'
+                        '/admin/' . filament()->getTenant()->shortname . '/events/' . $record->id . '/questions'
                     ),
                 Action::make('pissarra')
                     ->label('')
@@ -172,7 +172,7 @@ class EventResource extends Resource
                         ? 'Pissarra: ' . $record->board_snapshots_count . ' versió/ns'
                         : 'Obrir pissarra (sense pinyes desades)')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id
+                        '/admin/' . filament()->getTenant()->shortname . '/pissarra?selectedEventId=' . $record->id
                         . (($record->board_snapshots_count ?? 0) > 0 ? '&autoLoad=1' : '')
                     ),
                 Action::make('rondes')
@@ -183,7 +183,7 @@ class EventResource extends Resource
                         ? 'Rondes: ' . $record->rondes_count . ' assignades'
                         : 'Gestionar rondes (sense rondes)')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/rondes?eventId=' . $record->id
+                        '/admin/' . filament()->getTenant()->shortname . '/rondes?eventId=' . $record->id
                     ),
             ])
             ->bulkActions([
