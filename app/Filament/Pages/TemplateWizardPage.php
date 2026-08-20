@@ -814,8 +814,9 @@ class TemplateWizardPage extends Page
 
     public function loadTemplate(int $id): void
     {
+        $collaId  = filament()->getTenant()?->id ?? auth()->user()?->colla_id;
         $template = CastleTemplate::where('id', $id)
-            ->where('colla_id', auth()->user()?->colla_id)
+            ->where('colla_id', $collaId)
             ->firstOrFail();
 
         $this->templateName = $template->name;
@@ -826,7 +827,7 @@ class TemplateWizardPage extends Page
     #[On('template-save')]
     public function saveTemplate(string $name, string $positionsJson, string $description = ''): void
     {
-        $collaId   = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id ?? auth()->user()?->colla_id;
         $name      = trim($name) ?: $this->getCastellName();
         $key       = \Illuminate\Support\Str::slug($name);
         $decoded = json_decode($positionsJson, true) ?? [];

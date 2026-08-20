@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class ImportFp3Colla extends Command
 {
-    protected $signature = 'fp3:import {shortname : Shortname de la colla a FP3} {--dry-run : Simula la importació sense escriure a la BD}';
+    protected $signature = 'fp3:import {shortname : Shortname de la colla a FP3} {--fp4-shortname= : Shortname a FP4 si difereix de FP3} {--dry-run : Simula la importació sense escriure a la BD}';
 
     protected $description = 'Importa una colla de FP3 a FP4 (colles, castellers, events, assistència, tags)';
 
@@ -41,6 +41,7 @@ class ImportFp3Colla extends Command
     public function handle(): int
     {
         $shortname      = $this->argument('shortname');
+        $fp4Shortname   = $this->option('fp4-shortname') ?: $shortname;
         $this->dryRun   = (bool) $this->option('dry-run');
 
         if ($this->dryRun) {
@@ -62,7 +63,7 @@ class ImportFp3Colla extends Command
         $this->info("Colla trobada: {$fp3Colla->name}");
         $this->newLine();
 
-        $this->importColla($fp3Colla);
+        $this->importColla($fp3Colla, $fp4Shortname);
         $this->importTags($fp3Colla);
         $this->importCastellers($fp3Colla);
         $this->importEvents($fp3Colla);
@@ -77,13 +78,13 @@ class ImportFp3Colla extends Command
         return self::SUCCESS;
     }
 
-    private function importColla(object $fp3Colla): void
+    private function importColla(object $fp3Colla, string $fp4Shortname): void
     {
         $this->info('→ Colla...');
 
         $data = [
             'name'      => $fp3Colla->name,
-            'shortname' => $fp3Colla->shortname,
+            'shortname' => $fp4Shortname,
             'email'     => $fp3Colla->email,
             'phone'     => $fp3Colla->phone,
             'city'      => $fp3Colla->city,
@@ -93,7 +94,7 @@ class ImportFp3Colla extends Command
         ];
 
         if (! $this->dryRun) {
-            $fp4Colla = Colla::updateOrCreate(['shortname' => $fp3Colla->shortname], $data);
+            $fp4Colla = Colla::updateOrCreate(['shortname' => $fp4Shortname], $data);
             $this->idMap['colla'][$fp3Colla->id_colla] = $fp4Colla->id;
         } else {
             $this->idMap['colla'][$fp3Colla->id_colla] = 0;
@@ -377,6 +378,8 @@ class ImportFp3Colla extends Command
                 'div_id'   => $r->div_id,
                 'row'      => $r->row,
                 'base'     => $r->base,
+                'nom'      => $r->row,
+                'grup'     => $r->position,
             ])->values()->toArray();
 
             if (! $this->dryRun) {
