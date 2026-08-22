@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TagsColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -176,6 +177,19 @@ class CastellerResource extends Resource
                     ->label('Alçada espatlles (cm)')
                     ->numeric(),
             ])->columns(3),
+
+            Section::make('Etiquetes i posició')->schema([
+                Select::make('tags')
+                    ->label('Posició i etiquetes')
+                    ->helperText('Selecciona la posició (Rengla, Laterals…) i les etiquetes (Habituals, Canalla…)')
+                    ->relationship('tags', 'name', fn ($query) => $query
+                        ->whereIn('type', ['POSITIONS', 'CASTELLERS'])
+                        ->where('colla_id', \Filament\Facades\Filament::getTenant()?->id)
+                        ->orderBy('type')
+                        ->orderBy('name'))
+                    ->multiple()
+                    ->preload(),
+            ]),
         ]);
     }
 
@@ -221,7 +235,23 @@ class CastellerResource extends Resource
                         4 => 'info',
                         default => 'gray',
                     }),
+                TextColumn::make('posicio')
+                    ->label('Posició')
+                    ->state(fn (Casteller $record) => $record->tags
+                        ->where('type', 'POSITIONS')
+                        ->first()?->name ?? '—')
+                    ->badge()
+                    ->color('info')
+                    ->toggleable(),
+                TagsColumn::make('etiquetes')
+                    ->label('Etiquetes')
+                    ->state(fn (Casteller $record) => $record->tags
+                        ->where('type', 'CASTELLERS')
+                        ->pluck('name')
+                        ->toArray())
+                    ->toggleable(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with('tags'))
             ->filters([
                 SelectFilter::make('status')
                     ->label('Estat')

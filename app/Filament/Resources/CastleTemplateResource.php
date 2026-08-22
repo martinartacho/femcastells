@@ -59,8 +59,9 @@ class CastleTemplateResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $collaId = filament()->getTenant()?->id ?? auth()->user()?->colla_id;
         return parent::getEloquentQuery()
-            ->where('colla_id', auth()->user()?->colla_id);
+            ->where('colla_id', $collaId);
     }
 
     public static function form(Schema $schema): Schema

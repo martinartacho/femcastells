@@ -54,7 +54,7 @@ class BoardEditorPage extends Page
     public function mount(): void
     {
         if ($this->autoLoad && $this->selectedEventId) {
-            $collaId = auth()->user()?->colla_id;
+            $collaId = filament()->getTenant()?->id;
             $snap = BoardSnapshot::where('colla_id', $collaId)
                 ->where('event_id', $this->selectedEventId)
                 ->orderByDesc('is_primary')
@@ -81,7 +81,7 @@ class BoardEditorPage extends Page
         if (!$this->selectedEventId || !$this->castleType) {
             return null;
         }
-        return BoardSnapshot::where('colla_id', auth()->user()?->colla_id)
+        return BoardSnapshot::where('colla_id', filament()->getTenant()?->id)
             ->where('event_id', $this->selectedEventId)
             ->where('castle_type', $this->castleType)
             ->orderByDesc('is_primary')
@@ -94,7 +94,7 @@ class BoardEditorPage extends Page
         if (!$this->autoLoad || !$this->currentSnapshotId) {
             return null;
         }
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
         return BoardSnapshot::where('colla_id', $collaId)
             ->find($this->currentSnapshotId)
             ?->assignments;
@@ -102,7 +102,7 @@ class BoardEditorPage extends Page
 
     public function getCastleTypes(): Collection
     {
-        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+        return CastleTemplate::where('colla_id', filament()->getTenant()?->id)
             ->where('ready', true)
             ->orderBy('name')
             ->get(['key', 'name']);
@@ -110,7 +110,7 @@ class BoardEditorPage extends Page
 
     public function getCastlePositions(): array
     {
-        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+        return CastleTemplate::where('colla_id', filament()->getTenant()?->id)
             ->where('ready', true)
             ->get(['key', 'positions'])
             ->mapWithKeys(fn ($t) => [$t->key => $this->flatPositions($t->positions)])
@@ -130,7 +130,7 @@ class BoardEditorPage extends Page
 
     public function getCastleViews(): array
     {
-        return CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+        return CastleTemplate::where('colla_id', filament()->getTenant()?->id)
             ->where('ready', true)
             ->get(['key', 'positions'])
             ->mapWithKeys(fn ($t) => [$t->key => $this->multiViewPositions($t->positions)])
@@ -155,7 +155,7 @@ class BoardEditorPage extends Page
 
     public function getCastellers(): Collection
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
         $eventId  = $this->selectedEventId;
 
         $query = Casteller::where('castellers.colla_id', $collaId)
@@ -176,7 +176,7 @@ class BoardEditorPage extends Page
 
     public function getCastellerPhysicalData(): array
     {
-        return Casteller::where('colla_id', auth()->user()?->colla_id)
+        return Casteller::where('colla_id', filament()->getTenant()?->id)
             ->where('status', 1)
             ->select('alias', 'weight', 'height', 'shoulder_height')
             ->get()
@@ -192,7 +192,7 @@ class BoardEditorPage extends Page
 
     public function getUpcomingEvents(): Collection
     {
-        $collaId     = auth()->user()?->colla_id;
+        $collaId     = filament()->getTenant()?->id;
         $currentType = $this->castleType;
 
         return Event::where('colla_id', $collaId)
@@ -209,7 +209,7 @@ class BoardEditorPage extends Page
             return collect();
         }
 
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
 
         return BoardSnapshot::where('colla_id', $collaId)
             ->where('event_id', $this->selectedEventId)
@@ -225,7 +225,7 @@ class BoardEditorPage extends Page
             return collect();
         }
 
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
 
         return BoardSnapshot::where('colla_id', $collaId)
             ->where('event_id', $this->selectedEventId)
@@ -237,7 +237,7 @@ class BoardEditorPage extends Page
 
     public function getAllCollaSnapshots(): Collection
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
 
         return BoardSnapshot::where('colla_id', $collaId)
             ->where('castle_type', $this->castleType)
@@ -285,7 +285,7 @@ class BoardEditorPage extends Page
     #[On('board-save')]
     public function saveSnapshot(string $name, string $assignmentsJson): void
     {
-        $collaId    = auth()->user()?->colla_id;
+        $collaId    = filament()->getTenant()?->id;
         $assignments = json_decode($assignmentsJson, true) ?? [];
 
         if (empty($assignments)) {
@@ -316,7 +316,7 @@ class BoardEditorPage extends Page
             return;
         }
 
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $incoming = json_decode($assignmentsJson, true) ?? [];
         $dirty    = json_decode($dirtyViewsJson, true) ?? [];
 
@@ -390,7 +390,7 @@ class BoardEditorPage extends Page
         if (!$this->castleType) {
             return [];
         }
-        $template = CastleTemplate::where('colla_id', auth()->user()?->colla_id)
+        $template = CastleTemplate::where('colla_id', filament()->getTenant()?->id)
             ->where('key', $this->castleType)
             ->first();
 
@@ -420,7 +420,7 @@ class BoardEditorPage extends Page
 
     public function loadSnapshot(int $snapshotId): void
     {
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
 
         $this->currentSnapshotId   = $snapshot->id;
@@ -431,7 +431,7 @@ class BoardEditorPage extends Page
 
     public function setPrimary(int $snapshotId): void
     {
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
 
         BoardSnapshot::where('colla_id', $collaId)
@@ -451,7 +451,7 @@ class BoardEditorPage extends Page
 
     public function projectSnapshot(int $snapshotId): void
     {
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
 
         auth()->user()->colla->update(['projected_snapshot_id' => $snapshot->id]);
@@ -467,7 +467,7 @@ class BoardEditorPage extends Page
 
     public function generateShareUrl(int $snapshotId): void
     {
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId);
 
         if (!$snapshot->public_token) {
@@ -483,7 +483,7 @@ class BoardEditorPage extends Page
 
     public function renameSnapshot(int $id, string $name): void
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
         $name    = trim($name);
 
         if ($name === '') {
@@ -502,7 +502,7 @@ class BoardEditorPage extends Page
 
     public function deleteSnapshot(int $snapshotId): void
     {
-        $collaId = auth()->user()?->colla_id;
+        $collaId = filament()->getTenant()?->id;
 
         BoardSnapshot::where('colla_id', $collaId)->findOrFail($snapshotId)->delete();
 
@@ -521,7 +521,7 @@ class BoardEditorPage extends Page
             return;
         }
 
-        $collaId     = auth()->user()?->colla_id;
+        $collaId     = filament()->getTenant()?->id;
         $assignments = (new PinyaGeneratorService())->generate(
             $this->selectedEventId,
             $this->castleType,
@@ -560,7 +560,7 @@ class BoardEditorPage extends Page
             return [];
         }
 
-        $collaId  = auth()->user()?->colla_id;
+        $collaId  = filament()->getTenant()?->id;
         $snapshot = BoardSnapshot::where('colla_id', $collaId)->find($this->currentSnapshotId);
 
         if (!$snapshot || empty($snapshot->assignments)) {

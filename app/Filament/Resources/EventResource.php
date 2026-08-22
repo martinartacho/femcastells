@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TagsColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\Action;
 use Filament\Tables\Filters\SelectFilter;
@@ -106,6 +107,16 @@ class EventResource extends Resource
                     ->label('Permet acompanyants')
                     ->default(false),
             ])->columns(2),
+
+            Section::make('Etiquetes')->schema([
+                Select::make('tags')
+                    ->label('Etiquetes de l\'event')
+                    ->relationship('tags', 'name', fn ($query) => $query
+                        ->where('type', 'EVENTS')
+                        ->where('colla_id', \Filament\Facades\Filament::getTenant()?->id))
+                    ->multiple()
+                    ->preload(),
+            ]),
         ]);
     }
 
@@ -120,6 +131,13 @@ class EventResource extends Resource
                 TextColumn::make('name')
                     ->label('Nom')
                     ->searchable(),
+                TagsColumn::make('etiquetes')
+                    ->label('Etiquetes')
+                    ->state(fn (Event $record) => $record->tags
+                        ->where('type', 'EVENTS')
+                        ->pluck('name')
+                        ->toArray())
+                    ->toggleable(),
                 TextColumn::make('type')
                     ->label('Tipus')
                     ->badge()
@@ -138,6 +156,7 @@ class EventResource extends Resource
                     ->label('Visible')
                     ->boolean(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with('tags'))
             ->filters([
                 SelectFilter::make('type')
                     ->label('Tipus')
@@ -154,7 +173,7 @@ class EventResource extends Resource
                     ->color(fn (Event $record) => $record->attendance()->whereNotNull('checked_in')->exists() ? 'success' : 'gray')
                     ->tooltip('Verificació d\'assistència')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/attendance'
+                        '/admin/' . filament()->getTenant()->shortname . '/events/' . $record->id . '/attendance'
                     ),
                 Action::make('preguntes')
                     ->label('')
@@ -162,7 +181,7 @@ class EventResource extends Resource
                     ->color(fn (Event $record) => $record->questions()->exists() ? 'info' : 'gray')
                     ->tooltip('Preguntes de l\'event')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/events/' . $record->id . '/questions'
+                        '/admin/' . filament()->getTenant()->shortname . '/events/' . $record->id . '/questions'
                     ),
                 Action::make('pissarra')
                     ->label('')
@@ -172,7 +191,7 @@ class EventResource extends Resource
                         ? 'Pissarra: ' . $record->board_snapshots_count . ' versió/ns'
                         : 'Obrir pissarra (sense pinyes desades)')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/pissarra?selectedEventId=' . $record->id
+                        '/admin/' . filament()->getTenant()->shortname . '/pissarra?selectedEventId=' . $record->id
                         . (($record->board_snapshots_count ?? 0) > 0 ? '&autoLoad=1' : '')
                     ),
                 Action::make('rondes')
@@ -183,7 +202,7 @@ class EventResource extends Resource
                         ? 'Rondes: ' . $record->rondes_count . ' assignades'
                         : 'Gestionar rondes (sense rondes)')
                     ->url(fn (Event $record): string =>
-                        '/admin/' . auth()->user()->colla->shortname . '/rondes?eventId=' . $record->id
+                        '/admin/' . filament()->getTenant()->shortname . '/rondes?eventId=' . $record->id
                     ),
             ])
             ->bulkActions([
