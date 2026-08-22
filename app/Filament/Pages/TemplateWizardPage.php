@@ -38,9 +38,23 @@ class TemplateWizardPage extends Page
     public int    $cordonsN     = 1;
     public int    $anells       = 2;
 
+    public array $initialPositions = [];
+
     public function mount(): void
     {
         $this->templateName = $this->getCastellName();
+
+        $templateId = request()->query('template');
+        if ($templateId) {
+            $collaId  = filament()->getTenant()?->id ?? auth()->user()?->colla_id;
+            $template = CastleTemplate::where('id', $templateId)
+                ->where('colla_id', $collaId)
+                ->first();
+            if ($template) {
+                $this->templateName      = $template->name;
+                $this->initialPositions  = $template->positions ?? [];
+            }
+        }
     }
 
     public function updatedFamilia(): void { $this->templateName = $this->getCastellName(); }

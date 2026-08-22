@@ -165,7 +165,7 @@ class ImportFp3Colla extends Command
                 'emergency_phone'   => $c->emergency_phone ?? null,
                 'birthdate'         => $c->birthdate,
                 'subscription_date' => $c->subscription_date ?? null,
-                'gender'            => $c->gender ?? null,
+                'gender'            => [1 => 'M', 2 => 'F', 3 => 'X'][$c->gender] ?? null,
                 'status'            => $c->status,
                 'height'            => $c->height ? (int) round($c->height) : null,
                 'weight'            => $c->weight ? (int) round($c->weight) : null,
@@ -267,6 +267,7 @@ class ImportFp3Colla extends Command
                 'casteller_id' => $fp4CastellerId,
                 'status'       => $statusMap[$a->status] ?? 'unknown',
                 'companions'   => $a->companions ?? 0,
+                'checked_in'   => $a->status_verified === 1 ? 1 : null,
             ];
 
             if (! $this->dryRun) {

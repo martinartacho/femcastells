@@ -146,10 +146,11 @@ class ImportFp3Templates extends Command
     }
 
     /**
-     * Parseja html_pinya i retorna array de posicions geomètriques normalitzades.
+     * Parseja html_pinya i retorna array de posicions geomètriques normalitzades i escalades.
      *
-     * Cada <div id="{div_id}" style="left:{x}px; top:{y}px; width:{w}px; height:{h}px; transform:rotate({a}deg)">
-     * es converteix en {div_id, x, y, w, h, cx, cy, angle} amb coordenades normalitzades (minX=0, minY=0).
+     * Les coordenades de FP3 (CSS pixels reals, rang típic 1000–1600px) s'escalen
+     * perquè la dimensió màxima sigui TARGET_PX, compatible amb el wizard de FP4
+     * (templates natives usen rang ~400px).
      *
      * @return array<int, array{div_id:int, x:int, y:int, w:int, h:int, cx:int, cy:int, angle:float}>
      */
@@ -192,23 +193,30 @@ class ImportFp3Templates extends Command
             return [];
         }
 
-        $minX = min($xs);
-        $minY = min($ys);
+        $minX  = min($xs);
+        $minY  = min($ys);
+        $rangeX = max($xs) - $minX;
+        $rangeY = max($ys) - $minY;
 
-        return array_map(function (array $r) use ($minX, $minY): array {
-            $nx = (int) round($r['x'] - $minX);
-            $ny = (int) round($r['y'] - $minY);
-            $w  = (int) round($r['w']);
-            $h  = (int) round($r['h']);
+        // Escalar perquè la dimensió màxima sigui TARGET_PX (compatibilitat amb wizard FP4)
+        $targetPx = 500.0;
+        $maxRange = max($rangeX, $rangeY, 1);
+        $scale    = $maxRange > $targetPx ? $targetPx / $maxRange : 1.0;
+
+        return array_map(function (array $r) use ($minX, $minY, $scale): array {
+            $nx = (int) round(($r['x'] - $minX) * $scale);
+            $ny = (int) round(($r['y'] - $minY) * $scale);
+            $w  = (int) round($r['w'] * $scale);
+            $h  = (int) round($r['h'] * $scale);
 
             return [
                 'div_id' => $r['divId'],
                 'x'      => $nx,
                 'y'      => $ny,
-                'w'      => $w,
-                'h'      => $h,
-                'cx'     => $nx + intdiv($w, 2),
-                'cy'     => $ny + intdiv($h, 2),
+                'w'      => max(8, $w),
+                'h'      => max(5, $h),
+                'cx'     => $nx + intdiv(max(8, $w), 2),
+                'cy'     => $ny + intdiv(max(5, $h), 2),
                 'angle'  => $r['angle'],
             ];
         }, $raw);

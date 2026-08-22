@@ -42,7 +42,7 @@
 </style>
 
 <script>
-    window.__templatePositions = [];
+    window.__templatePositions = @json($this->initialPositions);
     window.__catSettings = @json($this->getCatSettings());
     window.__catCustom   = @json(auth()->user()?->colla?->board_settings['cat_custom'] ?? []);
 </script>
