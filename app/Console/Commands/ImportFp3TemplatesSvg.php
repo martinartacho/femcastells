@@ -113,7 +113,7 @@ class ImportFp3TemplatesSvg extends Command
                 $row = $rows->get($divId);
 
                 $pos = [
-                    'id'    => $row ? 'fp3_' . $row->id : 'div_' . $divId,
+                    'id'    => 'pos_' . $divId,
                     'cx'    => $geo['cx'],
                     'cy'    => $geo['cy'],
                     'x'     => round($geo['cx'] - $geo['w'] / 2, 1),
